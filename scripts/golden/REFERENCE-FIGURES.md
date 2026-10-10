@@ -299,3 +299,15 @@ source: export/oecd_cpi_headline_yoy.json, oecd_cpi_core_yoy.json
 - DEU | 2026-08 | headline 2.861815, core 2.509689
 - FRA | 2026-08 | headline 2.357136, core 1.155111
 - ITA | 2026-08 | headline 3.310138, core 1.796076
+
+## #14 Greenhouse gas emissions per person (added 2026-10-10)
+
+Conversion (Web and golden test must use exactly this): yearly population = mean of the four quarters Q1-Q4 of that year in `econ_population_joined.json` (sha256 36a710cfc718b1c44a057377c5b2fbc73d13342de81f7ae4089da5753b495ba4), thousands of persons. Per person = OECD GHG total excl. LULUCF (`oecd_ghg_total.json`, thousand t CO2e) / yearly population (thousands) = tonnes CO2e per person. Quarters derived from OECD annual population (status Y in the joined file) count as present and are used; they are not missing. This covers 1990 for DEU, GBR, ITA and JPN (and any year before each country's first published quarter). A year is null only if one of its four quarters has no value at all (null or absent) in the joined file.
+
+- CAN: 1990 22.000 t/person; 2024 16.652 t/person; change -24.31%
+- USA: 1990 26.129 t/person; 2022 18.972 t/person; change -27.39%
+- JPN: 1990 10.245 t/person; 2024 8.435 t/person; change -17.67%
+- GBR: 1990 13.697 t/person; 2024 5.418 t/person; change -60.45%
+- DEU: 1990 15.789 t/person; 2024 7.780 t/person; change -50.72%
+- FRA: 1990 9.428 t/person; 2024 5.396 t/person; change -42.76%
+- ITA: 1990 9.154 t/person; 2024 6.151 t/person; change -32.81%

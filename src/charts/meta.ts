@@ -1,7 +1,7 @@
 // Central chart registry metadata. The id is the stable link key (?chart=<id>), never the title.
 // Titles are plain and follow the selected view. One factual description line per chart.
-export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21";
-export type ChartId = BuiltId | "3" | "25" | "15" | "17" | "12" | "18" | "24" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
+export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24";
+export type ChartId = BuiltId | "3" | "25" | "15" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
 export type TabId = "economy" | "labour" | "finance" | "society" | "environment";
 export type ChartMeta = { id: ChartId; brief: string | null; tab: TabId; titles: Record<string, string>; desc: string; params: string[]; data: string[]; built?: boolean; src?: string[] };
 // src: short source names for the headline tag ("BIS · Aug 2026"); must match the names in the chart's full source line.
@@ -15,10 +15,10 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "3": { id: "3", brief: "#3", tab: "economy", titles: { _: "GDP per capita ranking" }, desc: "GDP per person at current PPPs, rank 1–7 each year", params: [], data: [] },
   "25": { id: "25", brief: "#25", tab: "economy", titles: { _: "Income inequality (Gini)" }, desc: "Gini coefficient of disposable income, latest year per country", params: [], data: [] },
   "15": { id: "15", brief: "#15", tab: "economy", titles: { _: "R&D spending, % of GDP" }, desc: "Gross domestic spending on R&D, business and other, % of GDP", params: [], data: [] },
-  "17": { id: "17", brief: "#17", tab: "labour", titles: { _: "Youth vs overall unemployment" }, desc: "Unemployment rate ages 15–24 divided by the rate for ages 15+", params: [], data: [] },
-  "12": { id: "12", brief: "#12", tab: "labour", titles: { _: "Real average wages" }, desc: "Average annual wages, constant prices, USD at PPP", params: [], data: [] },
-  "18": { id: "18", brief: "#18", tab: "labour", titles: { _: "Annual hours worked per worker" }, desc: "Average annual hours actually worked per worker", params: [], data: [] },
-  "24": { id: "24", brief: "#24", tab: "labour", titles: { _: "Labour share of income" }, desc: "Labour income as % of GDP", params: [], data: [] },
+  "17": { id: "17", src: ["OECD"], built: true, brief: "#17", tab: "labour", titles: { _: "Youth unemployment ratio" }, desc: "Unemployment rate ages 15–24 divided by the rate for ages 15+", params: [], data: ["oecd_unemployment_rate_m_15_24.json", "oecd_unemployment_rate_m_15plus.json"] },
+  "12": { id: "12", src: ["OECD"], built: true, brief: "#12", tab: "labour", titles: { _: "Real average wages" }, desc: "Average annual wages, constant prices, USD at PPP", params: [], data: ["oecd_avg_annual_wage_usd_ppp.json"] },
+  "18": { id: "18", src: ["OECD"], built: true, brief: "#18", tab: "labour", titles: { _: "Annual hours worked per worker" }, desc: "Average annual hours actually worked per worker", params: [], data: ["oecd_avg_annual_hours_worked.json"] },
+  "24": { id: "24", src: ["ILO"], built: true, brief: "#24", tab: "labour", titles: { _: "Labour share of income" }, desc: "Labour income as % of GDP", params: [], data: ["ilo_labour_share_gdp.json"] },
   "13": { id: "13", src: ["OECD"], built: true, brief: "#13", tab: "finance", titles: { headline: "Inflation", core: "Core inflation" }, desc: "Consumer prices, % change on a year earlier, monthly", params: ["in_view", "in_win"], data: ["oecd_cpi_headline_yoy.json", "oecd_cpi_core_yoy.json"] },
   "7": { id: "7", src: ["BIS"], built: true, brief: "#7", tab: "finance", titles: { policy: "Central bank policy rates" }, desc: "Central bank policy rate, %, end of month; euro area from 1999", params: ["pr_win", "pr_on"], data: ["bis_policy_rate_m.json"] },
   "10": { id: "10", src: ["IMF"], built: true, brief: "#10", tab: "finance", titles: { _: "Government debt, 2007 vs now" }, desc: "General government gross debt, % of GDP", params: [], data: ["imf_weo_GGXWDG_NGDP.json"] },

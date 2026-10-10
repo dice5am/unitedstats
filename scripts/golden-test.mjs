@@ -305,7 +305,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 13 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 17 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -596,6 +596,24 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(/"13": \{[^\n]*titles: \{ headline: "Inflation", core: "Core inflation" \}/.test(meta) && /chartTitle\(cfg\.id, view\)/.test(readFileSync(new URL("../src/components/HeatStrip.tsx", import.meta.url), "utf8")), `#13 title follows the toggle: "Inflation" / "Core inflation"`);
   const src = ["src/components/LineChart.tsx", "src/components/ChartCard.tsx", "lib/charts.mjs"].map((f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8")).join("\n");
   check(!/toLocaleDateString/.test(src) && /"Sep"/.test(src), `one month formatter everywhere: "Sep", never "Sept"`); }
+// Labour wave (#17, #12, #18, #24): expected values read FROM the Warehouse's REFERENCE-FIGURES.md; ours from lib/finance.mjs
+{ const F = await import("../lib/finance.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+  const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8")), num = (t) => parseFloat(t.replace("−", "-"));
+  const y = F.youthRatio(J("oecd_unemployment_rate_m_15_24.json"), J("oecd_unemployment_rate_m_15plus.json")), bad17 = [];
+  for (const [c, per, v] of sec(17)) { const r = y.rows.find((x) => x.code === c); if (!r || r.end !== per || Math.abs(r.ratio - num(v)) > 0.005 + 1e-9) bad17.push(`${c} ${per} ours ${r?.end} ${r?.ratio?.toFixed(3)} vs ${v}`); }
+  const sorted17 = y.rows.every((r, i, a) => !i || a[i - 1].ratio >= r.ratio), spk = y.rows.every((r) => r.spark.length === 60 && Math.abs(r.spark[59] - r.ratio) < 1e-12);
+  check(sec(17).length === 7 && !bad17.length && sorted17 && spk, `#17 youth ÷ overall at each own latest month = Warehouse (2 dp) for all 7 (${y.rows.map((r) => `${r.code} ${r.end} ${r.ratio.toFixed(2)}`).join(", ")}); sorted; 60-month sparks end on the bar value${bad17.length ? " MISMATCH " + bad17.join("; ") : ""}`);
+  const w = F.slope(J("oecd_avg_annual_wage_usd_ppp.json"), 1990), bad12 = [];
+  for (const [c, per, v] of sec(12)) { const r = w.rows.find((x) => x.code === c); if (per !== `1990→${r.end}` || Math.abs(r.change - num(v)) > 0.05 + 1e-9) bad12.push(`${c} ours ${r.change.toFixed(2)} vs ${v}`); }
+  check(sec(12).length === 7 && !bad12.length, `#12 wage growth 1990→2025 = Warehouse (1 dp) for all 7 (${w.rows.map((r) => `${r.code} ${r.change.toFixed(1)}%`).join(", ")})${bad12.length ? " MISMATCH " + bad12.join("; ") : ""}`);
+  const h = F.changeSince(J("oecd_avg_annual_hours_worked.json"), 2000), bad18 = [];
+  for (const [c, per, v] of sec(18)) { const r = h.rows.find((x) => x.code === c), m = /(-?[\d.]+) h \((-?[\d.]+)%\)/.exec(v); if (per !== `2000→${r.end}` || Math.abs(r.change - +m[1]) > 0.5 + 1e-9 || Math.abs(r.pct - +m[2]) > 0.05 + 1e-9) bad18.push(`${c} ours ${r.change.toFixed(1)} h ${r.pct.toFixed(2)}% vs ${v}`); }
+  check(sec(18).length === 7 && !bad18.length, `#18 hours change 2000→2025 = Warehouse (hours to 1, % to 1 dp) for all 7 (${h.rows.map((r) => `${r.code} ${Math.round(r.change)}`).join(", ")})${bad18.length ? " MISMATCH " + bad18.join("; ") : ""}`);
+  const ls = J("ilo_labour_share_gdp.json"), sh = F.slope(ls, 2004, "pts"), bad24 = [];
+  for (const [c, per, v] of sec(24)) { const r = sh.rows.find((x) => x.code === c), m = /([\d.]+)→([\d.]+) \(Δ (-?[\d.]+)\)/.exec(v);
+    if (per !== `2004→${r.end}` || Math.abs(r.startValue - +m[1]) > 0.05 + 1e-9 || Math.abs(r.endValue - +m[2]) > 0.05 + 1e-9 || Math.abs(r.change - +m[3]) > 0.051) bad24.push(`${c} ours ${r.end} ${r.change.toFixed(2)} vs ${per} ${v}`); }
+  check(sec(24).length === 7 && !bad24.length && F.wholeFlag(ls, "USA") === "I" && F.wholeFlag(ls, "CAN") === null, `#24 labour share 2004→own last actual year = Warehouse for all 7 (${sh.rows.map((r) => `${r.code} ${r.end} ${r.change.toFixed(1)}`).join(", ")}); US whole-series ILO "I" flag → solid line + stats-box tag${bad24.length ? " MISMATCH " + bad24.join("; ") : ""}`); }
 // #7 policy rates: each line's latest figure (the app's own buildLine, every window) = Warehouse REFERENCE-FIGURES.md Card 7, read from the file
 { const S = await import("../lib/series.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
   const rows = /## Card 7 [^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));

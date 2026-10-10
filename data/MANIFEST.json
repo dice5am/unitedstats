@@ -51,7 +51,8 @@
     "oecd_unemployment_rate_m_15plus.json": {
       "sha256": "3b47f4f64886a4f18b893654bd5257ead54c9d7b7c51d78a7acd4aa300d72e15",
       "cards": [
-        "#2"
+        "#2",
+        "#17"
       ]
     },
     "oecd_cpi_headline_yoy.json": {
@@ -100,6 +101,30 @@
       "sha256": "56d55de646b63d8428db40563a3242927cc40ae8a4fd92fc6f33a58e94592e05",
       "cards": [
         "#21"
+      ]
+    },
+    "oecd_unemployment_rate_m_15_24.json": {
+      "sha256": "778211e1c025d24a86fd3d50c6947183410e9a7f574bf37c907c2ac02144e89e",
+      "cards": [
+        "#17"
+      ]
+    },
+    "oecd_avg_annual_wage_usd_ppp.json": {
+      "sha256": "0f176222f52f38aef495358041815a2c8f5b05a7d966c0ac22505620472b7732",
+      "cards": [
+        "#12"
+      ]
+    },
+    "oecd_avg_annual_hours_worked.json": {
+      "sha256": "b03c496b35902d288300365b9ba5b0162e08da5cc6a1a458f8315405bb3e7c10",
+      "cards": [
+        "#18"
+      ]
+    },
+    "ilo_labour_share_gdp.json": {
+      "sha256": "45631d8737cffd74f48d91793a1620c10d1d539eef4a2fa7865659d796034cba",
+      "cards": [
+        "#24"
       ]
     }
   }

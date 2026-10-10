@@ -8,7 +8,7 @@ import type { DumbbellSpec } from "@/src/components/Dumbbell";
 import type { MultiplesSpec } from "@/src/components/Multiples";
 import type { HeatCfg } from "@/src/components/HeatStrip";
 
-const rules = (items: [string, string][]) => <div className="grp"><h3>Rules</h3><ul className="rules">{items.map(([ic, t]) => <li key={t}><span className="ic">{ic}</span>{t}</li>)}</ul></div>;
+export const rules = (items: [string, string][]) => <div className="grp"><h3>Rules</h3><ul className="rules">{items.map(([ic, t]) => <li key={t}><span className="ic">{ic}</span>{t}</li>)}</ul></div>;
 const pct1 = (v: number) => `${v.toFixed(1)}%`;
 
 export const cpiCfg = (headline: unknown, core: unknown): HeatCfg => ({

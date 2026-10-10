@@ -37,6 +37,18 @@ export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentT
   "13": {
     load: async () => { const [{ default: hl }, { default: core }, F, { default: H }] = await Promise.all([import("@/data/oecd_cpi_headline_yoy.json"), import("@/data/oecd_cpi_core_yoy.json"), import("./finance"), import("@/src/components/HeatStrip")]);
       const cfg = F.cpiCfg(hl, core); return { default: ({ initial }: Init) => <H cfg={cfg} initial={initial} /> }; } },
+  "17": {
+    load: async () => { const [{ default: y }, { default: a }, L, { default: R }] = await Promise.all([import("@/data/oecd_unemployment_rate_m_15_24.json"), import("@/data/oecd_unemployment_rate_m_15plus.json"), import("./labour"), import("@/src/components/RankBar")]);
+      const spec = L.youthSpec(y); return { default: () => <R file={a} spec={spec} /> }; } },
+  "18": {
+    load: async () => { const [{ default: f }, L, { default: R }] = await Promise.all([import("@/data/oecd_avg_annual_hours_worked.json"), import("./labour"), import("@/src/components/RankBar")]);
+      return { default: () => <R file={f} spec={L.hoursSpec} /> }; } },
+  "12": {
+    load: async () => { const [{ default: f }, L, { default: S }] = await Promise.all([import("@/data/oecd_avg_annual_wage_usd_ppp.json"), import("./labour"), import("@/src/components/Slope")]);
+      return { default: () => <S file={f} spec={L.wageSpec} /> }; } },
+  "24": {
+    load: async () => { const [{ default: f }, L, { default: S }] = await Promise.all([import("@/data/ilo_labour_share_gdp.json"), import("./labour"), import("@/src/components/Slope")]);
+      return { default: () => <S file={f} spec={L.shareSpec} /> }; } },
   "10": {
     load: async () => { const [{ default: f }, F, { default: D }] = await Promise.all([import("@/data/imf_weo_GGXWDG_NGDP.json"), import("./finance"), import("@/src/components/Dumbbell")]);
       return { default: () => <D file={f} spec={F.debtSpec} /> }; } },

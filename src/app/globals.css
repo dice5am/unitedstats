@@ -451,4 +451,20 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .db .dbax{cursor:default;min-height:22px}.db .dbax:hover{background:none}
 .db .dbax .sct{height:16px}.db .dbax .sct span{position:absolute;transform:translateX(-50%);font-size:var(--fs-1);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .db .dbax .sct span:first-child{transform:none}.db .dbax .sct span:last-child{transform:translateX(-100%)}
+/* Labour wave: ranked bars (#17, #18) and slope (#12, #24) */
+.rb .dbg{position:absolute;top:-15px;bottom:-15px;width:1px;background:var(--grid);transform:translateX(-.5px)}
+.rb .dbg.z{background:var(--text-2);opacity:.5}
+.rb .rbref{position:absolute;top:-15px;bottom:-15px;width:0;border-left:1px dashed var(--text-2);opacity:.7}
+.rb .scb{height:14px}
+.rb.sp .scr{grid-template-columns:88px 1fr 64px 56px}
+.rb .rbsp{display:flex;align-items:center}
+.rb .dbax,.rb .dbax:hover{cursor:default;min-height:22px;background:none}
+.rb .dbax .sct{height:16px}.rb .dbax .sct span{position:absolute;transform:translateX(-50%);font-size:var(--fs-1);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:767px){.rb.sp .scr{grid-template-columns:70px 1fr 44px 44px;gap:6px}.rb .rbs{width:44px}}
+.slope{position:relative;margin-top:8px}
+.slope .slax{stroke:var(--grid);stroke-width:1}
+.slope .slr{cursor:pointer}.slope .slr.dim{opacity:.25}
+.slope .sll{font-size:12px;fill:var(--text-2)}.slope .sll .slv{fill:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+.slope .sll .from{fill:var(--muted);font-size:11px}
 .fm text.fmt{font-size:10px;fill:var(--text-2)}
+.rb .scv em{display:block;margin:0;font-size:11px}
