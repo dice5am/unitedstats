@@ -126,11 +126,13 @@ export function useWidth<T extends HTMLElement>() {
 // Stats box shared by the new chart types: hidden until a mark is tapped/hovered; ✕, Esc and outside tap close it.
 // at: anchor beside the tapped item (y/h inside a container of height H): below it when the item is in the top half,
 // above it otherwise, so the tapped bar or line stays visible.
-export function StatBox({ title, rows, onClose, bottom = false, at }: { title: string; rows: { code: string; name: string; value: string; note?: string }[]; onClose: () => void; bottom?: boolean; at?: { y: number; h: number; H: number } }) {
+export function StatBox({ title, rows, onClose, bottom = false, at, ax }: { title: string; rows: { code: string; name: string; value: string; note?: string }[]; onClose: () => void; bottom?: boolean; ax?: { x: number; W: number; w?: number }; at?: { y: number; h: number; H: number } }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   return (
     <div className={`tip statbox ${at ? (at.y + at.h / 2 < at.H / 2 ? "below" : "above") : bottom ? "bot" : "top"}`} role="status" onPointerDown={(e) => e.stopPropagation()}
-      style={at ? (at.y + at.h / 2 < at.H / 2 ? { top: at.y + at.h + 6, bottom: "auto" } : { bottom: at.H - at.y + 6, top: "auto" }) : undefined}>
+      style={{ ...(at ? (at.y + at.h / 2 < at.H / 2 ? { top: at.y + at.h + 6, bottom: "auto" } : { bottom: at.H - at.y + 6, top: "auto" }) : {}),
+        // ax: beside a vertical guide at x (in a container W wide): to its right, or flipped to its left past the middle
+        ...(ax ? (ax.x < ax.W / 2 ? { left: Math.min(ax.x + 12, ax.W - (ax.w ?? 260)), right: "auto", width: ax.w ?? 260 } : { right: Math.min(ax.W - ax.x + 12, ax.W - (ax.w ?? 260)), left: "auto", width: ax.w ?? 260 }) : {}) }}>
       <div className="tiph"><span className="mo">{title}</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
       {rows.map((r, i) => <div key={`${r.code}${i}`} className="tipr"><i style={{ background: `var(--${r.code})` }} /><span>{r.name}</span><b>{r.value}</b>{r.note && <em>{r.note}</em>}</div>)}
     </div>

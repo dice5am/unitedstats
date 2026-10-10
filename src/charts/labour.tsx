@@ -14,7 +14,7 @@ export const youthSpec = (youth: any): RankBarSpec => ({
   labels: { top: "Highest ratio", bottom: "Lowest ratio" },
   rows: (all) => { const d = youthRatio(youth, all); return { latest: d.latest, rows: d.rows.map((r) => ({ code: r.code, value: r.ratio, end: r.end, spark: r.spark,
     stat: [{ name: `Ages 15–24 · ${r.end ? monLabel(r.end) : "n/a"}`, value: r.youth === null ? "n/a" : `${r.youth.toFixed(2)}%` }, { name: "Ages 15+", value: r.all === null ? "n/a" : `${r.all.toFixed(2)}%` }, { name: "Ratio", value: r.ratio === null ? "n/a" : `${r.ratio.toFixed(2)}×` }] })) }; },
-  sub: (latest) => <>Youth unemployment rate (age 15–24) ÷ overall rate · same month, each country’s latest month (to {monLabel(latest)}) · 1 = young people no worse off · seasonally adjusted</>,
+  sub: () => <>Youth unemployment rate (age 15–24) ÷ overall rate</>,
   source: "Source: OECD · monthly unemployment rates, ages 15–24 and 15+, seasonally adjusted",
   legend: <><li><i className="rbk" />Dashed line: ratio of 1 (same rate as everyone)</li><li>Sparkline: the ratio over the last 5 years</li></>,
   calc: (d) => { const c = d.rows.find((r: any) => r.code === "CAN"); return <>

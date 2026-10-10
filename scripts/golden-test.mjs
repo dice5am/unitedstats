@@ -783,5 +783,13 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
   check(!/not ranked/.test(tm) && /--text-2" : "--heat-hi"/.test(tm), "#14 diverging tiles around zero (grey = lower, heat hue = higher); no 'not ranked' text");
   check(/URLV\[vv\] === qv \|\| vv === qv/.test(cc), "j_view=jpc (and j_view=pc) restore Jobs per capita");
   check(/<td>\{\/Q\/\.test\(p\.period\) \? qLabel\(p\.period\) : fmtM\(p\.mi\)\}<\/td>/.test(lc) && !/April 2026/.test(rd("src/charts/finance.tsx")), "periods read 'Apr 2026' (screen-reader tables and #10 WEO edition), never '2026-04'/'April 2026'");
-  check(/sub: \(latest\) => <>Youth unemployment rate \(age 15–24\) ÷ overall rate/.test(lab), "#17 description reads 'Youth unemployment rate (age 15–24) ÷ overall rate'");
+  check(/sub: \(\) => <>Youth unemployment rate \(age 15–24\) ÷ overall rate<\/>/.test(lab), "#17 description reads 'Youth unemployment rate (age 15–24) ÷ overall rate'");
   check(/YearPick label="Country"/.test(mx) && /pl = 44/.test(mx) && /className="mixa"[^\n]*onPointerLeave/.test(mx), "#9 country dropdown (no overlap), 100% tick inside the plot, hover survives the stats box"); }
+// Quick round on f8cc5d8: #5 subtitle wraps; #4 calc describes the window switch; no 'Starts later' on Jobs; #17 description only; #9 bands + anchored box.
+{ const rd = (f) => readFileSync(f, "utf8"), css = rd("src/app/globals.css"), soc = rd("src/charts/society.tsx"), cc = rd("src/components/ChartCard.tsx"), lab = rd("src/charts/labour.tsx"), mx = rd("src/components/MixArea.tsx"), meta = rd("src/charts/meta.ts"), w = await import("../lib/waves.mjs");
+  check(/#chart-5 \.sub\{white-space:normal !important;overflow:visible !important;text-overflow:clip !important/.test(css), "#5 subtitle wraps at every width, never truncates");
+  check(/Timeframe switch 10Y \/ 20Y \/ 50Y \(default 50Y\), each counted back from the chart’s own last year/.test(soc) && !/start year switchable|1960, 1990, 2005/.test(soc), "#4 How it's calculated describes the 10Y/20Y/50Y switch from its own last year (no start-year wording)");
+  check(/kind !== "jobs" && latesL\.length > 0/.test(cc), "no 'Starts later' legend line on Jobs or Jobs per capita");
+  check(/sub: \(\) => <>Youth unemployment rate \(age 15–24\) ÷ overall rate<\/>,/.test(lab), "#17 visible description is only 'Youth unemployment rate (age 15–24) ÷ overall rate'");
+  const bands = w.MIX_BANDS.map(([n]) => n.toLowerCase()), d9 = /"9": \{[^\n]*desc: "([^"]+)"/.exec(meta)[1].toLowerCase();
+  check(bands.every((b) => b.split(", ").every((p) => d9.includes(p.replace(" and other renewables", "")))) && !/oil/.test(d9) && /ax=\{\{ x: x\(hover!\), W: w/.test(mx), `#9 description names all six bands (${w.MIX_BANDS.map(([n]) => n).join(" / ")}); hover/tap box anchors beside the guide and flips`); }

@@ -530,3 +530,5 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .notes li>i{flex:none;margin:0 !important}
 .notes li>i.dot{width:8px;height:8px}
 .notes li>i.dot,.notes li>i.late,.notes li>i.ndsw,.notes li>i.dash,.notes li>i.tick{box-sizing:border-box}
+/* #5: the subtitle always wraps, never truncates, at every width (incl. short windows) */
+#chart-5 .sub{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;display:block !important;-webkit-line-clamp:unset !important}

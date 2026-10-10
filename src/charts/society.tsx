@@ -15,7 +15,7 @@ export const greySpec: SlopeSpec = {
   source: "Source: World Bank WDI · population ages 65 and above, % of total population (SP.POP.65UP.TO.ZS)",
   calc: (d) => { const c = d.rows.find((r) => r.code === "CAN")!; return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Share 65+</dt><dd>People aged 65 and over as % of everyone. Already a share of the population, so no per-capita toggle.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">World Bank WDI · SP.POP.65UP.TO.ZS</dd><dt>Years</dt><dd>{d.start} and {d.ends.join(", ")}; start year switchable (1960, 1990, 2005).</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">World Bank WDI · SP.POP.65UP.TO.ZS</dd><dt>Years</dt><dd>{d.start} and {d.ends.join(", ")}. Timeframe switch 10Y / 20Y / 50Y (default 50Y), each counted back from the chart’s own last year: the latest year any country publishes, {Math.max(...d.ends.map(Number))}, so 50Y starts in {Math.max(...d.ends.map(Number)) - 50}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>share(latest) − share(start), in points</code></div>
       {c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = +{c.change.toFixed(1)} pts</b></p>}</div></div>
     {rules([["n/a", "Gaps are never filled"]])}

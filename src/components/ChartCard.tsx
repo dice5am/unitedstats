@@ -314,7 +314,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         {brks.length > 0 && <li><i className="tick" />{PR ? "Series break: euro area from Jan 1999" : `Series break, by ${brkUnit}`}</li>}
         {bandLeg.map((t) => <li key={t} className="ndleg"><i className="ndsw" />{t}</li>)}
         {hasEst && <li><i className="dash" />Dashed: population estimated from yearly figures</li>}
-        {latesL.length > 0 && <li><i className="late" />Starts later: {latesL.map((l) => `${l.name} from ${l.late!.slice(0, 4)}`).join(", ")}</li>}
+        {kind !== "jobs" && latesL.length > 0 && <li><i className="late" />Starts later: {latesL.map((l) => `${l.name} from ${l.late!.slice(0, 4)}`).join(", ")}</li>}
       </ul>
       <p className="source">{PR ? `Source: BIS central bank policy rates (WS_CBPOL), end of month · as of ${asOfStr}` : E ? `Source: OECD quarterly national accounts · ${view === "pc" ? "real GDP and population" : "real GDP"}, SA · as of ${asOfStr}`
         : R ? `Source: OECD · unemployment rate 15+, ${UM ? "monthly, " : ""}seasonally adjusted · as of ${asOfStr}`
