@@ -169,3 +169,20 @@ export function YearPick({ label, value, options, onChange }: { label: string; v
     </div>
   );
 }
+
+// ≥1024: size a chart's variable-height part from the viewport, like the line charts: grow or shrink `cur` so the
+// card's source line lands at the fold, never below Design's minimums (480, or 340 in windows under 800px tall) for the whole chart element `ref`.
+// Returns null below 1024 (keep the fixed mobile height). `cur` is the part the component controls (svg height, rows × panel).
+export function useFitH(ref: { current: Element | null }, curRef: { current: number }) {
+  const [fit, setFit] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const f = () => {
+      const el = ref.current as HTMLElement | null, cur = curRef.current; if (!el || innerWidth < 1024 || !cur) { setFit((v) => (v === null ? v : null)); return; }
+      const src = el.closest(".cardsec")?.querySelector(".source"); if (!src) return;
+      const min = (innerHeight < 800 ? 340 : 480) - Math.max(0, el.getBoundingClientRect().height - cur), t = Math.max(min, Math.round(cur + innerHeight - 8 - (src.getBoundingClientRect().bottom + scrollY)));
+      setFit((v) => (v !== null && Math.abs(v - t) <= 1 ? v : t));
+    };
+    f(); addEventListener("resize", f); return () => removeEventListener("resize", f);
+  });
+  return fit;
+}

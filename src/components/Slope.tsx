@@ -5,7 +5,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { slope, wholeFlag } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth, type Init } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
 import { HeadFigs, rankLabels, sgn } from "./HeadFigs";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -31,7 +31,9 @@ export default function Slope({ file, spec, initial }: { file: unknown; spec: Sl
   const d = useMemo(() => slope(file, start, spec.change), [file, start, spec.change]);
   const [sel, setSel] = useState<string | null>(null);
   const [ref, w] = useWidth<HTMLDivElement>();
-  const narrow = w > 0 && w < 560, H = narrow ? 340 : 420, padT = 28, padB = 16, LH = 16;
+  const svgRef = useRef<SVGSVGElement>(null), hNow = useRef(0), fitH = useFitH(svgRef, hNow);
+  const narrow = w > 0 && w < 560, H0 = narrow ? 340 : 420, H = fitH ?? H0, padT = 28, padB = 16, LH = 16;
+  hNow.current = H;
   const lw = narrow ? 64 : 150, rw = narrow ? 104 : 190, x0 = lw + 8, x1 = Math.max(x0 + 80, w - rw - 8);
   const ok = d.rows.filter((r) => r.startValue !== null && r.endValue !== null);
   const vs = ok.flatMap((r) => [r.startValue!, r.endValue!]), lo = Math.min(...vs), hi = Math.max(...vs), pad = (hi - lo) * 0.04 || 1;
@@ -57,7 +59,7 @@ export default function Slope({ file, spec, initial }: { file: unknown; spec: Sl
           { code: r.code, name: r.end ?? "Latest", value: r.endValue === null ? "n/a" : spec.valueFmt(r.endValue), note: flagOf(r.code) && spec.flagNote?.[flagOf(r.code)!] ? spec.flagNote[flagOf(r.code)!] : undefined },
           { code: r.code, name: "Change", value: r.change === null ? "n/a" : `${fmtC(r.change)}${unit ? " pts" : ""}` },
         ]} at={{ y: Math.min(y(r.startValue!), y(r.endValue!)) + 8, h: Math.max(8, Math.abs(y(r.endValue!) - y(r.startValue!))), H: H + 8 }} />}
-        {w > 0 && <svg width={w} height={H} role="img" aria-label={`${chartTitle(spec.id)}: ${ok.map((x) => `${NAME[x.code]} ${spec.valueFmt(x.startValue!)} in ${d.start}, ${spec.valueFmt(x.endValue!)} in ${x.end}`).join("; ")}`}>
+        {w > 0 && <svg ref={svgRef} width={w} height={H} role="img" aria-label={`${chartTitle(spec.id)}: ${ok.map((x) => `${NAME[x.code]} ${spec.valueFmt(x.startValue!)} in ${d.start}, ${spec.valueFmt(x.endValue!)} in ${x.end}`).join("; ")}`}>
           <text x={x0} y={14} className="ax" textAnchor="middle">{d.start}</text>
           <text x={x1} y={14} className="ax" textAnchor="middle">{mixed ? "Latest" : latest}</text>
           <line x1={x0} x2={x0} y1={padT - 6} y2={H - padB} className="slax" /><line x1={x1} x2={x1} y1={padT - 6} y2={H - padB} className="slax" />

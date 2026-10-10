@@ -4,11 +4,11 @@
 //   kind "area": 2px line + soft area, optional reference quarter marked as a level line (#20 household credit, 2007-Q4)
 //   kind "bars": diverging bars around zero, one per quarter (#19 current account)
 // Late starters draw from their own first reading with "from YYYY" in the panel title. Gaps stay gaps.
-import { useMemo, useState, type MutableRefObject, type ReactNode } from "react";
+import { useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { COUNTRIES, qLabel } from "@/lib/series.mjs";
 import { multiples, winFromQ, lastNN } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const WIN = ["1", "5", "10", "20", "50"] as const;
@@ -25,8 +25,10 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
   const end = useMemo(() => Object.values(file.series as Record<string, any>).map((s) => s.periods[lastNN(s)]).sort().pop() as string, [file]);
   const m = useMemo(() => multiples(file, winFromQ(end, years), spec.ref ?? null), [file, end, years, spec.ref]);
   const [wrap, w] = useWidth<HTMLDivElement>();
+  const phNow = useRef(0), fitT = useFitH(wrap, phNow);
   const [cur, setCur] = useState<{ code: string; i: number } | null>(null);
-  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, ph = cols === 4 ? 150 : 120;
+  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(7 / cols), ph = fitT ? Math.floor(fitT / rows) : cols === 4 ? 150 : 120;
+  phNow.current = rows * ph;
   const pl = 6, pr = 6, pt = 16, pb = 18, iw = pw - pl - pr, ih = ph - pt - pb;
   const q0 = qi(m.from), q1 = qi(m.to), n = q1 - q0 + 1;
   // round ticks with light gridlines (Round 4c): domain snaps to whole steps, never raw extents

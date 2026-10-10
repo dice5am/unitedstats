@@ -1,10 +1,10 @@
 "use client";
 // Scatter (#8, year selector) and connected scatter (#5, one trail per country, dot per year, latest year labelled).
 // Round ticks with light gridlines on both axes; country colours; labels spread so they never collide. Tap a dot for its stats box.
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, YearPick, StatBox, useParams, useWidth, type Init } from "./kit";
+import { CardFrame, YearPick, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
 import { HeadFigs, type Fig } from "./HeadFigs";
 import { spread } from "./Slope";
 
@@ -23,11 +23,13 @@ export default function Scatter({ spec, initial }: { spec: ScatterSpec } & Init)
   const year = spec.param ? st[spec.param] : "";
   const pts = useMemo(() => spec.points(year), [spec, year]);
   const [ref, w] = useWidth<HTMLDivElement>();
+  const svgRef = useRef<SVGSVGElement>(null), hNow = useRef(0), fitH = useFitH(svgRef, hNow);
   const [sel, setSel] = useState<string | null>(null);
   const ok = pts.filter((p) => p.x !== null && p.y !== null), na = pts.filter((p) => p.x === null || p.y === null);
   const xs = ok.flatMap((p) => (p.trail ? p.trail.map((q) => q.x) : [p.x!])), ys = ok.flatMap((p) => (p.trail ? p.trail.map((q) => q.y) : [p.y!]));
   const X = nice(Math.min(...xs), Math.max(...xs)), Y = nice(Math.min(...ys), Math.max(...ys));
-  const narrow = w > 0 && w < 560, H = narrow ? 340 : 440, pl = narrow ? 40 : 56, pr = narrow ? 36 : 110, pt = 24, pb = 40;
+  const narrow = w > 0 && w < 560, H0 = narrow ? 340 : 440, H = fitH ?? H0, pl = narrow ? 40 : 56, pr = narrow ? 36 : 110, pt = 24, pb = 40;
+  hNow.current = H;
   const x = (v: number) => pl + ((v - X.a) / (X.b - X.a)) * (w - pl - pr), y = (v: number) => pt + ((Y.b - v) / (Y.b - Y.a)) * (H - pt - pb);
   const ly = spread(ok.map((p) => y(p.y!)), 16, pt, H - pb);
   const p0 = sel ? pts.find((p) => p.code === sel)! : null, figs = spec.headline?.(pts, year) ?? null;
@@ -40,7 +42,7 @@ export default function Scatter({ spec, initial }: { spec: ScatterSpec } & Init)
       <div className="scat sc" ref={ref} onPointerDown={() => setSel(null)}>
         {p0 && <StatBox title={`${NAME[p0.code]}${p0.date ? ` · ${p0.date}` : year ? ` · ${year}` : ""}`} onClose={() => setSel(null)} bottom={p0.y !== null && y(p0.y) < H / 2}
           rows={[{ code: p0.code, name: spec.xLabel, value: p0.x === null ? "n/a" : spec.xFmt(p0.x) }, { code: p0.code, name: spec.yLabel, value: p0.y === null ? "n/a" : spec.yFmt(p0.y), note: p0.note }]} />}
-        {w > 0 && <svg width={w} height={H} role="img" aria-label={`${chartTitle(spec.id)}: ${ok.map((p) => `${NAME[p.code]} ${spec.xFmt(p.x!)}, ${spec.yFmt(p.y!)}`).join("; ")}`}>
+        {w > 0 && <svg ref={svgRef} width={w} height={H} role="img" aria-label={`${chartTitle(spec.id)}: ${ok.map((p) => `${NAME[p.code]} ${spec.xFmt(p.x!)}, ${spec.yFmt(p.y!)}`).join("; ")}`}>
           {X.ticks.map((t) => <g key={`x${t}`}><line x1={x(t)} x2={x(t)} y1={pt} y2={H - pb} className="gl" /><text x={x(t)} y={H - pb + 16} className="ax" textAnchor="middle">{(spec.xTick ?? String)(t)}</text></g>)}
           {Y.ticks.map((t) => <g key={`y${t}`}><line x1={pl} x2={w - pr} y1={y(t)} y2={y(t)} className="gl" /><text x={pl - 8} y={y(t) + 4} className="ax" textAnchor="end">{t}</text></g>)}
           <text x={w - pr} y={H - 6} className="ax axt" textAnchor="end">{spec.xLabel} →</text>

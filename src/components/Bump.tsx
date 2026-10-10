@@ -50,7 +50,7 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
       tag={srcTag("3", end)}
       controls={<div className="bar solo"><Seg label="Timeframe" value={st.lg_win} options={WINS.map((v) => [v, `${v}Y`])} onChange={(v) => { setHover(null); set("lg_win", v); }} /></div>}
       headline={<HeadFigs tag={srcTag("3", end)} figs={[byRank[0], byRank[6]].map((b, k) => ({ code: b.c, label: k ? "Rank 7 (lowest)" : "Rank 1 (highest)", value: usd(L.value[b.c][last]!), date: `${end} · per person, PPP` }))} />}
-      legend={<>{narrow && deJ > 0 && <li><i className="ndkey" />{deLabel}</li>}<li>Rank 1 = highest GDP per person that year</li><li>Ranked only in years all seven publish</li></>}
+      legend={<>{narrow && deJ > 0 && <li><i className="ndkey" />{deLabel}</li>}<li>Rank 1 = highest GDP per person that year</li><li>Ranked in years all seven publish; Germany from 1991, the other six 1–6 before</li></>}
       source="Source: OECD · GDP per head, US dollars, current prices and current PPPs"
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>GDP per person</dt><dd>GDP per head at current prices and current purchasing power parities (PPPs adjust for price differences between countries), US dollars. Already per person, so no per-capita toggle.</dd></dl></div>

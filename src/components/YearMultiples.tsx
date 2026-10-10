@@ -1,10 +1,10 @@
 "use client";
 // Small multiples for yearly series (#11 fertility): one panel per country, same scale, round ticks with light gridlines,
 // a dashed reference line (e.g. 2.1) and the latest value in the caption. Tap a panel for its stats box.
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth, type Init } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
 import { HeadFigs } from "./HeadFigs";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -17,11 +17,13 @@ export default function YearMultiples({ file, spec, initial }: { file: any; spec
   const panels = useMemo(() => ORDER.map((c) => { const s = file.series[c]; const pts = s.periods.map((p: string, i: number) => ({ y: +p, v: s.values[i] as number | null })).filter((q: any) => q.y >= +from);
     const last = [...pts].reverse().find((q: any) => q.v !== null); return { code: c, pts, end: String(last.y), value: last.v as number }; }), [file, from]);
   const [wrap, w] = useWidth<HTMLDivElement>();
+  const phNow = useRef(0), fitT = useFitH(wrap, phNow);
   const [sel, setSel] = useState<string | null>(null);
   const all = panels.flatMap((p) => p.pts.map((q: any) => q.v)).filter((v: any) => v !== null).concat(spec.ref ? [spec.ref.value] : []);
   const step = [0.25, 0.5, 1, 2, 5, 10].find((s) => (Math.max(...all) - Math.min(0, ...all)) / s <= 5) ?? 20, lo = Math.min(0, Math.floor(Math.min(...all) / step) * step), hi = Math.ceil(Math.max(...all) / step) * step;
   const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => +(lo + i * step).toFixed(2));
-  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, ph = cols === 4 ? 140 : 110, pl = 6, pr = 6, pt = 16, pb = 18;
+  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(7 / cols), ph = fitT ? Math.floor(fitT / rows) : cols === 4 ? 140 : 110, pl = 6, pr = 6, pt = 16, pb = 18;
+  phNow.current = rows * ph;
   const y0 = panels[0].pts[0].y, y1 = Math.max(...panels.map((p) => +p.end));
   const x = (yr: number) => pl + ((yr - y0) / (y1 - y0 || 1)) * (pw - pl - pr), y = (v: number) => pt + ((hi - v) / (hi - lo)) * (ph - pt - pb);
   const sorted = [...panels].sort((a, b) => b.value - a.value), p0 = sel ? panels.find((p) => p.code === sel)! : null;

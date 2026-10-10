@@ -773,3 +773,6 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
 // #3 Germany no-data band (same spec as the GDP 50Y band: --ndband white 5% / black 4%, 11px text-2 label, legend at 390).
 { const b = readFileSync("src/components/Bump.tsx", "utf8"), css = readFileSync("src/app/globals.css", "utf8");
   check(/className="ndband" data-code="DEU"/.test(b) && /!narrow && <text[^>]*className="from ndlabel"/.test(b) && /narrow && deJ > 0 && <li><i className="ndkey" \/>\{deLabel\}/.test(b) && css.includes('--ndband:rgba(255,255,255,.05)') && css.includes('--ndband:rgba(0,0,0,.04)') && /\.ndlabel\{font-size:11px;fill:var\(--text-2\)\}/.test(css), "#3 'Germany: no data before 1991' band, GDP 50Y band spec; label inside ≥560px, in the legend at 390"); }
+// ≥1024 fixed-height charts size from the viewport (useFitH), never below Design's minimums (480 / 340 under 800px tall).
+{ const k = readFileSync("src/components/kit.tsx", "utf8"), use = ["Slope", "Scatter", "Multiples", "YearMultiples"].filter((f) => /useFitH\(/.test(readFileSync(`src/components/${f}.tsx`, "utf8")));
+  check(/innerHeight < 800 \? 340 : 480/.test(k) && use.length === 4, `viewport-fit heights on ${use.join(", ")} (#4 #12 #24 #8 #5 #19 #20 #11), minimums 480/340 kept`); }
