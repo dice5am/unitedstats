@@ -4,7 +4,8 @@ import { COUNTRIES, WINDOWS, EURO, estAt, buildLine, headlinePick, headlineLabel
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
-import { writeParams, CalcDisclosure, useDocTitle } from "./kit";
+import { writeParams, CalcDisclosure, useDocTitle, TagIn } from "./kit";
+import { MON } from "@/lib/charts.mjs";
 import { srcTag, chartTitle } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 
@@ -41,8 +42,8 @@ const LEGACY = ["view", "win", "on"];
 export const UNEMP_NOTE = "OECD monthly estimates; European figures differ from the earlier quarterly series by up to 1.1 points.";
 export const UNEMP_EU_NOTE = "smoothed across survey changes; no break flagged by OECD";
 export const POP_JOIN_LINE = "Population before the quarterly series starts uses OECD annual population, interpolated monthly. Switch to quarterly: Canada 1981, France 1980, UK 1995, Italy 1995, Japan 2007.";
-const fmtM = (p: string) => { const [y, m] = p.split("-").map(Number); return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }); };
-export const asOf = (id: string) => { const m = /(\d{4})(\d{2})(\d{2})T/.exec(id); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : id; };
+const fmtM = (p: string) => { const [y, m] = p.split("-").map(Number); return `${MON[m - 1]} ${y}`; }; // "Sep", same as every chart
+export const asOf = (id: string) => { const m = /(\d{4})(\d{2})(\d{2})T/.exec(id); return m ? `${+m[3]} ${MON[+m[2] - 1]} ${m[1]}` : id; };
 const sign = (v: number) => (v > 0.0049 ? "+" : v < -0.0049 ? "−" : "");
 const fmtL = (v: number) => (v >= 1000 ? Math.round(v).toLocaleString("en-GB") : v.toLocaleString("en-GB", { maximumFractionDigits: 3 }));
 const k = (v: number) => `${v.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
@@ -95,6 +96,8 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   }, [years]);
 
   const ds = sets[view]; const UM = ds.kind === "unemp_m"; const mode = MODE[view]; const R = mode === "unemp"; const L = mode === "level"; const PR = kind === "policy";
+  const tagStr = (() => { const ce = commonEnds(ds); const anyM = Object.keys(ds.monthly || {}).length > 0;
+            return srcTag(E ? "gdp" : PR ? "7" : R ? "unemp" : "jobs", `${ds.rankEnd ? fmtM(ds.rankEnd) : anyM ? fmtM(ce.monthEnd) : qLabel(ce.quarterEnd)}`); })();
   // #7: DE/FR/IT national lines end Dec 1998; one euro-area line (XM) carries them from Jan 1999 when any is picked.
   const lines = useMemo(() => [...COUNTRIES.map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
     ...(PR ? [{ ...(buildLine(ds, "XM", years, mode) as Line), name: "Euro area" }] : [])], [ds, years, mode, PR]);
@@ -109,7 +112,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const allPts = lines.flatMap((l) => l.points), m0 = Math.min(...allPts.map((p) => p.mi)), m1 = Math.max(...allPts.map((p) => p.mi));
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
   const brkUnit = brks.length && brks.every((b) => b.label.includes("Q")) ? "quarter" : "year";
-  const hasJan = kind === "jobs" && years <= 5 && shown.some((l) => l.janJumps.length > 0);
+  const hasJan = kind === "jobs" && shown.some((l) => l.code === "USA"); // whenever the US is on, every window (incl. 50Y)
   const naNote = Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`]));
   const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); return s.length && s.every((l) => l.excluded) ? `No OECD data for ${s.map((l) => COUNTRIES.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
   const windowRow = <><dt>Start – end</dt><dd className="strong">{wl.range}{wl.freq === "quarterly" ? " · quarterly" : ""}</dd></>;
@@ -285,18 +288,17 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
               const cards = h.single ? [{ label: h.single.codes.map(nm).join(" · "), k: null as string | null, p: h.single }]
                 : lb.lowerBetter ? [{ label: lb.slow!, k: "s", p: h.slowest! }, { label: lb.fast!, k: "f", p: h.fastest! }]
                 : [{ label: lb.fast!, k: "f", p: h.fastest! }, { label: lb.slow!, k: "s", p: h.slowest! }];
-              return cards.map((c) => (
+              return cards.map((c, ci) => (
                 <div key={`${view}-${c.k ?? "one"}-${c.label}`} className="fig">
                   <div className="figl">{c.k ? c.label : null}</div>
                   <div className="figc" key={c.p.codes.join()}>{c.p.codes.map((cc) => <span key={cc}><i style={{ background: `var(--${cc})` }} />{nm(cc)}</span>)}</div>
                   <div className={R || L ? "figv pts" : "figv"}><Tween value={c.p.value} format={(x) => fmtHeadline(x, mode)} />{(R || L) && <span>pts</span>}</div>
-                  <div className="figp">{per(c.p.periods)}</div>
+                  <div className="figp">{per(c.p.periods)}{ci === 0 && <TagIn tag={tagStr} />}</div>
                 </div>
               ));
             })()}
           </div>
-          <p className="srctag">{(() => { const ce = commonEnds(ds); const anyM = Object.keys(ds.monthly || {}).length > 0;
-            return srcTag(E ? "gdp" : PR ? "7" : R ? "unemp" : "jobs", `${ds.rankEnd ? fmtM(ds.rankEnd) : anyM ? fmtM(ce.monthEnd) : qLabel(ce.quarterEnd)}`); })()}</p>
+          <p className="srctag">{tagStr}</p>
           <p className="span">{wl.text.split(" · ").map((t, i) => <Fragment key={i}>{i ? " · " : ""}<span className="nw">{t}</span></Fragment>)}</p>
 
         </div>

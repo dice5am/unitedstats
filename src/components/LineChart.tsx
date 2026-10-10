@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MON } from "@/lib/charts.mjs";
+import { DISPLAY_DP } from "@/lib/series.mjs";
 import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands, flagTags } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
@@ -11,8 +13,8 @@ export type Line = {
 const MAIN = new Set(["CAN", "USA"]);
 const col = (c: string) => `var(--${c})`;
 const COVID = { a: 2020 * 12 + 2, b: 2021 * 12 + 5 };
-const fmtM = (mi: number, short = false) =>
-  new Date(Date.UTC(Math.floor(mi / 12), mi % 12, 1)).toLocaleDateString("en-GB", { month: "short", year: short ? "2-digit" : "numeric", timeZone: "UTC" }).replace(/ (\d\d)$/, " ’$1");
+// one month formatter everywhere ("Sep", never "Sept")
+const fmtM = (mi: number, short = false) => `${MON[mi % 12]} ${short ? "’" + String(Math.floor(mi / 12)).slice(2) : Math.floor(mi / 12)}`;
 const qLabel = (p: string) => { const [y, q] = p.split("-"); return `${q} ${y}`; };
 
 let ctx: CanvasRenderingContext2D | null = null;
@@ -69,7 +71,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const nameW = Math.max(36, ...lines.map((l) => textW(l.name, lblPx, MAIN.has(l.code) ? 700 : 500)));
   const useCodes = !wide && (nameW + 22 > (w || 390) * 0.26 || lines.length * minGap > h - 34 - 58 - 10);
   const from = (l: Line) => (IX && l.late && !(data.noLateMark || []).includes(l.code) ? ` · from ${l.late.slice(0, 4)}` : "");
-  const label = (l: Line) => (wide && l.last !== null ? `${l.name}${from(l)} ${l.last.toFixed(1)}${R ? "%" : ""}` : (useCodes ? SHORT_CODE[l.code] ?? l.code : l.name) + from(l));
+  const label = (l: Line) => (wide && l.last !== null ? `${l.name}${from(l)} ${l.last.toFixed(R ? DISPLAY_DP.rate : 1)}${R ? "%" : ""}` : (useCodes ? SHORT_CODE[l.code] ?? l.code : l.name) + from(l));
   const gutter = Math.ceil(Math.max(36, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 500)))) + (wide ? 28 : 22);
   const pad = { l: wide ? 48 : 38, r: gutter, t: 34, b: 58 };
   const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b, bottom = pad.t + ih;
@@ -163,7 +165,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     // early ender (e.g. UK monthly to Jun 2026): past its last reading, show its own last figure tagged "to <month>"
     const lastP = [...l.points].reverse().find((q) => q.value !== null);
     if (!l.excluded && l.freq === "monthly" && lastP && lastP.mi < m1 && hover > lastP.mi) { const oc = R ? ownChange(data, l.code, years) : null;
-      return { l, p: lastP, v: lastP.value, lvl: null, tag: `to ${fmtM(lastP.mi)}${oc ? ` · ${oc.change > 0.004 ? "+" : oc.change < -0.004 ? "−" : ""}${Math.abs(oc.change).toFixed(2)} pts over ${years}Y` : ""}` }; }
+      return { l, p: lastP, v: lastP.value, lvl: rawLevel(data, l.code, lastP.period), tag: `to ${fmtM(lastP.mi)}${oc ? ` · ${oc.change > 0.004 ? "+" : oc.change < -0.004 ? "−" : ""}${Math.abs(oc.change).toFixed(2)} pts over ${years}Y` : ""}` }; }
     const fl = p && p.value !== null ? flagTags(data, l.code, p.period) : []; // general rule: estimate · OECD estimate · provisional
     return { l, p, v: p ? p.value : null, lvl, oe: fl.includes("OECD estimate"), note: fl.join(" · "), tag: pre ?? (l.freq === "quarterly" && p ? qLabel(p.period) : null) };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
@@ -178,7 +180,9 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const tipW = wide ? 340 : 0;
   const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
-  const summary = `${RU ? "Unemployment rate" : R ? "Policy rate" : "Index"}, ${allQ ? `${qL(m0)} to ${qL(m1)}` : `${fmtM(m0)} to ${fmtM(m1)}`}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
+  // summary dates: monthly windows read from the first monthly reading (a 3-month average labelled by its end month), not the mid-quarter of a quarterly country
+  const mOnly = all.filter((l) => l.freq === "monthly").flatMap((l) => l.points.filter((q) => q.value !== null).map((q) => q.mi)), sm0 = mOnly.length ? Math.min(...mOnly) : m0;
+  const summary = `${RU ? "Unemployment rate" : R ? "Policy rate" : "Index"}, ${allQ ? `${qL(m0)} to ${qL(m1)}` : `${fmtM(sm0)} to ${fmtM(m1)}`}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(R ? DISPLAY_DP.rate : 1)}`).join(", ");
   // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
   const valAt = (l: Line, mi: number): number | null => {
     if (l.freq === "monthly") { const p = l.points.find((q) => q.mi === mi); return p ? p.value : null; }
@@ -372,7 +376,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
             <div key={r.l.code} className="tipr">
               <i style={{ background: col(r.l.code) }} /><span className="nm">{r.l.name}</span>
               {r.tag && <em>{r.tag}</em>}
-              <b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}${R ? "%" : ""}`}</b>
+              <b>{r.v === null ? "n/a" : `${r.v.toFixed(R ? DISPLAY_DP.rate : 1)}${R ? "%" : ""}`}</b>
               {wide && mode === "jobs" && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
               {"note" in r && r.note && <span className="tipnote">{r.note}</span>}
             </div>
@@ -387,7 +391,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         <caption>{summary}</caption>
         <thead><tr><th>Period</th>{lines.map((l) => <th key={l.code}>{l.name}</th>)}</tr></thead>
         <tbody>{(lines.find((l) => l.freq === "monthly") ?? lines[0])?.points.map((p) => (
-          <tr key={p.period}><td>{p.period}</td>{lines.map((l) => { const q = ptAt(l, p.mi); return <td key={l.code}>{q && q.value !== null ? q.value.toFixed(1) : "n/a"}</td>; })}</tr>
+          <tr key={p.period}><td>{p.period}</td>{lines.map((l) => { const q = ptAt(l, p.mi); return <td key={l.code}>{q && q.value !== null ? q.value.toFixed(R ? DISPLAY_DP.rate : 1) : "n/a"}</td>; })}</tr>
         ))}</tbody>
       </table></div>
     </div>

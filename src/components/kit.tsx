@@ -72,6 +72,8 @@ export function Seg<V extends string>({ label, value, options, onChange, classNa
 }
 
 // id = "chart-<registry id>". Shared card anatomy (DESIGN-SYSTEM Round 4): eyebrow · H2 · subtitle · controls · headline · plot · legend · source · calc.
+export function TagIn({ tag }: { tag?: string }) { return tag ? <span className="tagin"> · {tag.split(" · ")[0]}</span> : null; }
+
 export function CardFrame({ id, eyebrow, title, sub, controls, headline, tag, legend, source, calc, children }: {
   id: string; eyebrow: string; title: string; sub: ReactNode; controls?: ReactNode; headline?: ReactNode; tag?: string; legend?: ReactNode; source: string; calc: ReactNode; children: ReactNode;
 }) {
@@ -82,10 +84,14 @@ export function CardFrame({ id, eyebrow, title, sub, controls, headline, tag, le
       <p className="eyebrow">{eyebrow}</p>
       <h2 id={`h-${id}`} className="h1">{title}</h2>
       <p className="sub">{sub}</p>
-      <div className="toprow">
+      {headline ? <div className="toprow">
         {controls && <div className="ctrls ctrls2">{controls}</div>}
-        {(headline || tag) && <div className="figwrap">{headline}{tag && <p className="srctag">{tag}</p>}</div>}
-      </div>
+        <div className="figwrap">{headline}{tag && <p className="srctag">{tag}</p>}</div>
+      </div> : <div className="toprow nohead">
+        {/* no ranked headline: controls sit directly under the description, source tag to their left (below at 390) */}
+        {controls && <div className="ctrls ctrls2">{controls}</div>}
+        {tag && <p className="srctag">{tag}</p>}
+      </div>}
       <div className="card chartcard plotcard">{children}</div>
       {legend && <ul className="notes">{legend}</ul>}
       <p className="source">{source}</p>

@@ -1,4 +1,5 @@
 "use client";
+import { DISPLAY_DP } from "@/lib/series.mjs";
 // #2 Unemployment heat strip — rows = countries (fixed G7 order), columns fit the width. Sequential 7-step scale
 // built from neutral tokens + one hue (never country colours). Monthly OECD data (DF_IALFS_UNE_M), all seven.
 import { useMemo, useState, type MutableRefObject } from "react";
@@ -40,7 +41,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
   const hasNa = h.rows.some((r) => r.vals.some((v) => v === null));
   const partialCol = h.cols.map((_, i) => h.rows.some((r) => r.cells[i].v !== null && r.cells[i].n < r.cells[i].of));
   const hasPartial = partialCol.some(Boolean);
-  const fmt = (v: number | null) => (v === null ? "n/a" : `${v.toFixed(1)}%`);
+  const fmt = (v: number | null) => (v === null ? "n/a" : `${v.toFixed(DISPLAY_DP.rate)}%`); // rates in percent: 2 dp (Round 4c)
   const sel = cur ? { r: h.rows[cur[0]], c: h.cols[cur[1]], v: h.rows[cur[0]].vals[cur[1]] } : null;
   const key = (e: React.KeyboardEvent) => {
     const d: Record<string, [number, number]> = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] };
@@ -51,7 +52,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
   };
   const steps = Array.from({ length: HEAT_STEPS }, (_, i) => h.min + ((h.max - h.min) * i) / HEAT_STEPS);
   return (
-    <CardFrame id={`chart-${cfg ? cfg.id : "2"}`} eyebrow={cfg ? cfg.eyebrow : "Labour"} title={chartTitle(cfg ? cfg.id : "2")}
+    <CardFrame id={`chart-${cfg ? cfg.id : "2"}`} eyebrow={cfg ? cfg.eyebrow : "Labour"} title={cfg ? chartTitle(cfg.id, view) : chartTitle("2")}
       sub={cfg ? cfg.sub(h, view) : <>Unemployment rate, %, 15+ · seasonally adjusted · {h.unit === "month" ? "monthly" : h.unit === "year" ? "yearly averages of months" : "quarterly averages of months"} · darker = higher</>}
       tag={srcTag(cfg ? cfg.id : "2", monLabel(h.end))}
       controls={<div className={cfg ? "bar" : "bar solo"}>{cfg && <Seg label="Measure" value={view} options={cfg.views.map((v) => [v[0], v[1]])} onChange={(v) => { setCur(null); set(cfg.viewParam, v); }} />}<Seg label="Timeframe" value={st[wp]} options={WIN.map((x) => [x, `${x}Y`])} onChange={(v) => { setCur(null); set(wp, v); }} /></div>}

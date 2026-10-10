@@ -117,12 +117,12 @@ export default function TabPage({ tab }: { tab: TabId }) {
             </button>
             <button type="button" className="cpar" aria-label="Next chart" onClick={() => step(1)}>›</button>
           </div>
-          <main className="hero" aria-live="polite">
+          <main className="hero" aria-live="polite" onClick={(e) => { /* short heights: the one-line, cut-off description opens on tap/click (every chart's description) */ const t = (e.target as HTMLElement).closest(".sub"); if (t && !t.hasAttribute("onclick") && !(t as HTMLElement).dataset.own) t.classList.toggle("open"); }}>
             {chart && (isBuilt(chart) ? <ChartById key={`${chart}-${nonce}`} id={chart} /> : (
               <section className="cardsec wip" aria-labelledby="wip-h">
                 <p className="eyebrow">{TABS.find((t) => t.id === tab)!.label}</p>
                 <h1 id="wip-h" className="h1">{chartTitle(chart)}</h1>
-                <p className="sub" title={CHART_META[chart].desc} onClick={(e) => e.currentTarget.classList.toggle("open")}>{CHART_META[chart].desc}</p>
+                <p className="sub" data-own="1" title={CHART_META[chart].desc} onClick={(e) => e.currentTarget.classList.toggle("open")}>{CHART_META[chart].desc}</p>
                 <div className="card wipcard"><p>In progress</p></div>
               </section>
             ))}

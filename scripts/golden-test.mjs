@@ -537,7 +537,10 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const hard = /srctag">\{?["'`](OECD|BIS)/.test(cc + rd("kit.tsx"));
   check(!bad.length && !hard, `source tags: every built chart's tag names (${Object.keys(lines).map((id) => `${id}=${(srcOf(id) || []).join("+")}`).join(", ")}) appear in its full source line; none hard-coded${bad.length ? ` (BAD: ${bad})` : ""}`); }
 // ---- Finance wave: Warehouse reference figures (REFERENCE-FIGURES.md) + independent in-test maths + structure ----
-{ const F = await import("../lib/finance.mjs"); const md = readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8");
+{ const F = await import("../lib/finance.mjs");
+  // expected figures are read straight from the Warehouse's file (not self-computed); the in-test maths is an extra, independent check
+  const WREF = "/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", md = readFileSync(WREF, "utf8");
+  check(md === readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8"), `Finance references read from ${WREF} (repo copy scripts/golden/REFERENCE-FIGURES.md identical)`);
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const raw = (file, c, p) => { const s = file.series[c], i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
@@ -584,6 +587,29 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
     const steps = [-0.5, 0, 0.99, 1, 1.49, 1.5, 2, 2.49, 2.5, 3.9, 4, 5.9, 6, 9].map(F.cpiStep).join("");
     check(mm.length === n0 && steps === "01122333445566", `#13 inflation vs Warehouse: Aug 2026 headline and core match for all 7 (1Y cells = published monthly values); fixed bands around 2% (step map ${steps})`); }
   if (mm.length) console.log("  FINANCE MISMATCHES:\n  " + mm.join("\n  ")); }
+// #10 difference note: word for word from the Warehouse gate file, and rendered in #10's How it's calculated; #13 title follows the toggle
+{ const { DIFFERENCE_NOTES } = await import("../lib/differenceNotes.mjs"); const gate = readFileSync("/workspace/skyscraper/unitedstats-warehouse/gates/DIFFERENCE-NOTES.md", "utf8");
+  const line = (gate.split("\n").find((l) => l.startsWith("- **#10 ")) || "").replace(/^- \*\*#10 [^*]+:\*\* /, "");
+  const fin = readFileSync(new URL("../src/charts/finance.tsx", import.meta.url), "utf8"), debt = fin.slice(fin.indexOf("export const debtSpec"), fin.indexOf("export const houseSpec"));
+  const meta = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8");
+  check(line.length > 50 && DIFFERENCE_NOTES["10"] === line && /DIFFERENCE_NOTES\["10"\]/.test(debt), `#10 How it's calculated note = DIFFERENCE-NOTES.md word for word ("${line.slice(0, 48)}…")`);
+  check(/"13": \{[^\n]*titles: \{ headline: "Inflation", core: "Core inflation" \}/.test(meta) && /chartTitle\(cfg\.id, view\)/.test(readFileSync(new URL("../src/components/HeatStrip.tsx", import.meta.url), "utf8")), `#13 title follows the toggle: "Inflation" / "Core inflation"`);
+  const src = ["src/components/LineChart.tsx", "src/components/ChartCard.tsx", "lib/charts.mjs"].map((f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8")).join("\n");
+  check(!/toLocaleDateString/.test(src) && /"Sep"/.test(src), `one month formatter everywhere: "Sep", never "Sept"`); }
+// #7 policy rates: each line's latest figure (the app's own buildLine, every window) = Warehouse REFERENCE-FIGURES.md Card 7, read from the file
+{ const S = await import("../lib/series.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+  const rows = /## Card 7 [^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const ds = S.policyDataset(JSON.parse(readFileSync(new URL("../data/bis_policy_rate_m.json", import.meta.url), "utf8"))), bad = [];
+  for (const yrs of [1, 5, 10, 20, 50]) for (const [c, per, v] of rows) { const l = S.buildLine(ds, c, yrs, "level"), lp = [...l.points].reverse().find((q) => q.value !== null);
+    if (!lp || lp.period !== per || Math.abs(lp.value - parseFloat(v)) > 1e-9 || Math.abs(l.last - parseFloat(v)) > 1e-9) bad.push(`${yrs}Y ${c} ours ${lp?.period} ${lp?.value} vs ${per} ${v}`); }
+  check(rows.length === 5 && !bad.length, `#7 policy rate latest = Warehouse REFERENCE-FIGURES.md for ${rows.map(([c, p, v]) => `${c} ${p} ${v}`).join(", ")} at every window${bad.length ? " MISMATCH " + bad.slice(0, 4).join("; ") : ""}`); }
+// Round 4c decimals: rates in percent 2 dp (unemployment, inflation, policy), shares of GDP/income 1 dp, growth 1 dp, point changes 2 dp
+{ const S = await import("../lib/series.mjs"); const rd = (f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+  const lc = rd("src/components/LineChart.tsx"), hs = rd("src/components/HeatStrip.tsx"), fin = rd("src/charts/finance.tsx");
+  const rateUses = (lc.match(/toFixed\(R \? DISPLAY_DP\.rate : 1\)/g) || []).length;
+  check(S.DISPLAY_DP.rate === 2 && S.DISPLAY_DP.share === 1 && S.DISPLAY_DP.pct === 1 && S.DISPLAY_DP.pts === 2 && rateUses >= 4 && /toFixed\(DISPLAY_DP\.rate\)/.test(hs) && /const pct1 = \(v: number\) => `\$\{v\.toFixed\(1\)\}%`/.test(fin)
+    && S.fmtHeadline(12.345, "gdp").endsWith("12.3%") && S.fmtHeadline(-0.534, "unemp").endsWith("0.53"),
+    `Round 4c decimals: rates 2 dp (unemployment/policy end labels, stats box, table: ${rateUses} uses; heat cells), shares 1 dp, growth 1 dp, point changes 2 dp`); }
 // display rule: % changes 1 dp with "%", pts 2 dp; labels follow the displayed rounding
 { const { DISPLAY_DP } = await import("../lib/series.mjs"); const H = (a, b, m) => headlineLabels({ fastest: { value: a }, slowest: { value: b } }, m);
   const ok = DISPLAY_DP.pct === 1 && DISPLAY_DP.pts === 2 && fmtHeadline(283.1749, "index") === "+283.2%" && fmtHeadline(99.08, "index") === "+99.1%" && fmtHeadline(-0.5321, "unemp") === "−0.53"

@@ -18,7 +18,7 @@ export function headlinePick(data: unknown, codes: string[], years: number): { s
 export function glowLeaders(series: { code: string; at: (mi: number) => number | null }[], m0: number, m1: number): (string | null)[];
 export function buildLine(data: unknown, code: string, years: number, mode?: Mode): unknown;
 export function headlinePick(data: unknown, codes: string[], years: number, mode?: Mode): { single: Pick; fastest: Pick; slowest: Pick; none?: boolean; fullCodes?: string[] };
-export const DISPLAY_DP: { pct: number; pts: number };
+export const DISPLAY_DP: { pct: number; pts: number; rate: number; share: number };
 export function isPts(mode?: Mode): boolean;
 export function headlineDp(mode?: Mode): number;
 export function roundShown(v: number, mode?: Mode): number;

@@ -5,7 +5,7 @@ import { COUNTRIES, qLabel } from "@/lib/series.mjs";
 import { scorecard } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
-import { CardFrame, StatBox } from "./kit";
+import { CardFrame, StatBox, TagIn } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const pts = (v: number) => `${v >= 0.005 ? "+" : v <= -0.005 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
@@ -25,7 +25,7 @@ export default function Scorecard({ rate }: { rate: unknown }) {
       tag={srcTag("22", qLabel(s.end))}
       headline={
         <div className="figs">
-          <div className="fig"><div className="figl">Biggest gain</div><div className="figc"><span><i style={{ background: `var(--${best.code})` }} />{NAME[best.code]}</span></div><div className="figv">{pts(best.change!)}<span>pts</span></div><div className="figp">{qLabel(s.base)} → {qLabel(s.end)}</div></div>
+          <div className="fig"><div className="figl">Biggest gain</div><div className="figc"><span><i style={{ background: `var(--${best.code})` }} />{NAME[best.code]}</span></div><div className="figv">{pts(best.change!)}<span>pts</span></div><div className="figp">{qLabel(s.base)} → {qLabel(s.end)}<TagIn tag={srcTag("22", qLabel(s.end))} /></div></div>
           <div className="fig"><div className="figl">{worst.change! < 0 ? "Still below" : "Smallest gain"}</div><div className="figc"><span><i style={{ background: `var(--${worst.code})` }} />{NAME[worst.code]}</span></div><div className="figv">{pts(worst.change!)}<span>pts</span></div><div className="figp">{qLabel(s.base)} → {qLabel(s.end)}</div></div>
         </div>}
       legend={s.rows.some((x) => x.est) ? <li><span className="estk">est.</span>Germany’s quarters are published as estimates</li> : null}

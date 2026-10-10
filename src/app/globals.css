@@ -384,7 +384,7 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 @media (min-width:1024px) and (max-height:799px){
  .hero .h1{font-size:24px}
  .hero .sub{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset;display:block;cursor:pointer}
- .hero .sub.open{white-space:normal}
+ .hero .sub.open{white-space:normal;overflow:visible;text-overflow:clip}
  .hero .figv{font-size:30px}
  .hero .toprow{margin-top:12px}
  .hero .chartcard,.hero .plotcard{margin-top:12px}
@@ -409,7 +409,6 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .notes i.dbs{background:var(--muted)}.notes i.dbe{background:var(--text)}
 .db .scv em{display:block;margin:0;font-size:11px}
 /* finance small multiples */
-.fm .smp.ca{border-color:var(--CAN);box-shadow:inset 0 0 0 1px var(--CAN)}
 .fm figcaption{font-weight:600;font-size:13px;margin-bottom:4px}.fm figcaption b{color:var(--text);font-variant-numeric:tabular-nums}
 .fm figcaption .from{font-weight:400;font-size:11px;color:var(--text-2)}
 .fm svg{display:block}.fm .gl{stroke:var(--grid)}.fm .zl{stroke:var(--text-2);stroke-opacity:.5}
@@ -434,3 +433,22 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .notes li.cpik i{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
 /* 390: generic cards with two switches put the timeframe on its own full-width line (Round 4b) */
 @media (max-width:767px){.cardsec .bar:not(.solo){flex-direction:column;align-items:stretch;gap:8px;border-radius:24px}.cardsec .bar:not(.solo)>[role=radiogroup]{width:100%}}
+
+/* screen-reader tables stay inside their 1px box (no off-screen layout at 390) */
+.sr-only table{table-layout:fixed;width:1px;max-width:1px}.sr-only caption{white-space:normal;width:1px}
+/* legend items wrap at 390 instead of running past the edge */
+@media (max-width:767px){.notes li{white-space:normal;align-items:flex-start}.notes li>i{margin-top:3px}}
+
+/* charts with no ranked headline: no blank band */
+.toprow.nohead{margin-top:16px;gap:8px}
+.toprow.nohead .srctag{margin:0}
+@media (min-width:768px){.toprow.nohead,.hero .toprow.nohead{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:center;gap:16px;margin-top:16px}}
+/* 390: the source tag rides on the first (Fastest) date line; the standalone tag is hidden there */
+.tagin{display:none}
+@media (max-width:767px){.tagin{display:inline}.figwrap:has(.tagin) > .srctag{display:none}}
+/* dumbbell gridlines + round-tick axis */
+.db .dbg{position:absolute;top:-15px;bottom:-15px;width:1px;background:var(--grid);transform:translateX(-.5px)}
+.db .dbax{cursor:default;min-height:22px}.db .dbax:hover{background:none}
+.db .dbax .sct{height:16px}.db .dbax .sct span{position:absolute;transform:translateX(-50%);font-size:var(--fs-1);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.db .dbax .sct span:first-child{transform:none}.db .dbax .sct span:last-child{transform:translateX(-100%)}
+.fm text.fmt{font-size:10px;fill:var(--text-2)}

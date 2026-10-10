@@ -11,3 +11,4 @@ export type HeatCell = { v: number | null; n: number; of: number; why?: string; 
 export const monLabel: (p: string) => string;
 export function heatStrip(um: unknown, years: number): { end: string; unit: "month" | "quarter" | "year"; cols: { key: string; label: string; months: string[] }[]; rows: { code: string; first: string; last: string; lastValue: number | null; vals: (number | null)[]; cells: HeatCell[] }[]; min: number; max: number };
 export function heatStep(v: number, min: number, max: number): number;
+export const MON: string[];

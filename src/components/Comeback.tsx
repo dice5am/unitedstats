@@ -4,7 +4,7 @@ import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES, monotonePath, qLabel } from "@/lib/series.mjs";
 import { comeback, qi } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, TagIn } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const pct = (v: number) => `${v - 100 >= 0.005 ? "+" : v - 100 <= -0.005 ? "−" : ""}${Math.abs(v - 100).toFixed(1)}%`;
@@ -66,7 +66,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
           <div className="fig"><div className="figl">First back to 100</div><div className="figc">{first.map((p) => <span key={p.code}><i style={{ background: `var(--${p.code})` }} />{NAME[p.code]}</span>)}</div>
             <div className="figv sm">{firstQ !== null ? qLabel(first[0].back!) : "n/a"}</div><div className="figp">{notBack.length ? `Not yet back: ${notBack.map((p) => NAME[p.code]).join(", ")}` : "All seven are back"}</div></div>
           <div className="fig"><div className="figl">Highest now</div><div className="figc"><span><i style={{ background: `var(--${top.code})` }} />{NAME[top.code]}</span></div>
-            <div className="figv">{pct(top.last!)}</div><div className="figp">{qLabel(c.end)}</div></div>
+            <div className="figv">{pct(top.last!)}</div><div className="figp">{qLabel(c.end)}<TagIn tag={srcTag("1", qLabel(c.end))} /></div></div>
         </div>}
       source={`Source: OECD quarterly national accounts · real GDP${view === "pc" ? " ÷ population" : ""}, SA`}
       calc={<>

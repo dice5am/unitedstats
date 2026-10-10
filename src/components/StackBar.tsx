@@ -6,7 +6,7 @@ import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { openness, OPEN_YEARS, OPEN_DEFAULT } from "@/lib/finance.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, TagIn } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const f1 = (v: number) => `${v.toFixed(1)}%`;
@@ -24,7 +24,7 @@ export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; in
       tag={srcTag("21", o.year)}
       controls={<div className="bar solo"><Seg label="Year" value={o.year} options={OPEN_YEARS.map((v) => [v, v])} onChange={(v) => { setSel(null); set("tr_year", v); }} /></div>}
       headline={top && bot ? <div className="figs">
-        <div className="fig"><div className="figl">Most open</div><div className="figc"><span><i style={{ background: `var(--${top.code})` }} />{NAME[top.code]}</span></div><div className="figv">{f1(top.total!)}</div><div className="figp">of GDP · {o.year}</div></div>
+        <div className="fig"><div className="figl">Most open</div><div className="figc"><span><i style={{ background: `var(--${top.code})` }} />{NAME[top.code]}</span></div><div className="figv">{f1(top.total!)}</div><div className="figp">of GDP · {o.year}<TagIn tag={srcTag("21", o.year)} /></div></div>
         <div className="fig"><div className="figl">Least open</div><div className="figc"><span><i style={{ background: `var(--${bot.code})` }} />{NAME[bot.code]}</span></div><div className="figv">{f1(bot.total!)}</div><div className="figp">of GDP · {o.year}</div></div>
       </div> : undefined}
       legend={<>

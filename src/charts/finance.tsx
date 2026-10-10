@@ -30,7 +30,7 @@ export const cpiCfg = (headline: unknown, core: unknown): HeatCfg => ({
 
 const Y = (p: string) => p;
 export const debtSpec: DumbbellSpec = {
-  id: "10", eyebrow: "Finance", start: "2007", change: "pts", per: Y, unitLabel: "gross debt, % of GDP", valueFmt: pct1,
+  id: "10", eyebrow: "Finance", start: "2007", change: "pts", per: Y, unitLabel: "gross debt, % of GDP", valueFmt: pct1, tickFmt: (v) => `${v}%`,
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" },
   sub: () => <>General government gross debt, % of GDP · 2007 vs latest actual year · actuals to 2024 or 2025, no projections</>,
   source: "Source: IMF World Economic Outlook (April 2026) · general government gross debt (GGXWDG_NGDP), % of GDP, actuals only",
@@ -45,7 +45,7 @@ export const debtSpec: DumbbellSpec = {
 };
 
 export const houseSpec: DumbbellSpec = {
-  id: "6", eyebrow: "Finance", start: "2010-Q1", change: "pct", per: qLabel, unitLabel: "price-to-income index", valueFmt: (v) => v.toFixed(1),
+  id: "6", eyebrow: "Finance", start: "2010-Q1", change: "pct", per: qLabel, unitLabel: "price-to-income index", valueFmt: (v) => v.toFixed(1), tickFmt: (v) => String(v),
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" },
   sub: (latest) => <>House prices ÷ disposable income per person · index · Q1 2010 vs latest quarter (to {qLabel(latest)}) · compares change within each country, not levels between countries</>,
   source: "Source: OECD Analytical house prices · price-to-income ratio (HPI_YDH), index, seasonally adjusted",

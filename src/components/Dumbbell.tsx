@@ -6,12 +6,12 @@ import { useMemo, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { dumbbell } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, StatBox } from "./kit";
+import { CardFrame, StatBox, TagIn } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 export type DumbbellSpec = {
   id: ChartId; eyebrow: string; start: string; change: "pts" | "pct"; per: (p: string) => string;
-  sub: (latest: string) => ReactNode; source: string; unitLabel: string; valueFmt: (v: number) => string;
+  sub: (latest: string) => ReactNode; source: string; unitLabel: string; valueFmt: (v: number) => string; tickFmt: (v: number) => string;
   labels: { up: string; down: string; upSmall: string; downSmall: string }; calc: (d: ReturnType<typeof dumbbell>) => ReactNode;
 };
 // signed change at the displayed rounding: 1 dp; a figure that rounds to zero is unsigned
@@ -21,7 +21,10 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
   const d = useMemo(() => dumbbell(file, spec.start, spec.change), [file, spec.start, spec.change]);
   const [sel, setSel] = useState<string | null>(null);
   const vs = d.rows.flatMap((r) => [r.startValue, r.endValue]).filter((v): v is number => v !== null);
-  const lo = Math.min(...vs), hi = Math.max(...vs), pad = (hi - lo) * 0.04, x = (v: number) => ((v - lo + pad) / (hi - lo + 2 * pad)) * 100;
+  // round ticks (e.g. 50/100/150/200%) with light gridlines; the domain snaps to whole steps, never raw extents
+  const lo0 = Math.min(...vs), hi0 = Math.max(...vs), step = [1, 2, 5, 10, 20, 25, 50, 100, 200].find((st) => (hi0 - lo0) / st <= 5) ?? 500;
+  const lo = Math.floor(lo0 / step) * step, hi = Math.ceil(hi0 / step) * step, x = (v: number) => ((v - lo) / (hi - lo)) * 100;
+  const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => lo + i * step);
   const ok = d.rows.filter((r) => r.change !== null), top = ok[0], bot = ok[ok.length - 1];
   const r1 = (v: number) => Math.round(v * 10) / 10;
   const lbl = (v: number, first: boolean) => r1(v) === 0 ? "No change" : first ? (v > 0 ? spec.labels.up : spec.labels.downSmall) : (v < 0 ? spec.labels.down : spec.labels.upSmall);
@@ -33,7 +36,7 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
       headline={top && bot ? <div className="figs">
         {[[top, true], [bot, false]].map(([row, f]) => { const x0 = row as typeof top; return (
           <div className="fig" key={x0.code}><div className="figl">{lbl(x0.change!, f as boolean)}</div><div className="figc"><span><i style={{ background: `var(--${x0.code})` }} />{NAME[x0.code]}</span></div>
-            <div className={spec.change === "pts" ? "figv pts" : "figv"}>{chg(x0.change!, spec.change)}{spec.change === "pts" && <span>pts</span>}</div><div className="figp">{spec.per(d.start)} → {spec.per(x0.end!)}</div></div>); })}
+            <div className={spec.change === "pts" ? "figv pts" : "figv"}>{chg(x0.change!, spec.change)}{spec.change === "pts" && <span>pts</span>}</div><div className="figp">{spec.per(d.start)} → {spec.per(x0.end!)}{f && <TagIn tag={srcTag(spec.id, spec.per(d.latest))} />}</div></div>); })}
       </div> : undefined}
       legend={<>
         <li><i className="dbs" />{spec.per(d.start)}</li><li><i className="dbe" />Latest{mixed ? " (each country’s own, dated)" : ""}</li>
@@ -53,6 +56,7 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
                 aria-label={`${NAME[row.code]}: ${row.startValue === null ? "n/a" : spec.valueFmt(row.startValue)} in ${spec.per(d.start)}, ${row.endValue === null ? "n/a" : spec.valueFmt(row.endValue)} in ${row.end ? spec.per(row.end) : "n/a"}`}>
                 <span className="scn"><i style={{ background: `var(--${row.code})` }} />{NAME[row.code]}</span>
                 <span className="sct">
+                  {ticks.map((t) => <span key={t} className="dbg" style={{ left: `${x(t)}%` }} aria-hidden />)}
                   {row.startValue !== null && row.endValue !== null ? <>
                     <span className="dbc" style={{ left: `${Math.min(x(row.startValue), x(row.endValue))}%`, width: `${Math.abs(x(row.endValue) - x(row.startValue))}%`, background: `var(--${row.code})` }} />
                     <span className="dbs" style={{ left: `${x(row.startValue)}%` }} />
@@ -64,7 +68,7 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
             </li>
           ))}
         </ol>
-        <p className="scaxis"><span>{spec.valueFmt(lo)}</span><span>{spec.valueFmt(hi)}</span></p>
+        <div className="scr dbax" aria-hidden><span /><span className="sct">{ticks.map((t) => <span key={t} style={{ left: `${x(t)}%` }}>{spec.tickFmt(t)}</span>)}</span><span /></div>
       </div>
     </CardFrame>
   );
