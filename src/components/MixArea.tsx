@@ -4,7 +4,7 @@
 // between bands, 100% scale. Band = sum of its available fuels (n/a never 0). Stats box: six band rows with their Ember sources.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
-import { mix, MIX_BANDS } from "@/lib/waves.mjs";
+import { mix, MIX_BANDS, bandParts } from "@/lib/waves.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, YearPick, useParams, useWidth, type Init } from "./kit";
 
@@ -59,9 +59,10 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
 // #9 stats box: six band rows in the chart's stack order (top band first, as drawn), each with its band swatch, value and
 // the Ember source categories that make it up (no rounding line; that sits in How it's calculated). 390: docked inside the card under the plot.
 // >=768: floats beside the guide (right of it, flipped left past the middle) and is clamped inside the viewport.
-const SRC_NAME = (f: string) => (f === "Other Renewables" ? "Other renewables" : f === "Other Fossil" ? "Other fossil" : f);
-function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: string; value: number | null }[] }; c: string; onClose: () => void; float?: { x: number; W: number } }) {
+function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: string; value: number | null }[]; fuels: { name: string; value: number | null }[] }; c: string; onClose: () => void; float?: { x: number; W: number } }) {
   const ref = useRef<HTMLDivElement>(null), [dy, setDy] = useState(0);
+  // 390 docked: bring the box into view on tap (smooth unless the user prefers reduced motion)
+  useEffect(() => { if (float || !ref.current) return; ref.current.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, [h.year, c]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   // clamp inside the viewport: measured once per position (untransformed top), so it can never loop
   useLayoutEffect(() => { if (!float || !ref.current) return; const el = ref.current; el.style.transform = "none"; const r = el.getBoundingClientRect(), pad = 8;
@@ -69,11 +70,11 @@ function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: st
     el.style.transform = `translateY(${Math.round(want)}px)`; setDy(Math.round(want)); }, [float?.x, float?.W, h.year]); // eslint-disable-line react-hooks/exhaustive-deps
   const bw = float ? Math.min(280, float.W - 24) : undefined;
   const style = float ? { position: "absolute" as const, top: 8, width: bw, transform: `translateY(${dy}px)`, ...(float.x < float.W / 2 ? { left: Math.min(float.x + 24, float.W - bw!), right: "auto" } : { right: Math.min(float.W - float.x + 24, float.W - bw!), left: "auto" }) } : undefined;
-  const rows = MIX_BANDS.map(([name, fs], k) => ({ k, name: name as string, fs: (fs as string[]).map(SRC_NAME), v: h.bands[k].value })).reverse();
+  const rows = MIX_BANDS.map(([name], k) => ({ k, name: name as string, sub: bandParts(h, k), v: h.bands[k].value })).reverse();
   return (
     <div ref={ref} className={`tip statbox mixbox ${float ? "float" : "dock"}`} role="status" data-testid="mixbox" style={style} onPointerDown={(e) => e.stopPropagation()}>
       <div className="tiph"><span className="mo">{NAME[c]} · {h.year} · % of electricity</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
-      {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b><span className="tipnote">{r.fs.join(", ")}</span></div>)}
+      {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b>{r.sub && <span className="tipnote">{r.sub}</span>}</div>)}
     </div>
   );
 }

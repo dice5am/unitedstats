@@ -12,3 +12,5 @@ export function yearPop(popJ: any, code: string, year: string | number): { value
 export function emissions(ghg: any, popJ: any, mode?: "total" | "pp", from?: string): { code: string; pts: { year: string; value: number | null; est: boolean }[]; end: string | null; change: number | null }[];
 export const MIX_BANDS: [string, string[]][];
 export function mix(ember: any, code: string): { year: string; bands: { name: string; value: number | null }[]; fuels: { name: string; value: number | null }[] }[];
+export const MIX_SHORT: Record<string, string>;
+export function bandParts(row: { fuels: { name: string; value: number | null }[] }, k: number): string | null;
