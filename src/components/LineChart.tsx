@@ -388,7 +388,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
             </div>
           ))}
           {!wide && covid && hover !== null && hover >= covid.a && hover <= covid.b && <div className="tipn covtip">Shaded: COVID-19 (Mar 2020 – Jun 2021)</div>}
-          {jan && <div className="tipn"><i className="dot amber" />US January jump: cause not confirmed</div>}
+          {jan && <div className="tipn"><i className="dot amber" />US Jan jump: cause not confirmed</div>}
           {brk.map((b) => <div key={b} className="tipn">{b}</div>)}
         </div>
       )}

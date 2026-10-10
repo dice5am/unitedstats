@@ -240,6 +240,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
           {calc}
           <div className="grp"><h3>Rules</h3><ul className="rules">
             <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
+            {hasJan && <li><span className="ic"><i className="dot amber" /></span>US Jan jump: OECD shows unusually large US changes in Jan; cause not confirmed</li>}
             <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Quarterly countries: one reading per quarter, joined by a line</li>
             <li><span className="ic"><svg width="5" height="15"><rect x="1.5" y="1.5" width="2" height="12" rx="1" fill="var(--text-2)" stroke="var(--card-solid)" strokeWidth="3" paintOrder="stroke" /></svg></span>{PR ? "One break mark at Jan 1999 (euro area)" : E ? "Series breaks marked by quarter" : "Series breaks marked by year"}</li>
             {!E && !PR && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
@@ -310,7 +311,6 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         <LineChart lines={lines} on={onX} years={years} data={ds} mode={mode} emptyMsg={emptyMsg} onBandLegend={(l) => setBandLeg((o) => (o.join("|") === l.join("|") ? o : l))} />
       </section>
       <ul className="notes">
-        {hasJan && <li><i className="dot amber" />US January jump: cause not confirmed</li>}
         {brks.length > 0 && <li><i className="tick" />{PR ? "Series break: euro area from Jan 1999" : `Series break, by ${brkUnit}`}</li>}
         {bandLeg.map((t) => <li key={t} className="ndleg"><i className="ndsw" />{t}</li>)}
         {hasEst && <li><i className="dash" />Dashed: population estimated from yearly figures</li>}

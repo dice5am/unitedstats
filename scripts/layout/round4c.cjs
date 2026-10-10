@@ -1,12 +1,12 @@
 // Layout checks (run against next start on :3907): PW=<path to playwright> node scripts/layout/round4c.cjs
-// Covers: #20 round ticks, US January note at every window, Jobs pc 50Y summary dates, Jobs 50Y own-latest employed in stats box,
+// Covers: #20 round ticks, US Jan note (How it's calculated) at every window, Jobs pc 50Y summary dates, Jobs 50Y own-latest employed in stats box,
 // 1366x657 cut-off description opens/closes on click, 390 touch tap inside COVID band shows its label.
 const {chromium}=require(process.env.PW);const B='http://localhost:3907';
 (async()=>{const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});const out=[];
 let c=await b.newContext({viewport:{width:1440,height:900}});let p=await c.newPage();
 await p.goto(B+'/finance?chart=20');await p.waitForTimeout(1200);out.push('#20 legend: '+await p.evaluate(()=>[...document.querySelectorAll('.notes li')].map(l=>l.textContent).find(t=>/Same scale/.test(t)))+' | ticks: '+await p.evaluate(()=>[...document.querySelectorAll('.fm text.fmt')].slice(0,3).map(t=>t.textContent).join(',')));
 await p.screenshot({path:'/workspace/fix3-1440-20.png'});
-for(const w of [1,50]){await p.goto(B+`/labour?chart=jobs&j_win=${w}`);await p.waitForTimeout(1200);out.push(`jobs ${w}Y US Jan note: `+await p.evaluate(()=>!!document.querySelector('.notes')?.textContent.includes('US January jump')));}
+for(const w of [1,50]){await p.goto(B+`/labour?chart=jobs&j_win=${w}`);await p.waitForTimeout(1200);out.push(`jobs ${w}Y US Jan note in How it's calculated, not under the chart: `+await p.evaluate(()=>!document.querySelector('.notes')?.textContent.includes('Jan jump')&&[...document.querySelectorAll('.rules li')].some(l=>l.textContent.includes('US Jan jump'))));}
 await p.goto(B+'/labour?chart=jobs&j_view=pc&j_win=50');await p.waitForTimeout(1200);out.push('jpc 50Y summary: '+await p.evaluate(()=>[...document.querySelectorAll('.sr-only,[role=img]')].map(e=>e.getAttribute('aria-label')||e.textContent).find(t=>/1976/.test(t||''))?.slice(0,80)));
 await p.goto(B+'/labour?chart=jobs&j_win=50');await p.waitForTimeout(1200);
 const plot=await p.$('.plot svg, .lc svg, svg[role=img]');const bb=await plot.boundingBox();await p.mouse.move(bb.x+bb.width-60,bb.y+bb.height/2);await p.waitForTimeout(400);

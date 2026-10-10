@@ -522,6 +522,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(lasts.every((v) => v !== null), `Jobs 50Y end labels use each country's own latest value (CAN ${lasts[0]?.toFixed(1)}, JPN ${lasts[1]?.toFixed(1)}, USA ${lasts[2]?.toFixed(1)}), never n/a`);
   const cc = readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8");
   check(/kind === "jobs" \? \{\} : \{ janJumps: \[\]/.test(cc) && /hasJan = kind === "jobs"/.test(cc), `US January note: Jobs and Jobs per capita only (cleared on every other chart)`);
+  check(!/<ul className="notes">[\s\S]{0,200}hasJan/.test(cc) && /\{hasJan && <li><span className="ic">[^\n]*US Jan jump/.test(cc) && !/January/.test(cc + readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8")), "US Jan note sits in How it's calculated (when the US is selected), not under the chart; text says 'Jan', never 'January'");
   const lc = readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");
   check(/allQ \? `\$\{qL\(m0\)\} to \$\{qL\(m1\)\}`/.test(lc), `screen-reader summary uses quarters on quarterly-only charts ("Q2 1976 to Q2 2026")`); }
 // headline source tag: names come from the registry (meta src) and must match the chart's full source line
