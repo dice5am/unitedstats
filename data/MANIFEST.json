@@ -17,8 +17,7 @@
     "c1_unemployment_rate.json": {
       "sha256": "7c77ec1f71358c42a1f9633e03e2e2078e138224c1bcb78ee8b4e3ce91d4483a",
       "cards": [
-        "live:unemp",
-        "#2"
+        "live:unemp"
       ]
     },
     "econ_gdp_series.json": {
@@ -28,6 +27,12 @@
         "live:gdp-pc",
         "live:jobs-pc",
         "#1"
+      ]
+    },
+    "oecd_unemployment_rate_m_15plus.json": {
+      "sha256": "3b47f4f64886a4f18b893654bd5257ead54c9d7b7c51d78a7acd4aa300d72e15",
+      "cards": [
+        "#2"
       ]
     }
   }

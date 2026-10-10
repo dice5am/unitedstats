@@ -245,19 +245,25 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const ok = sc.end === "2026-Q2" && sc.rows.every((r, i) => r.code === want[i][0] && Math.abs(r.change - want[i][1]) < 1e-9);
     check(ok, `recovery scorecard: Q2 2026 − Q4 2019 (pts), ranked: ${want.map(([c, v]) => `${c} ${v >= 0 ? "+" : ""}${v.toFixed(2)}`).join(", ")}`);
     check(sc.rows.find((r) => r.code === "DEU").est && !sc.rows.find((r) => r.code === "CAN").est, "recovery scorecard: Germany's estimated (E) quarter flagged; others not"); }
-  // #2 heat strip
-  { let bad = 0; const shape = [];
-    for (const y of [1, 5, 10, 20]) { const h = heatStrip(un, y); shape.push(`${y}Y ${h.cols.length} ${h.unit}s`);
-      if (h.end !== "2026-Q2" || h.rows.map((r) => r.code).join() !== ORDER.join()) bad++;
-      if ((y <= 5 && (h.cols.length !== y * 4 || h.unit !== "quarter")) || (y > 5 && (h.cols.length !== y || h.unit !== "year"))) bad++;
+  // #2 heat strip (monthly file) — recomputed independently from the raw months
+  { const UM = JSON.parse(readFileSync(new URL("../data/oecd_unemployment_rate_m_15plus.json", import.meta.url)));
+    const mv = (c, p) => { const s2 = UM.series[c]; const i = s2.periods.indexOf(p); return i < 0 ? null : s2.values[i]; };
+    const lastM = (c) => { const s2 = UM.series[c]; for (let i = s2.values.length - 1; i >= 0; i--) if (s2.values[i] !== null) return s2.periods[i]; };
+    let bad = 0; const shape = [];
+    for (const y of [1, 5, 10, 20]) { const h = heatStrip(UM, y); shape.push(`${y}Y ${h.cols.length} ${h.unit}s`);
+      if (h.end !== "2026-09" || h.rows.map((r) => r.code).join() !== ORDER.join()) bad++;
+      const wantN = { 1: 12, 5: 20, 10: 10, 20: 20 }[y], wantU = { 1: "month", 5: "quarter", 10: "year", 20: "year" }[y];
+      if (h.cols.length !== wantN || h.unit !== wantU) bad++;
       for (const r of h.rows) h.cols.forEach((c, i) => {
-        let want; if (y <= 5) want = val(un.quarterly[r.code], c.key);
-        else { const n = c.key === "2026" ? 2 : 4; const v = []; for (let k = 1; k <= n; k++) v.push(val(un.quarterly[r.code], `${c.key}-Q${k}`)); want = v.some((x) => x === null) ? null : v.reduce((a, b) => a + b, 0) / n; }
+        const pub = c.months.filter((p) => p <= lastM(r.code)), v = pub.map((p) => mv(r.code, p));
+        const want = !pub.length || v.some((x) => x === null) ? null : v.reduce((a2, b2) => a2 + b2, 0) / v.length;
         if ((want === null) !== (r.vals[i] === null) || (want !== null && Math.abs(want - r.vals[i]) > 1e-9)) bad++;
         if (r.vals[i] !== null) { const st = heatStep(r.vals[i], h.min, h.max); if (st < 0 || st > 6) bad++; } }); }
-    const h20 = heatStrip(un, 20), us = h20.rows.find((r) => r.code === "USA");
-    check(bad === 0, `heat strip: every cell recomputed from raw quarters (${shape.join(", ")}); 7 steps within 0–6`);
-    check(us.vals[h20.cols.findIndex((c) => c.key === "2025")] === null && heatStrip(un, 1).rows.find((r) => r.code === "USA").vals[1] === null, "heat strip: US Q4 2025 n/a (quarter and 2025 year cell), never filled");
+    check(bad === 0, `heat strip (monthly): every cell recomputed from raw months (${shape.join(", ")}); end Sep 2026; 7 steps within 0–6`);
+    const h1 = heatStrip(UM, 1), h20 = heatStrip(UM, 20);
+    const us = h1.rows.find((r) => r.code === "USA"), uk = h1.rows.find((r) => r.code === "GBR");
+    check(us.vals[h1.cols.findIndex((c) => c.key === "2025-10")] === null && h20.rows.find((r) => r.code === "USA").vals[h20.cols.findIndex((c) => c.key === "2025")] === null, "heat strip: US Oct 2025 n/a (month, and the 2025 year cell), never filled");
+    check(uk.vals.slice(-3).every((v) => v === null) && uk.cells.at(-1).why === "not yet published", "heat strip: UK ends Jun 2026 -> Jul–Sep cells n/a (not yet published)");
     check(heatStep(h20.min, h20.min, h20.max) === 0 && heatStep(h20.max, h20.min, h20.max) === 6, `heat strip 20Y: scale ${h20.min.toFixed(2)}–${h20.max.toFixed(2)}% maps to steps 0 and 6`); }
 }
 // ---- data/MANIFEST.json: every data file listed, sha matches, used by an approved (or live) card, imported by a page ----
@@ -275,40 +281,53 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     if (!Array.isArray(e.cards) || !e.cards.length || !e.cards.every(okCard)) probs.push(`${f}: no valid card id`);
     if (!pages.includes(`@/data/${f}`)) probs.push(`${f}: not imported by any page`); }
   for (const f of Object.keys(man.files)) if (!files.includes(f)) probs.push(`${f}: in manifest but missing from data/`);
+  // self-test: a changed file (any file, live ones included) must be caught by the sha comparison
+  { const f0 = files.find((f) => man.files[f].cards.some((c) => c.startsWith("live:")));
+    const tampered = createHash("sha256").update(Buffer.concat([readFileSync(new URL(`../data/${f0}`, import.meta.url)), Buffer.from(" ")])).digest("hex");
+    check(tampered !== man.files[f0].sha256, `data manifest self-test: a one-byte change to live file ${f0} no longer matches its manifest sha (would fail)`); }
+  // registry: every chart's data files are in the manifest; prefixed params never collide between charts
+  { const reg = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8");
+    const ids = [...reg.matchAll(/^  "?(\w+)"?: \{ id: "(\w+)"[^\n]*titles: \{([^}]*)\}[^\n]*params: \[([^\]]*)\], data: \[([^\]]*)\]/gm)].map((m) => ({ id: m[2], key: m[1], titles: [...m[3].matchAll(/(\w+): "([^"]+)"/g)].flatMap((x) => [x[1], x[2]]), params: [...m[4].matchAll(/"([^"]+)"/g)].map((x) => x[1]), data: [...m[5].matchAll(/"([^"]+)"/g)].map((x) => x[1]) }));
+    const allP = ids.flatMap((x) => x.params), dupe = allP.filter((p, i) => allP.indexOf(p) !== i);
+    const prefOk = ids.every((x) => x.params.every((p) => /^[a-z]+_/.test(p)) && new Set(x.params.map((p) => p.split("_")[0])).size <= 1);
+    const dataOk = ids.every((x) => x.data.every((f) => man.files[f]));
+    const keyOk = ids.every((x) => x.id === x.key) && ["1", "2", "22"].every((n) => ids.some((x) => x.id === n));
+    const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
+    const loadOk = ids.every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
+    check(ids.length === 6 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} standalone charts, ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
+    check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
+      && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
   check(probs.length === 0, `data manifest: ${files.length} files, sha256 match, each used by a card (${files.map((f) => `${f} → ${man.files[f]?.cards.join(" ")}`).join("; ")})${probs.length ? " — " + probs.join("; ") : ""}`); }
 // ---- Warehouse independent reference figures (scripts/golden/REFERENCE-FIGURES.md), Wave 1 cards, every country ----
-// Like-for-like comparisons must match (check). Where the card's convention differs (shared end vs own latest,
-// quarterly vs monthly), the difference is printed as a DIFF line with ours vs theirs — never forced to match.
+// Cards #1 and #22 use the shared end (latest quarter all seven share); Warehouse uses each country's own latest.
+// Both are compared: card figure at the shared end where periods agree, and the card's own-latest figure (stats box)
+// where they don't. The shared-end vs own-latest gap itself is printed as EXPECTED (by design), never forced.
 { const { comeback, scorecard, heatStrip } = await import("../lib/charts.mjs");
   const md = readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8");
   const sect = (n) => { const m = new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md); return m[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => { const [c, per, v, note] = l.slice(2).split(" | "); return { c, per, v: +v, note: note || "" }; }); };
-  const val = (s, p) => { const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
-  const diffs = [];
-  // #1
-  { const ref = sect(1), cb = comeback(econ, "pc"); let bad = 0, same = 0;
+  const exp = [], mism = [];
+  { const ref = sect(1), cb = comeback(econ, "pc"); let n = 0;
     for (const r of ref) { const p = cb.panels.find((x) => x.code === r.c); const back = /back to 100 at (\d{4}-Q\d)/.exec(r.note)[1];
-      if (p.back !== back) bad++;
-      const s = econ.gdp_per_capita[r.c], mine = val(s, r.per) / val(s, "2019-Q4") * 100; // same formula at their period
-      if (Math.abs(mine - r.v) > 0.05) bad++;
-      if (r.per === cb.end) { same++; if (Math.abs(p.last - r.v) > 0.05) bad++; }
-      else diffs.push(`#1 ${r.c}: card shows ${p.last.toFixed(1)} at ${cb.end} (shared end); Warehouse ${r.v} at ${r.per} (own latest)`); }
-    check(bad === 0, `ref #1 comeback: back-to-100 quarter matches for all 7; index formula matches Warehouse at their period for all 7 (±0.05); card figure matches where periods agree (${same} of 7)`); }
-  // #22
-  { const ref = sect(22), sc = scorecard(JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url)))); let bad = 0, same = 0;
-    const rr = JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url)));
-    for (const r of ref) { const [a, b] = r.per.split("→"); const row = sc.rows.find((x) => x.code === r.c);
-      const mine = val(rr.quarterly[r.c], b) - val(rr.quarterly[r.c], a);
-      if (Math.abs(mine - r.v) > 0.005 || a !== sc.base) bad++;
-      if (b === sc.end) { same++; if (Math.abs(row.change - r.v) > 0.005) bad++; }
-      else diffs.push(`#22 ${r.c}: card ${row.change >= 0 ? "+" : ""}${row.change.toFixed(2)} pts to ${sc.end} (shared end); Warehouse ${r.v >= 0 ? "+" : ""}${r.v.toFixed(2)} to ${b} (own latest)`); }
-    check(bad === 0, `ref #22 scorecard: change formula matches Warehouse for all 7 (±0.005 pts); card figure matches where periods agree (${same} of 7)`); }
-  // #2
-  { const ref = sect(2), h = heatStrip(un, 1); let bad = 0, cmp = 0;
-    for (const r of ref) { const m = un.monthly[r.c]; const row = h.rows.find((x) => x.code === r.c), q = row.vals[row.vals.length - 1];
-      if (m) { cmp++; if (Math.abs(val(m, r.per) - r.v) > 0.05) bad++; }
-      diffs.push(`#2 ${r.c}: card (quarterly) ${q.toFixed(2)}% at ${h.end}; Warehouse (monthly file) ${r.v}% at ${r.per}${m ? "" : " — monthly series not held"}`); }
-    check(bad === 0, `ref #2 heat strip: latest monthly values in our held file match Warehouse for the ${cmp} countries we hold monthly (CAN, USA, JPN); card is quarterly, so no like-for-like card figure yet`); }
-  for (const d of diffs) console.log("DIFF " + d);
+      if (p.back !== back) mism.push(`#1 ${r.c} back: ours ${p.back} vs Warehouse ${back}`);
+      const ours = r.per === cb.end ? p.last : p.own.period === r.per ? p.own.value : null;
+      if (ours === null || Math.abs(ours - r.v) > 0.05) mism.push(`#1 ${r.c} ${r.per}: ours ${ours?.toFixed(2)} vs Warehouse ${r.v}`); else n++;
+      if (r.per !== cb.end) exp.push(`#1 ${r.c}: card ${p.last.toFixed(1)} at ${cb.end} (shared end); own latest ${p.own.value.toFixed(1)} at ${p.own.period} = Warehouse ${r.v}`); }
+    check(mism.filter((x) => x.startsWith("#1")).length === 0, `ref #1 comeback (per person): ${n} of 7 match Warehouse (±0.05) at their period (shared end or the stats box's own latest); back-to-100 quarter matches for all 7`); }
+  { const rr = JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url))), sc = scorecard(rr); let n = 0;
+    for (const r of ref22()) { const b = r.per.split("→")[1], row = sc.rows.find((x) => x.code === r.c);
+      const ours = b === sc.end ? row.change : row.own.period === b ? row.own.change : null;
+      if (ours === null || Math.abs(ours - r.v) > 0.005) mism.push(`#22 ${r.c} ${b}: ours ${ours?.toFixed(3)} vs Warehouse ${r.v}`); else n++;
+      if (b !== sc.end) exp.push(`#22 ${r.c}: card ${row.change >= 0 ? "+" : ""}${row.change.toFixed(2)} pts to ${sc.end} (shared end); own latest ${row.own.change >= 0 ? "+" : ""}${row.own.change.toFixed(2)} to ${row.own.period} = Warehouse ${r.v}`); }
+    function ref22() { return sect(22); }
+    check(mism.filter((x) => x.startsWith("#22")).length === 0, `ref #22 scorecard: ${n} of 7 match Warehouse (±0.005 pts) at their period (shared end or own latest)`); }
+  { const UM = JSON.parse(readFileSync(new URL("../data/oecd_unemployment_rate_m_15plus.json", import.meta.url))), h = heatStrip(UM, 1); let n = 0;
+    for (const r of sect(2)) { const row = h.rows.find((x) => x.code === r.c), i = h.cols.findIndex((c) => c.key === r.per);
+      const ours = i < 0 ? null : row.vals[i];
+      if (row.last !== r.per || ours === null || Math.abs(ours - r.v) > 0.05) mism.push(`#2 ${r.c} ${r.per}: ours ${ours} (latest ${row.last}) vs Warehouse ${r.v}`); else n++; }
+    check(mism.filter((x) => x.startsWith("#2 ")).length === 0, `ref #2 heat strip (monthly): latest month and value match Warehouse for ${n} of 7 (${sect(2).map((r) => `${r.c} ${r.per} ${r.v}`).join(", ")})`); }
+  for (const e of exp) console.log("EXPECTED " + e);
+  for (const m of mism) console.log("MISMATCH " + m);
 }
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("unemployment sha256", createHash("sha256").update(uraw).digest("hex"));

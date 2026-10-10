@@ -3,12 +3,13 @@
 import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES, monotonePath, qLabel } from "@/lib/series.mjs";
 import { comeback, qi } from "@/lib/charts.mjs";
-import { CardFrame, Seg, useParams, useWidth } from "./kit";
+import { chartTitle } from "@/src/charts/meta";
+import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const pct = (v: number) => `${v - 100 >= 0.005 ? "+" : v - 100 <= -0.005 ? "−" : ""}${Math.abs(v - 100).toFixed(1)}%`;
 
-function Panel({ p, lo, hi, first }: { p: ReturnType<typeof comeback>["panels"][number]; lo: number; hi: number; first: boolean }) {
+function Panel({ p, lo, hi, first, onOpen }: { p: ReturnType<typeof comeback>["panels"][number]; lo: number; hi: number; first: boolean; onOpen: () => void }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [hv, setHv] = useState<number | null>(null);
   const H = 96, pt = 6, pb = 6;
@@ -25,7 +26,7 @@ function Panel({ p, lo, hi, first }: { p: ReturnType<typeof comeback>["panels"][
         <span className="smv">{cur && cur.value !== null ? <>{cur.value.toFixed(1)}<em>{hv !== null ? qLabel(cur.period) : "now"}</em></> : <>n/a<em>{cur ? qLabel(cur.period) : ""}</em></>}</span>
       </figcaption>
       <div ref={ref} className="smplot" onPointerMove={(e) => pick(e.clientX - e.currentTarget.getBoundingClientRect().left)} onPointerLeave={(e) => e.pointerType === "mouse" && setHv(null)}
-        onPointerDown={(e) => pick(e.clientX - e.currentTarget.getBoundingClientRect().left)}>
+        onPointerDown={(e) => { e.stopPropagation(); pick(e.clientX - e.currentTarget.getBoundingClientRect().left); onOpen(); }}>
         {w > 0 && (
           <svg width={w} height={H} role="img" aria-label={`${NAME[p.code]}: ${p.back ? `back to 100 in ${qLabel(p.back)}` : "not yet back to 100"}, now ${p.last === null ? "n/a" : p.last.toFixed(1)}`}>
             <line x1={0} x2={w} y1={y(100)} y2={y(100)} className="ref100" />
@@ -36,13 +37,14 @@ function Panel({ p, lo, hi, first }: { p: ReturnType<typeof comeback>["panels"][
           </svg>
         )}
       </div>
+      <button type="button" className="smbtn" onClick={onOpen} aria-label={`${NAME[p.code]} details`}>Details</button>
       <p className={`back${p.back ? "" : " not"}`}>{p.back ? <>Back to 100 · <b>{qLabel(p.back)}</b></> : <>Not yet back to 100</>}</p>
     </figure>
   );
 }
 
 export default function Comeback({ econ, initial }: { econ: unknown; initial: MutableRefObject<string | null> }) {
-  const [st, set] = useParams(initial, { cr_view: ["pc", ["pc", "gdp"] as const] });
+  const [st, set] = useParams(initial, { cr_view: ["gdp", ["gdp", "pc"] as const] });
   const view = st.cr_view as "pc" | "gdp";
   const c = useMemo(() => comeback(econ, view), [econ, view]);
   const lo = Math.floor(Math.min(c.min, 100) - 1), hi = Math.ceil(Math.max(c.max, 100) + 1);
@@ -52,10 +54,12 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
   const notBack = c.panels.filter((p) => !p.back);
   const top = c.panels.filter((p) => p.last !== null).sort((a, b) => b.last! - a.last!)[0];
   const ex = c.panels[0], exEnd = ex.points[ex.points.length - 1];
+  const [open, setOpen] = useState<string | null>(null);
+  const op = open ? c.panels.find((p) => p.code === open)! : null;
   return (
-    <CardFrame id="comeback" eyebrow="Economy" title="The comeback race"
-      sub={<>{view === "pc" ? "Real GDP per person" : "Real GDP, total"} · Q4 2019 = 100 · same scale in all panels · actuals to {qLabel(c.end)}</>}
-      controls={<Seg className="vseg" label="Measure" value={view} options={[["pc", "Per person"], ["gdp", "Total GDP"]]} onChange={(v) => set("cr_view", v)} />}
+    <CardFrame id="chart-1" eyebrow="Economy" title={chartTitle("1", view)}
+      sub={<>{view === "pc" ? "Real GDP per person" : "Real GDP, total"} · Q4 2019 = 100 · same scale in all panels · to {qLabel(c.end)}, the latest quarter all seven share</>}
+      controls={<Seg className="vseg" label="Measure" value={view} options={[["gdp", "Total GDP"], ["pc", "Per person"]]} onChange={(v) => set("cr_view", v)} />}
       headline={
         <div className="figs">
           <div className="fig"><div className="figl">First back to 100</div><div className="figc">{first.map((p) => <span key={p.code}><i style={{ background: `var(--${p.code})` }} />{NAME[p.code]}</span>)}</div>
@@ -82,7 +86,14 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
           <li><span className="ic">=</span>Shared y-scale across all seven panels</li>
         </ul></div>
       </>}>
-      <div className="smgrid">{c.panels.map((p, i) => <Panel key={p.code} p={p} lo={lo} hi={hi} first={i === 0} />)}</div>
+      <div className="smwrap" onPointerDown={() => setOpen(null)}>
+        {op && <StatBox title={`${NAME[op.code]} · index, Q4 2019 = 100`} onClose={() => setOpen(null)} rows={[
+          { code: op.code, name: `${qLabel(c.end)} · shared end`, value: op.last === null ? "n/a" : op.last.toFixed(1) },
+          ...(op.own.period !== c.end ? [{ code: op.code, name: `${qLabel(op.own.period)} · own latest`, value: op.own.value === null ? "n/a" : op.own.value.toFixed(1) }] : []),
+          { code: op.code, name: "Back to 100", value: op.back ? qLabel(op.back) : "not yet" },
+        ]} />}
+        <div className="smgrid">{c.panels.map((p, i) => <Panel key={p.code} p={p} lo={lo} hi={hi} first={i === 0} onOpen={() => setOpen(p.code)} />)}</div>
+      </div>
       <p className="smaxis"><span>{qLabel("2019-Q1")}</span><span>Dashed line = 100 (Q4 2019) · scale {lo}–{hi}</span><span>{qLabel(c.end)}</span></p>
     </CardFrame>
   );

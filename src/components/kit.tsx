@@ -71,12 +71,14 @@ export function Seg<V extends string>({ label, value, options, onChange, classNa
   );
 }
 
-// Shared card anatomy (DESIGN-SYSTEM Round 4): eyebrow · H2 · subtitle · controls · headline · plot · legend · source · calc.
+// id = "chart-<registry id>". Shared card anatomy (DESIGN-SYSTEM Round 4): eyebrow · H2 · subtitle · controls · headline · plot · legend · source · calc.
 export function CardFrame({ id, eyebrow, title, sub, controls, headline, legend, source, calc, children }: {
   id: string; eyebrow: string; title: string; sub: ReactNode; controls?: ReactNode; headline?: ReactNode; legend?: ReactNode; source: string; calc: ReactNode; children: ReactNode;
 }) {
+  const ref = useRef<HTMLElement>(null);
+  useDocTitle(ref, title);
   return (
-    <section className="cardsec" id={id} aria-labelledby={`h-${id}`}>
+    <section className="cardsec" id={id} aria-labelledby={`h-${id}`} ref={ref}>
       <p className="eyebrow">{eyebrow}</p>
       <h2 id={`h-${id}`} className="h1">{title}</h2>
       <p className="sub">{sub}</p>
@@ -129,4 +131,20 @@ export function jumpTo(id: string) {
   dispatchEvent(new Event("us-mount-all"));
   history.replaceState(null, "", `${location.pathname}${location.search}#${id}`);
   requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })));
+}
+
+// document.title follows the chart currently at the top of the viewport ("<chart title> · unitedstats").
+const visibleTitles = new Map<Element, string>();
+function applyTitle() {
+  let best: [number, string] | null = null;
+  for (const [el, t] of visibleTitles) { const top = Math.abs(el.getBoundingClientRect().top); if (!best || top < best[0]) best = [top, t]; }
+  if (best) document.title = `${best[1]} · unitedstats`;
+}
+export function useDocTitle(ref: React.RefObject<Element | null>, title: string) {
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const io = new IntersectionObserver((es) => { for (const e of es) { if (e.isIntersecting) visibleTitles.set(el, title); else visibleTitles.delete(el); } applyTitle(); }, { threshold: [0, 0.25] });
+    io.observe(el); const sc = () => applyTitle(); addEventListener("scroll", sc, { passive: true });
+    return () => { io.disconnect(); visibleTitles.delete(el); removeEventListener("scroll", sc); };
+  }, [ref, title]);
 }

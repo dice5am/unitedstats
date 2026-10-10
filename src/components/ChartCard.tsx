@@ -4,7 +4,8 @@ import { COUNTRIES, WINDOWS, buildLine, headlinePick, headlineLabels, fmtHeadlin
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
-import { writeParams, CalcDisclosure } from "./kit";
+import { writeParams, CalcDisclosure, useDocTitle } from "./kit";
+import { chartTitle } from "@/src/charts/meta";
 
 // One self-contained chart card: measure toggle, timeframe, picker, headline, chart, legend, How it's calculated.
 // Every card on a page owns its own state and its own URL params (prefix), sharing nothing with its siblings.
@@ -21,7 +22,8 @@ const MODE: Record<View, Mode> = { unemp: "unemp", jobs: "jobs", jpc: "index", g
 // false = the old always-open section.
 export const CALC_DISCLOSURE = true;
 
-const HEAD: Record<View, string> = { unemp: "Unemployment rate", jobs: "Jobs", jpc: "Jobs per capita", gdp: "GDP", pc: "GDP per capita" };
+// Titles come from the central registry (src/charts/meta.ts) and follow the selected view.
+const HEAD: Record<View, string> = { unemp: chartTitle("unemp"), jobs: chartTitle("jobs", "jobs"), jpc: chartTitle("jobs", "jpc"), gdp: chartTitle("gdp", "gdp"), pc: chartTitle("gdp", "pc") };
 const SUB: Record<View, string> = {
   unemp: "Unemployed as % of labour force, age 15+ · seasonally adjusted",
   jobs: "People employed, 15+ · seasonally adjusted · not adjusted for population",
@@ -29,8 +31,8 @@ const SUB: Record<View, string> = {
   gdp: "Real GDP · inflation-adjusted · seasonally adjusted · each country\u2019s own currency",
   pc: "Real GDP per person · inflation-adjusted · each country\u2019s own currency",
 };
-// URL keys per card: economy keeps view/win/on; Labour cards are prefixed (u_*, j_*).
-const KEYS: Record<Kind, { view?: string; win: string; on: string }> = { econ: { view: "view", win: "win", on: "on" }, unemp: { win: "u_win", on: "u_on" }, jobs: { view: "j_view", win: "j_win", on: "j_on" } };
+// URL keys per chart, all prefixed (g_*, u_*, j_*). Old unprefixed links (view/win/on) still map onto the right chart.
+const KEYS: Record<Kind, { view?: string; win: string; on: string }> = { econ: { view: "g_view", win: "g_win", on: "g_on" }, unemp: { win: "u_win", on: "u_on" }, jobs: { view: "j_view", win: "j_win", on: "j_on" } };
 const LEGACY = ["view", "win", "on"];
 
 const fmtM = (p: string) => { const [y, m] = p.split("-").map(Number); return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }); };
@@ -60,20 +62,21 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   useLayoutEffect(() => {
     const q = new URLSearchParams(initialSearch.current ?? location.search);
     const lv = q.get("view");
-    const legacy = !E && (q.has("view") || q.has("win") || q.has("on")) && ((kind === "unemp" && lv === "rate") || (kind === "jobs" && lv !== "rate"));
-    const qv = keys.view ? q.get(keys.view) : null;
+    const hasOld = q.has("view") || q.has("win") || q.has("on");
+    const legacy = hasOld && (E || (kind === "unemp" && lv === "rate") || (kind === "jobs" && lv !== "rate"));
+    const qv = keys.view ? (q.get(keys.view) ?? (legacy && E ? lv : null)) : null;
     const v = views.find(([vv]) => URLV[vv] === qv)?.[0] ?? views[0][0];
     const qw = Number(q.get(keys.win) ?? (legacy ? q.get("win") : null)), w = WINDOWS.includes(qw) ? qw : 1;
     const codes = parseOn(q.get(keys.on) ?? (legacy ? q.get("on") : null));
     setView(v); setYears(w); setOn(Object.fromEntries(codes.map((c) => [c, true])));
-    writeParams(keyStr(v, w, codes), E ? [] : LEGACY);
+    writeParams(keyStr(v, w, codes), LEGACY);
     if (kind === "unemp" && lv === "rate") requestAnimationFrame(() => secRef.current?.scrollIntoView({ block: "start" }));
     urlRead.current = 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (urlRead.current !== 2) { if (urlRead.current === 1) urlRead.current = 2; return; }
-    writeParams(keyStr(view, years, DEFAULT_ON.filter((c) => on[c])), E ? [] : LEGACY);
+    writeParams(keyStr(view, years, DEFAULT_ON.filter((c) => on[c])), LEGACY);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, years, on]);
 
@@ -111,6 +114,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
     (segRef.current?.querySelectorAll("button")[j] as HTMLElement | undefined)?.focus();
   };
   const H = primary ? "h1" : "h2";
+  useDocTitle(secRef, HEAD[view]);
 
   const calc = (() => {
     if (E) {

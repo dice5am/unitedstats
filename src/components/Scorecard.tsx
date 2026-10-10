@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { COUNTRIES, qLabel } from "@/lib/series.mjs";
 import { scorecard } from "@/lib/charts.mjs";
+import { chartTitle } from "@/src/charts/meta";
 import { CardFrame, StatBox } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -18,8 +19,8 @@ export default function Scorecard({ rate }: { rate: unknown }) {
   const r = sel ? s.rows.find((x) => x.code === sel)! : null;
   const ca = s.rows.find((x) => x.code === "CAN")!;
   return (
-    <CardFrame id="recovery" eyebrow="Labour" title="Jobs recovery scorecard"
-      sub={<>Employment rate, ages 15–64 · change since Q4 2019, in points · seasonally adjusted</>}
+    <CardFrame id="chart-22" eyebrow="Labour" title={chartTitle("22")}
+      sub={<>Employment rate, ages 15–64 · change since Q4 2019, in points · to {qLabel(s.end)}, the latest quarter all seven share</>}
       headline={
         <div className="figs">
           <div className="fig"><div className="figl">Biggest gain</div><div className="figc"><span><i style={{ background: `var(--${best.code})` }} />{NAME[best.code]}</span></div><div className="figv">{pts(best.change!)}<span>pts</span></div><div className="figp">{qLabel(s.base)} → {qLabel(s.end)}</div></div>
@@ -36,11 +37,11 @@ export default function Scorecard({ rate }: { rate: unknown }) {
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps (n/a) are never filled</li><li><span className="ic">E</span>Estimated quarters are marked est.</li></ul></div>
       </>}>
       <div className="sc" onPointerDown={() => setSel(null)}>
-        {r && <StatBox title={`${NAME[r.code]} · ${qLabel(s.base)} → ${qLabel(s.end)}`} onClose={() => setSel(null)} rows={[
+        {r && <StatBox title={`${NAME[r.code]} · employment rate 15–64`} onClose={() => setSel(null)} rows={[
           { code: r.code, name: qLabel(s.base), value: r.start === null ? "n/a" : `${r.start.toFixed(2)}%` },
-          { code: r.code, name: qLabel(s.end), value: r.end === null ? "n/a" : `${r.end.toFixed(2)}%`, note: r.est ? "est." : undefined },
-          { code: r.code, name: "Change", value: r.change === null ? "n/a" : `${pts(r.change)} pts` },
-        ].map((x, i) => ({ ...x, code: i === 2 ? r.code : r.code, name: x.name }))} />}
+          { code: r.code, name: `${qLabel(s.end)} · shared end`, value: r.end === null ? "n/a" : `${r.end.toFixed(2)}% (${pts(r.change!)} pts)`, note: r.est ? "est." : undefined },
+          ...(r.own.period !== s.end ? [{ code: r.code, name: `${qLabel(r.own.period)} · own latest`, value: r.own.value === null ? "n/a" : `${r.own.value.toFixed(2)}% (${pts(r.own.change!)} pts)`, note: r.own.est ? "est." : undefined }] : []),
+        ]} />}
         <ol className="scl">
           {s.rows.map((x) => {
             const v = x.change, w = v === null ? 0 : (Math.abs(v) / span) * 100, l = v === null ? z : v >= 0 ? z : z - w;
