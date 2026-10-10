@@ -16,6 +16,11 @@ const k = (v: number) => `${v.toLocaleString("en-GB", { minimumFractionDigits: 1
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const writeUrl = (v: string, w: number, codes: string[]) => {
+  const ordered = COUNTRIES.map((c) => c.code).filter((c) => codes.includes(c));
+  const next = `${location.pathname}?view=${v}&win=${w}&on=${ordered.join(",")}${location.hash}`;
+  if (next !== location.pathname + location.search + location.hash) history.replaceState(null, "", next);
+};
 type View = "jobs" | "rate" | "gdp" | "pc";
 const VIEWS: Record<Tab, [View, string][]> = { labour: [["jobs", "Jobs"], ["rate", "Employment rate"]], economy: [["gdp", "GDP"], ["pc", "GDP per capita"]] };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,14 +30,30 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const eds = useMemo(() => (econ ? { gdp: econDataset(econ, "gdp"), pc: econDataset(econ, "pc") } : null), [econ]);
   const vRef = useRef<HTMLDivElement>(null);
   const [vhl, setVhl] = useState({ x: 0, w: 0 });
-  useEffect(() => { const v = new URLSearchParams(location.search).get("view"); if (VIEWS[tab].some(([k]) => k === v)) setView(v as View); }, [tab]);
-  const pickView = (v: View) => { setView(v); const u = new URL(location.href); u.searchParams.set("view", v); history.replaceState(null, "", u); };
+  const pickView = (v: View) => setView(v);
   useLayoutEffect(() => { const el = vRef.current?.querySelector<HTMLElement>("button.on"); if (el) setVhl({ x: el.offsetLeft, w: el.offsetWidth }); }, [view, tab]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ds: any = view === "rate" ? rate : view === "gdp" ? eds!.gdp : view === "pc" ? eds!.pc : data;
   const mode = view === "rate" ? "rate" : view === "jobs" ? "jobs" : "index";
   const [years, setYears] = useState(1);
   const [on, setOn] = useState<Record<string, boolean>>({ CAN: true, USA: true });
+  // URL state (?view, ?win, ?on): read once before paint (no hydration mismatch: server renders defaults),
+  // invalid values fall back to defaults; then mirror changes with replaceState.
+  const urlRead = useRef<0 | 1 | 2>(0);
+  useLayoutEffect(() => {
+    const q = new URLSearchParams(location.search);
+    const qv = q.get("view"), v = VIEWS[tab].some(([k]) => k === qv) ? (qv as View) : VIEWS[tab][0][0];
+    const qw = Number(q.get("win")), w = WINDOWS.includes(qw) ? qw : 1;
+    const codes0 = (q.get("on") || "").split(",").map((c) => c.trim().toUpperCase()).filter((c) => COUNTRIES.some((x) => x.code === c));
+    const codes = codes0.length ? codes0 : ["CAN", "USA"];
+    setView(v); setYears(w); setOn(Object.fromEntries(codes.map((c) => [c, true])));
+    writeUrl(v, w, codes); // canonicalise invalid params right away
+    urlRead.current = 1;
+  }, [tab]);
+  useEffect(() => {
+    if (urlRead.current !== 2) { if (urlRead.current === 1) urlRead.current = 2; return; } // skip the commit that still holds pre-URL state
+    writeUrl(view, years, COUNTRIES.map((c) => c.code).filter((c) => on[c]));
+  }, [view, years, on]);
   const segRef = useRef<HTMLDivElement>(null);
   const [hl, setHl] = useState({ x: 0, w: 0 });
   const lines = useMemo(() => COUNTRIES.map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short })), [ds, years, mode]);
@@ -46,6 +67,12 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const qEnd = E ? qLabel(commonEnds(ds).quarterEnd) : "";
   const qx = E ? quarterExample(ds, "CAN", years) : null;
   const qSpan = E ? (() => { const l = lines[0]; return `${qLabel(l.points[0].period)} – ${qLabel(l.points[l.points.length - 1].period)}`; })() : "";
+  // legend items only when the matching marker is actually drawn (same conditions as LineChart)
+  const shown = lines.filter((l) => on[l.code] && !l.excluded);
+  const allPts = lines.flatMap((l) => l.points), m0 = Math.min(...allPts.map((p) => p.mi)), m1 = Math.max(...allPts.map((p) => p.mi));
+  const hasBreak = shown.some((l) => l.points.some((p) => p.value !== null) && l.breaks.some((b) => b.mi >= m0 && b.mi <= m1));
+  const hasJan = years <= 5 && shown.some((l) => l.janJumps.length > 0);
+  const hasQ = shown.some((l) => l.freq === "quarterly" && l.points.some((p) => p.value !== null));
   const naNote = Object.fromEntries(lines.filter((l) => l.excluded).map((l) => [l.code, `n/a for ${years}Y`]));
   const emptyMsg = (() => { const sel = lines.filter((l) => on[l.code]); return sel.length && sel.every((l) => l.excluded) ? `No OECD data for ${sel.map((l) => COUNTRIES.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
   const rateAsOf = asOf(rate.data_as_of.addendum_id);
@@ -129,9 +156,9 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
             <LineChart lines={lines} on={on} years={years} data={ds} mode={mode} emptyMsg={emptyMsg} />
           </section>
           <ul className="notes">
-            {!E && <li><i className="dot amber" />US January jump: cause not confirmed</li>}
-            {E && <li><i className="qdot" />One dot per quarter</li>}
-            <li><i className="tick" />{view === "jobs" ? "Series break, by year" : "Series break, by quarter"}</li>
+            {hasJan && <li><i className="dot amber" />US January jump: cause not confirmed</li>}
+            {E && hasQ && <li><i className="qdot" />One dot per quarter</li>}
+            {hasBreak && <li><i className="tick" />{view === "jobs" ? "Series break, by year" : "Series break, by quarter"}</li>}
           </ul>
           <p className="source">{E ? `Source: OECD quarterly national accounts · ${view === "pc" ? "real GDP and population" : "real GDP"}, SA · as of ${econAsOf}` : `Source: OECD · ${view === "rate" ? "employment rate 15–64" : "employment 15+"}, SA · as of ${view === "rate" ? rateAsOf : dataAsOf}`}</p>
 
