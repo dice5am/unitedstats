@@ -34,7 +34,7 @@ export default function LineChart({ lines, years }: { lines: Line[]; years: numb
   useEffect(() => {
     const el = ref.current; if (!el) return;
     setW(el.clientWidth);
-    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    const ro = new ResizeObserver(([e]) => { if (e.contentRect.width > 0) setW(e.contentRect.width); });
     ro.observe(el); return () => ro.disconnect();
   }, []);
   useEffect(() => {
