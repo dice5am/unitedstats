@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { mStr, qOfMonth } from "@/lib/series.mjs";
+import { mStr, qOfMonth, monotonePath, rawLevel } from "@/lib/series.mjs";
 
-export type Pt = { period: string; mi: number; value: number | null; raw?: number | null };
+export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
   code: string; name: string; freq: "monthly" | "quarterly"; points: Pt[]; breaks: number[];
   last: number | null; growth: number | null; janJumps: string[]; indexedFrom: string | null;
@@ -10,11 +10,10 @@ export type Line = {
 
 const MAIN = new Set(["CAN", "USA"]);
 const col = (c: string) => `var(--${c})`;
-const COVID = { a: 2020 * 12 + 2, b: 2021 * 12 + 5 }; // Mar 2020 - Jun 2021
-
-const fmtM = (mi: number, yr: "2-digit" | "numeric" = "numeric") =>
-  new Date(Date.UTC(Math.floor(mi / 12), mi % 12, 1)).toLocaleDateString("en-GB", { month: "short", year: yr, timeZone: "UTC" });
-const qLabel = (p: string) => { const [y, q] = p.split("-"); return q ? `${q} ${y}` : p; };
+const COVID = { a: 2020 * 12 + 2, b: 2021 * 12 + 5 };
+const fmtM = (mi: number, short = false) =>
+  new Date(Date.UTC(Math.floor(mi / 12), mi % 12, 1)).toLocaleDateString("en-GB", { month: "short", year: short ? "2-digit" : "numeric", timeZone: "UTC" }).replace(/ (\d\d)$/, " ’$1");
+const qLabel = (p: string) => { const [y, q] = p.split("-"); return `${q} ${y}`; };
 
 let ctx: CanvasRenderingContext2D | null = null;
 function textW(s: string, px: number, weight: number) {
@@ -25,12 +24,13 @@ function textW(s: string, px: number, weight: number) {
   return ctx.measureText(s).width;
 }
 
-export default function LineChart({ lines, years }: { lines: Line[]; years: number }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function LineChart({ lines: all, on, years, data }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any }) {
   const ref = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
-  const [hover, setHover] = useState<number | null>(null); // month index
-  const [tipSize, setTipSize] = useState({ w: 160, h: 80 });
+  const [hover, setHover] = useState<number | null>(null);
+  const [tipSize, setTipSize] = useState({ w: 200, h: 100 });
   useEffect(() => {
     const el = ref.current; if (!el) return;
     setW(el.clientWidth);
@@ -41,99 +41,97 @@ export default function LineChart({ lines, years }: { lines: Line[]; years: numb
     const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setHover(null); };
     document.addEventListener("pointerdown", close); return () => document.removeEventListener("pointerdown", close);
   }, []);
-  useLayoutEffect(() => {
-    if (tipRef.current) setTipSize({ w: tipRef.current.offsetWidth, h: tipRef.current.offsetHeight });
-  }, [hover, lines]);
+  useLayoutEffect(() => { if (tipRef.current) setTipSize({ w: tipRef.current.offsetWidth, h: tipRef.current.offsetHeight }); }, [hover, on, years]);
 
+  const lines = all.filter((l) => on[l.code]);
+  const mainOn = lines.some((l) => MAIN.has(l.code));
   const wide = w >= 768;
-  const h = w >= 1024 ? 480 : 300;
+  const h = wide ? 500 : 320;
   const lblPx = wide ? 13 : 12;
   const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}` : l.name);
-  const gutter = Math.ceil(Math.max(40, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 400)))) + 8 + 14;
-  const pad = { l: 44, r: gutter, t: 16, b: 30 };
-  const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b;
+  const gutter = Math.ceil(Math.max(36, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 500)))) + (wide ? 28 : 22);
+  const pad = { l: wide ? 48 : 38, r: gutter, t: 20, b: 58 };
+  const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b, bottom = pad.t + ih;
 
-  const all = lines.flatMap((l) => l.points);
-  const m0 = all.length ? Math.min(...all.map((p) => p.mi)) : 0;
-  const m1 = all.length ? Math.max(...all.map((p) => p.mi)) : 1;
+  const pts = all.flatMap((l) => l.points);
+  const m0 = Math.min(...pts.map((p) => p.mi)), m1 = Math.max(...pts.map((p) => p.mi));
   const { y0, y1 } = useMemo(() => {
-    const vs = lines.flatMap((l) => l.points.flatMap((p) => [p.value, p.raw ?? null])).filter((v): v is number => v !== null);
+    const vs = lines.flatMap((l) => l.points.map((p) => p.value)).filter((v): v is number => v !== null);
     let lo = Math.min(100, ...vs), hi = Math.max(100, ...vs);
-    const span = Math.max(hi - lo, 0.5); lo -= span * 0.06; hi += span * 0.06;
+    const span = Math.max(hi - lo, 0.5); lo -= span * 0.1; hi += span * 0.08;
     return { y0: lo, y1: hi };
   }, [lines]);
 
-  if (!lines.length) return <div ref={ref} className="chart empty" style={{ height: 300 }}>No country selected</div>;
-  if (!w) return <div ref={ref} className="chart skeleton" style={{ height: 300 }} />;
+  if (!w) return <div ref={ref} className="chart skeleton" style={{ height: 320 }} />;
 
   const x = (mi: number) => pad.l + ((mi - m0) / (m1 - m0 || 1)) * iw;
   const y = (v: number) => pad.t + (1 - (v - y0) / (y1 - y0)) * ih;
-  const ticks = niceTicks(y0, y1, w < 560 ? 4 : 6);
-  const step = years <= 1 ? 3 : years <= 5 ? 12 : years <= 10 ? 24 : 48;
-  const xt: number[] = [];
-  if (years <= 1) for (let mi = m1; mi >= m0; mi -= step) xt.unshift(mi);
-  else { for (let mi = Math.ceil(m0 / 12) * 12; mi <= m1; mi += step) xt.push(mi); }
+  const ticks = niceTicks(y0, y1, wide ? 5 : 4);
   const dec = ticks.length > 1 && ticks[1] - ticks[0] < 1 ? 1 : 0;
+  // x ticks: max 4 at <768
+  const maxT = wide ? 6 : 4;
+  const xt: number[] = [];
+  if (years <= 1) { const st = wide ? 3 : 4; for (let mi = m1; mi >= m0; mi -= st) xt.unshift(mi); }
+  else { const yrs = years / (maxT - 1); const st = Math.max(1, Math.ceil(yrs)) * 12; for (let mi = m1; mi >= m0; mi -= st) xt.unshift(mi); }
+  while (xt.length > maxT) xt.shift();
 
-  const path = (pts: { mi: number; v: number | null }[]) => {
-    let d = "", pen = false;
-    for (const p of pts) {
-      if (p.v === null) { pen = false; continue; }
-      d += `${pen ? "L" : "M"}${x(p.mi).toFixed(1)},${y(p.v).toFixed(1)}`; pen = true;
-    }
-    return d;
-  };
-
-  // End labels: column sorted by value, top-down collision resolve, clamp to plot.
-  const minGap = wide ? 16 : 14;
-  const ends = lines.map((l) => {
-    const lp = [...l.points].reverse().find((p) => p.value !== null);
-    return lp ? { l, mi: lp.mi, v: lp.value as number, ty: y(lp.value as number) } : null;
-  }).filter((e): e is NonNullable<typeof e> => !!e).sort((a, b) => a.ty - b.ty);
-  for (let i = 0; i < ends.length; i++) {
-    ends[i].ty = Math.max(ends[i].ty, pad.t + 6, i ? ends[i - 1].ty + minGap : -Infinity);
-  }
-  const bottom = pad.t + ih;
-  for (let i = ends.length - 1; i >= 0; i--) {
-    ends[i].ty = Math.min(ends[i].ty, i === ends.length - 1 ? bottom : ends[i + 1].ty - minGap);
+  // gaps: blank stretches inside visible monthly lines
+  const gaps: { a: number; b: number; label: string }[] = [];
+  for (const l of lines) {
+    if (l.freq !== "monthly") continue;
+    let s: number | null = null;
+    l.points.forEach((p, i) => {
+      const prevOk = i > 0 && l.points[i - 1].value !== null;
+      if (p.value === null && s === null && prevOk) s = p.mi;
+      if (p.value !== null && s !== null) {
+        const miss = (data.monthly[l.code].missing as string[]).filter((m: string) => { const [yy, mm] = m.split("-").map(Number); const mi = yy * 12 + mm - 1; return mi >= s! && mi < p.mi; });
+        gaps.push({ a: s, b: p.mi - 1, label: `No OECD data · ${miss.map((m: string) => fmtM(Number(m.slice(0, 4)) * 12 + Number(m.slice(5)) - 1)).join(", ") || fmtM(s)}` });
+        s = null;
+      }
+    });
   }
 
   const covid = COVID.b >= m0 && COVID.a <= m1 ? { a: Math.max(COVID.a, m0), b: Math.min(COVID.b, m1) } : null;
   const showJumps = years <= 5;
-  const breaks = lines.flatMap((l) => l.breaks.map((yr) => ({ l, yr, mi: yr * 12 + 6 })))
-    .filter((b) => b.mi >= m0 && b.mi <= m1);
 
-  // tooltip rows
-  const rowFor = (l: Line, mi: number) => {
-    if (l.freq === "monthly") { const p = l.points.find((p) => p.mi === mi); return { v: p ? p.value : null, tag: null as string | null }; }
-    const q = qOfMonth(mi); const lastQ = l.points[l.points.length - 1];
-    // months after the common quarterly cutoff (e.g. Jul-Aug 2026) read the latest quarter
-    const p = l.points.find((pp) => qOfMonth(pp.mi) === q) ?? (lastQ && qOfMonth(mi) > qOfMonth(lastQ.mi) ? lastQ : undefined);
-    return { v: p ? p.value : null, tag: p ? qLabel(p.period) : null };
+  // end labels
+  const minGap = wide ? 20 : 16;
+  const ends = lines.map((l) => {
+    const lp = [...l.points].reverse().find((p) => p.value !== null);
+    return lp ? { l, mi: lp.mi, v: lp.value as number, ty: y(lp.value as number) } : null;
+  }).filter((e): e is NonNullable<typeof e> => !!e).sort((a, b) => a.ty - b.ty);
+  for (let i = 0; i < ends.length; i++) ends[i].ty = Math.max(ends[i].ty, pad.t + 6, i ? ends[i - 1].ty + minGap : -Infinity);
+  for (let i = ends.length - 1; i >= 0; i--) ends[i].ty = Math.min(ends[i].ty, i === ends.length - 1 ? bottom - 4 : ends[i + 1].ty - minGap);
+
+  // tooltip
+  const ptAt = (l: Line, mi: number) => {
+    if (l.freq === "monthly") return l.points.find((p) => p.mi === mi) ?? null;
+    const q = qOfMonth(mi), last = l.points[l.points.length - 1];
+    return l.points.find((p) => qOfMonth(p.mi) === q) ?? (last && q > qOfMonth(last.mi) ? last : null);
   };
   const pick = (clientX: number) => {
     const r = ref.current!.getBoundingClientRect();
-    const mi = Math.round(m0 + ((clientX - r.left - pad.l) / iw) * (m1 - m0));
-    setHover(Math.min(m1, Math.max(m0, mi)));
+    setHover(Math.min(m1, Math.max(m0, Math.round(m0 + ((clientX - r.left - pad.l) / iw) * (m1 - m0)))));
   };
-  const rows = hover === null ? [] : lines.map((l) => ({ l, ...rowFor(l, hover) }))
-    .sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
-  const notes: string[] = [];
-  if (hover !== null) {
-    const p = mStr(hover);
-    if (showJumps && lines.some((l) => l.janJumps.includes(p))) notes.push("◆ US January jump: cause not confirmed");
-    for (const b of breaks) if (Math.floor(hover / 12) === b.yr) notes.push(`| ${b.l.name}: series break ${b.yr} (OECD)`);
-    for (const l of lines) if (l.indexedFrom) notes.push(`${l.name} indexed from ${qLabel(l.indexedFrom)}`);
-  }
-  const onlyQ = lines.every((l) => l.freq === "quarterly");
+  const rows = hover === null ? [] : lines.map((l) => {
+    const p = ptAt(l, hover);
+    const lvl = p ? rawLevel(data, l.code, p.period) : null;
+    return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? qLabel(p.period) : null };
+  }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
+  const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
+  const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => b === Math.floor(hover / 12)).map((b) => `${l.name}: series break ${b}`)) : [];
   const cx = hover === null ? 0 : x(hover);
-  const tipLeft = cx + 12 + tipSize.w > pad.l + iw + pad.r ? cx - 12 - tipSize.w : cx + 12;
-  const tipTop = Math.min(Math.max(pad.t, pad.t + 4), Math.max(pad.t, bottom - tipSize.h));
+  const tipLeft = cx + 16 + tipSize.w > w ? cx - 16 - tipSize.w : cx + 16;
+  const tipTop = Math.max(pad.t, Math.min(pad.t + 8, bottom - tipSize.h));
 
   const summary = `Employment index, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
+  const can = all.find((l) => l.code === "CAN")!;
+  const canPts = can.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) }));
+  const canFirst = canPts.find((p) => p.y !== null), canLast = [...canPts].reverse().find((p) => p.y !== null);
+  const area = canFirst && canLast ? `${monotonePath(canPts)}L${canLast.x},${bottom}L${canFirst.x},${bottom}Z` : "";
 
   return (
-    <div ref={ref} className="chart" style={{ height: h }} tabIndex={0}
+    <div ref={ref} className="chart" style={{ height: h }} tabIndex={0} aria-label="Employment chart; use arrow keys to step months"
       onKeyDown={(e) => {
         if (e.key === "Escape") return setHover(null);
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -144,82 +142,100 @@ export default function LineChart({ lines, years }: { lines: Line[]; years: numb
         onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}
         onPointerDown={(e) => pick(e.clientX)}
         onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
+        <defs>
+          <linearGradient id="caArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--CAN)" stopOpacity="var(--area-a)" /><stop offset="1" stopColor="var(--CAN)" stopOpacity="0" />
+          </linearGradient>
+          <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
+        </defs>
         {covid && <g>
-          <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} fill="#fff" opacity={0.05} />
-          <text x={x(covid.a) + 4} y={pad.t + 12} className="ax">COVID-19</text>
+          <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
+          <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
         </g>}
         {ticks.map((v) => (
           <g key={v}>
             <line x1={pad.l} x2={pad.l + iw} y1={y(v)} y2={y(v)} className={Math.abs(v - 100) < 1e-9 ? "base" : "grid"} />
-            <text x={pad.l - 8} y={y(v) + 4} textAnchor="end" className="ax">{v.toFixed(dec)}</text>
+            <text x={pad.l - 10} y={y(v) + 4} textAnchor="end" className="ax">{v.toFixed(dec)}</text>
           </g>
         ))}
         {!ticks.some((v) => Math.abs(v - 100) < 1e-9) && <line x1={pad.l} x2={pad.l + iw} y1={y(100)} y2={y(100)} className="base" />}
-        {xt.map((mi) => <text key={mi} x={x(mi)} y={h - 8} textAnchor="middle" className="ax">{years <= 1 ? fmtM(mi, "2-digit") : Math.floor(mi / 12)}</text>)}
+        {xt.map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? fmtM(mi, !wide) : Math.floor(mi / 12)}</text>)}
 
-        {lines.map((l) => {
+        {on.CAN && area && <path key={`a${years}`} d={area} fill="url(#caArea)" className="fadein" />}
+        {on.CAN && <path key={`g${years}`} d={monotonePath(canPts)} fill="none" stroke="var(--CAN)" strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" className="fadein" />}
+
+        {all.map((l) => {
+          const vis = !!on[l.code];
           const main = MAIN.has(l.code);
-          if (l.freq === "monthly") return (
-            <g key={l.code}>
-              <path d={path(l.points.map((p) => ({ mi: p.mi, v: p.raw ?? null })))} fill="none" stroke={col(l.code)} strokeWidth={1} strokeOpacity={0.28} />
-              <path className="ln" d={path(l.points.map((p) => ({ mi: p.mi, v: p.value })))} fill="none" stroke={col(l.code)}
-                strokeWidth={main ? 2.5 : 1.5} strokeOpacity={main ? 1 : 0.8} strokeLinejoin="round" strokeLinecap="round" />
-              {showJumps && l.janJumps.map((p) => {
-                const pt = l.points.find((q) => q.period === p); if (!pt || pt.raw == null) return null;
-                const X = x(pt.mi), Y = y(pt.raw);
-                return <path key={p} d={`M${X},${Y - 4}L${X + 4},${Y}L${X},${Y + 4}L${X - 4},${Y}Z`} fill="var(--amber)" />;
-              })}
-            </g>);
+          const op = !vis ? 0 : main || !mainOn ? 1 : 0.7;
+          const d = monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })));
           return (
-            <g key={l.code}>
-              <path d={path(l.points.map((p) => ({ mi: p.mi, v: p.value })))} fill="none" stroke={col(l.code)} strokeWidth={1} strokeOpacity={0.5} />
-              {l.points.map((p) => p.value !== null &&
-                <circle key={p.period} cx={x(p.mi)} cy={y(p.value)} r={years >= 20 ? 2 : 3} fill={col(l.code)} />)}
-            </g>);
+            <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
+              <path key={`${l.code}${years}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={main ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
+              {l.freq === "quarterly" && l.points.map((p) => p.value !== null && <circle key={p.period} cx={x(p.mi)} cy={y(p.value)} r={years >= 20 ? 2 : 3} fill={col(l.code)} />)}
+              {vis && l.breaks.map((b) => {
+                const mi = b * 12 + 6; if (mi < m0 || mi > m1) return null;
+                const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - mi) < Math.abs(best.mi - mi)) ? q : best), null);
+                return p && p.value !== null ? <line key={b} x1={x(mi)} x2={x(mi)} y1={y(p.value) - 6} y2={y(p.value) + 6} stroke={col(l.code)} strokeWidth={1.5} /> : null;
+              })}
+              {vis && showJumps && l.janJumps.map((jp) => {
+                const p = l.points.find((q) => q.period === jp);
+                // on the line where it exists; for a blank 3-mo avg, sit on the next drawn point
+                const q = p && p.value !== null ? p : l.points.find((qq) => qq.mi > (p?.mi ?? 0) && qq.value !== null);
+                return q && q.value !== null ? <circle key={jp} cx={x(q.mi)} cy={y(q.value)} r={5} fill="var(--amber)" stroke="var(--card-solid)" strokeWidth={1.5} /> : null;
+              })}
+            </g>
+          );
         })}
 
-        {breaks.map((b) => {
-          const p = b.l.points.reduce((best, q) => (q.value !== null && Math.abs(q.mi - b.mi) < Math.abs((best?.mi ?? 1e9) - b.mi) ? q : best), null as Pt | null);
-          if (!p || p.value === null) return null;
-          return <line key={`${b.l.code}${b.yr}`} x1={x(b.mi)} x2={x(b.mi)} y1={y(p.value) - 4} y2={y(p.value) + 4} stroke={col(b.l.code)} strokeWidth={1.5} />;
+        {gaps.map((g) => {
+          const a = x(g.a), b = x(g.b), mid = (a + b) / 2, py = bottom + 44;
+          const tw = textW(g.label, 12, 500) + 20;
+          const px = Math.min(Math.max(mid - tw / 2, pad.l), pad.l + iw - tw);
+          return (
+            <g key={g.a} className="gap">
+              <path d={`M${a},${bottom - 2}v6M${a},${bottom + 4}H${b}M${b},${bottom - 2}v6`} className="bracket gapb" />
+              <rect x={px} y={py - 10} width={tw} height={20} rx={10} className="pill" />
+              <text x={px + tw / 2} y={py + 4} textAnchor="middle" className="ax">{g.label}</text>
+            </g>
+          );
         })}
 
         {ends.map((e) => (
-          <g key={e.l.code}>
-            <line x1={x(e.mi)} y1={y(e.v)} x2={pad.l + iw + 10} y2={e.ty} stroke={col(e.l.code)} strokeWidth={0.6} strokeOpacity={0.7} />
-            <text x={pad.l + iw + 14} y={e.ty + 4} fill={col(e.l.code)} fontSize={lblPx}
-              fontWeight={MAIN.has(e.l.code) ? 700 : 400} style={{ fontVariantNumeric: "tabular-nums" }}>{label(e.l)}</text>
+          <g key={e.l.code} className="fadein">
+            <path d={`M${x(e.mi) + 4},${y(e.v)} C${pad.l + iw + 6},${y(e.v)} ${pad.l + iw + 4},${e.ty} ${pad.l + iw + 12},${e.ty}`} stroke={col(e.l.code)} strokeWidth={0.7} strokeOpacity={0.6} fill="none" />
+            <circle cx={x(e.mi)} cy={y(e.v)} r={3} fill={col(e.l.code)} />
+            <text x={pad.l + iw + 16} y={e.ty + 4} fill={col(e.l.code)} fontSize={lblPx} fontWeight={MAIN.has(e.l.code) ? 700 : 500} className="num">{label(e.l)}</text>
           </g>
         ))}
 
         {hover !== null && <g>
-          <line x1={cx} x2={cx} y1={pad.t} y2={bottom} stroke="var(--text-secondary)" strokeWidth={1} />
-          {rows.map((r) => r.v !== null && (() => {
-            const pt = r.l.freq === "monthly" ? r.l.points.find((p) => p.mi === hover) : (r.l.points.find((p) => qOfMonth(p.mi) === qOfMonth(hover)) ?? r.l.points[r.l.points.length - 1]);
-            return pt && pt.value !== null ? <circle key={r.l.code} cx={x(pt.mi)} cy={y(pt.value)} r={4} fill={col(r.l.code)} stroke="var(--bg)" strokeWidth={2} /> : null;
-          })())}
+          <line x1={cx} x2={cx} y1={pad.t} y2={bottom} className="cross" />
+          {rows.map((r) => r.p && r.v !== null && <circle key={r.l.code} cx={x(r.p.mi)} cy={y(r.v)} r={4.5} fill={col(r.l.code)} stroke="var(--card-solid)" strokeWidth={2} />)}
         </g>}
       </svg>
 
       {hover !== null && (
-        <div ref={tipRef} className="tip" style={{ left: tipLeft, top: tipTop }} role="status">
-          <div className="tipd">{onlyQ ? qLabel(rows.find((r) => r.tag)?.tag ?? fmtM(hover)) : fmtM(hover)}</div>
+        <div ref={tipRef} className={`tip ${wide ? "" : "dock"}`} style={wide ? { left: tipLeft, top: tipTop } : undefined} role="status">
+          <div className="tiph"><span>{fmtM(hover)}</span>{wide && <span className="cols">index · employed</span>}</div>
           {rows.map((r) => (
             <div key={r.l.code} className="tipr">
-              <i style={{ background: col(r.l.code) }} />{r.l.name}
-              {r.tag && !onlyQ && <em>{r.tag}</em>}
+              <i style={{ background: col(r.l.code) }} /><span className="nm">{r.l.name}</span>
+              {r.tag && <em>{r.tag}</em>}
               <b>{r.v === null ? "n/a" : r.v.toFixed(1)}</b>
+              {wide && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
             </div>
           ))}
-          {notes.map((n) => <div key={n} className="tipn">{n}</div>)}
+          {jan && <div className="tipn"><i className="dot amber" />US January jump: cause not confirmed</div>}
+          {brk.map((b) => <div key={b} className="tipn">{b}</div>)}
         </div>
       )}
 
       <div className="sr-only"><table>
         <caption>{summary}</caption>
         <thead><tr><th>Period</th>{lines.map((l) => <th key={l.code}>{l.name}</th>)}</tr></thead>
-        <tbody>{(lines.find((l) => l.freq === "monthly") ?? lines[0]).points.map((p) => (
-          <tr key={p.period}><td>{p.period}</td>{lines.map((l) => { const r = rowFor(l, p.mi); return <td key={l.code}>{r.v === null ? "n/a" : r.v.toFixed(1)}</td>; })}</tr>
+        <tbody>{(lines.find((l) => l.freq === "monthly") ?? lines[0])?.points.map((p) => (
+          <tr key={p.period}><td>{p.period}</td>{lines.map((l) => { const q = ptAt(l, p.mi); return <td key={l.code}>{q && q.value !== null ? q.value.toFixed(1) : "n/a"}</td>; })}</tr>
         ))}</tbody>
       </table></div>
     </div>

@@ -7,3 +7,8 @@ export function monthlyGrowth(data: unknown, code: string, a: string, b: string)
 export function mIdx(p: string): number;
 export function mStr(i: number): string;
 export function qOfMonth(mi: number): number;
+export function windowInfo(data: unknown, years: number): { start: string; end: string; years: number };
+export function headline(data: unknown, code: string, years: number): number | null;
+export function rawLevel(data: unknown, code: string, period: string): number | null;
+export function workedExample(data: unknown, code: string, years: number): { start: string; end: string; avgStart: number; avgEnd: number; index: number; growth: number } | null;
+export function monotonePath(points: { x: number; y: number | null }[]): string;
