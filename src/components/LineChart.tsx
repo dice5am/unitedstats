@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { mStr, qOfMonth, monotonePath, rawLevel } from "@/lib/series.mjs";
+import { mStr, qOfMonth, monotonePath, rawLevel, glowLeaders } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
@@ -125,10 +125,45 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
   const tipTop = Math.max(pad.t, Math.min(pad.t + 8, bottom - tipSize.h));
 
   const summary = `Employment index, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
-  const can = all.find((l) => l.code === "CAN")!;
-  const canPts = can.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) }));
-  const canFirst = canPts.find((p) => p.y !== null), canLast = [...canPts].reverse().find((p) => p.y !== null);
-  const area = canFirst && canLast ? `${monotonePath(canPts)}L${canLast.x},${bottom}L${canFirst.x},${bottom}Z` : "";
+  // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
+  const valAt = (l: Line, mi: number): number | null => {
+    if (l.freq === "monthly") { const p = l.points.find((q) => q.mi === mi); return p ? p.value : null; }
+    let lo: Pt | null = null, hi: Pt | null = null;
+    for (const p of l.points) { if (p.value === null) continue; if (p.mi <= mi) lo = p; if (p.mi >= mi && !hi) hi = p; }
+    if (!lo || !hi) return null;
+    return lo.mi === hi.mi ? lo.value : lo.value! + ((hi.value! - lo.value!) * (mi - lo.mi)) / (hi.mi - lo.mi);
+  };
+  const leaders = glowLeaders(lines.map((l) => ({ code: l.code, at: (mi: number) => valAt(l, mi) })), m0, m1);
+  const glowCodes = [...new Set(leaders.filter((c): c is string => !!c))];
+  const span = x(m1) - x(m0) || 1, ramp = 6;
+  const maskStops = (code: string) => {
+    const st: { o: number; a: number }[] = [];
+    leaders.forEach((c, i) => {
+      const mi = m0 + i, X = x(mi);
+      const lead = c === code;
+      st.push({ o: Math.max(0, Math.min(1, (X - x(m0)) / span)), a: lead ? 1 : 0 });
+    });
+    // soften switches over ~12px
+    const out: { o: number; a: number }[] = [];
+    for (let i = 0; i < st.length; i++) {
+      if (i && st[i].a !== st[i - 1].a) {
+        const mid = (st[i].o + st[i - 1].o) / 2, r = ramp / span;
+        out.push({ o: Math.max(0, mid - r), a: st[i - 1].a }, { o: Math.min(1, mid + r), a: st[i].a });
+      }
+      out.push(st[i]);
+    }
+    return out;
+  };
+  const glowPath = (l: Line) => monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })));
+  const areaPath = (l: Line) => {
+    const ps = l.points.filter((p) => p.value !== null);
+    if (ps.length < 2) return "";
+    // area per contiguous run
+    let d = "", run: Pt[] = [];
+    const flush = () => { if (run.length > 1) d += `${monotonePath(run.map((p) => ({ x: x(p.mi), y: y(p.value!) })))}L${x(run[run.length - 1].mi)},${bottom}L${x(run[0].mi)},${bottom}Z`; run = []; };
+    for (const p of l.points) { if (p.value === null) flush(); else run.push(p); }
+    flush(); return d;
+  };
 
   return (
     <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0} aria-label="Employment chart; use arrow keys to step months"
@@ -143,9 +178,19 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
         onPointerDown={(e) => pick(e.clientX)}
         onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
         <defs>
-          <linearGradient id="caArea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--CAN)" stopOpacity="var(--area-a)" /><stop offset="1" stopColor="var(--CAN)" stopOpacity="0" />
-          </linearGradient>
+          {glowCodes.map((c) => (
+            <g key={c}>
+              <linearGradient id={`ar-${c}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor={col(c)} stopOpacity="var(--area-a)" /><stop offset="1" stopColor={col(c)} stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id={`mg-${c}`} gradientUnits="userSpaceOnUse" x1={x(m0)} x2={x(m1)} y1="0" y2="0">
+                {maskStops(c).map((st, i) => <stop key={i} offset={st.o} stopColor="#fff" stopOpacity={st.a} />)}
+              </linearGradient>
+              <mask id={`mk-${c}`} maskUnits="userSpaceOnUse" x={0} y={0} width={w} height={h}>
+                <rect x={0} y={0} width={w} height={h} fill={`url(#mg-${c})`} />
+              </mask>
+            </g>
+          ))}
           <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
         </defs>
         {covid && <g>
@@ -161,8 +206,11 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
         {!ticks.some((v) => Math.abs(v - 100) < 1e-9) && <line x1={pad.l} x2={pad.l + iw} y1={y(100)} y2={y(100)} className="base" />}
         {xt.filter((mi) => !gaps.some((g) => Math.abs(x(mi) - (x(g.a) + x(g.b)) / 2) < (wide ? 36 : 26))).map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? fmtM(mi, !wide) : Math.floor(mi / 12)}</text>)}
 
-        {on.CAN && area && <path key={`a${years}`} d={area} fill="url(#caArea)" className="fadein" />}
-        {on.CAN && <path key={`g${years}`} d={monotonePath(canPts)} fill="none" stroke="var(--CAN)" strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" className="fadein" />}
+        {glowCodes.map((c) => { const l = lines.find((q) => q.code === c)!; return (
+          <g key={`gl${c}${years}`} mask={`url(#mk-${c})`} className="fadein">
+            <path d={areaPath(l)} fill={`url(#ar-${c})`} />
+            <path d={glowPath(l)} fill="none" stroke={col(c)} strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" />
+          </g>); })}
 
         {all.map((l) => {
           const vis = !!on[l.code];

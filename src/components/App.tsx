@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useRef, useState, useLayoutEffect } from "react";
-import { COUNTRIES, WINDOWS, buildLine, headline, windowInfo, workedExample } from "@/lib/series.mjs";
+import { COUNTRIES, WINDOWS, buildLine, headlinePick, windowInfo, workedExample } from "@/lib/series.mjs";
 import LineChart, { type Line } from "./LineChart";
 import ThemeToggle from "./ThemeToggle";
 import Tween from "./Tween";
@@ -58,18 +58,25 @@ export default function App({ data, tab }: { data: any; tab: Tab }) {
         <main className="wrap" role="tabpanel" aria-label="Labour">
           <p className="eyebrow">Labour</p>
           <h1>Employment growth</h1>
-          <p className="sub">People employed, 15+, indexed to 100 at window start</p>
+          <p className="sub"><span className="full">People employed, age 15+ · seasonally adjusted · indexed to 100 at start · not adjusted for population</span></p>
 
           <div className="figs">
-            {(["CAN", "USA"] as const).map((c) => {
-              const v = headline(data, c, years);
-              return (
-                <div key={c} className="fig">
-                  <div className="figl"><i style={{ background: `var(--${c})` }} />{c === "CAN" ? "Canada" : "United States"}</div>
-                  <div className="figv">{v === null ? "n/a" : <><Tween value={v} format={(x) => `${sign(x)}${Math.abs(x).toFixed(2)}`} /><span>%</span></>}</div>
+            {(() => {
+              const sel = COUNTRIES.map((c) => c.code).filter((c) => on[c]);
+              const h = headlinePick(data, sel, years);
+              const nm = (c: string) => COUNTRIES.find((x) => x.code === c)!.short;
+              const per = (ps: string[]) => ps.map((p) => p.includes("Q") ? p.split("-").reverse().join(" ") : fmtM(p)).join(" / ");
+              const cards = h.single ? [{ label: h.single.codes.map(nm).join(" · "), k: null as string | null, p: h.single }]
+                : [{ label: "Fastest growth", k: "f", p: h.fastest! }, { label: "Slowest growth", k: "s", p: h.slowest! }];
+              return cards.map((c, i) => (
+                <div key={c.k ?? "one"} className="fig">
+                  <div className="figl">{c.k ? c.label : null}</div>
+                  <div className="figc" key={c.p.codes.join()}>{c.p.codes.map((cc) => <span key={cc}><i style={{ background: `var(--${cc})` }} />{nm(cc)}</span>)}</div>
+                  <div className="figv"><Tween value={c.p.value} format={(x) => `${sign(x)}${Math.abs(x).toFixed(2)}`} /><span>%</span></div>
+                  <div className="figp">{per(c.p.periods)}</div>
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
           <p className="span">{span} · 3-month average</p>
 
@@ -107,6 +114,10 @@ export default function App({ data, tab }: { data: any; tab: Tab }) {
             <h2 id="calc-h">How it’s calculated</h2>
             <p className="sub">Same inputs and maths as the chart above.</p>
             <div className="card panel">
+              <div className="grp"><h3>Measures</h3><dl>
+                <dt>Counts</dt><dd>Number of people employed, age 15+. A headcount, not a rate.</dd>
+                <dt>Not</dt><dd>Adjusted for population: faster population growth can add jobs without a better employment rate.</dd>
+              </dl></div>
               <div className="grp"><h3>Inputs</h3><dl>
                 <dt>Dataset</dt><dd className="mono">OECD DF_IALFS_INDIC</dd>
                 <dt>Measure</dt><dd>Employment, 15+, seasonally adjusted</dd>

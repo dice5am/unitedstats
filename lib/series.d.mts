@@ -12,3 +12,6 @@ export function headline(data: unknown, code: string, years: number): number | n
 export function rawLevel(data: unknown, code: string, period: string): number | null;
 export function workedExample(data: unknown, code: string, years: number): { start: string; end: string; avgStart: number; avgEnd: number; index: number; growth: number } | null;
 export function monotonePath(points: { x: number; y: number | null }[]): string;
+export type Pick = { codes: string[]; value: number; periods: string[] } | null;
+export function headlinePick(data: unknown, codes: string[], years: number): { single: Pick; fastest: Pick; slowest: Pick };
+export function glowLeaders(series: { code: string; at: (mi: number) => number | null }[], m0: number, m1: number): (string | null)[];

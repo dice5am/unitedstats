@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { buildLine, commonEnds, headline, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { buildLine, commonEnds, headline, headlinePick, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -51,5 +51,23 @@ for (const y of [1, 5, 10, 20]) for (const c of ["CAN","USA","JPN","GBR","DEU","
   for (const p of l.points) { if (p.value === null) test(); else run.push({ x: p.mi, y: p.value }); } test();
 }
 check(over === 0, `monotone curve: ${segs} segments, ${over} overshoot`);
+
+// v2.1: fastest/slowest headline over every combination of countries, every window
+const ALL = ["CAN","USA","JPN","GBR","DEU","FRA","ITA"]; let combos = 0, bad = 0;
+for (const y of [1, 5, 10, 20]) {
+  const ends = Object.fromEntries(ALL.map((c) => [c, buildLine(data, c, y).last - 100]));
+  for (let mask = 1; mask < 128; mask++) {
+    const sel = ALL.filter((_, i) => mask & (1 << i)); combos++;
+    const h = headlinePick(data, sel, y), vs = sel.map((c) => ends[c]);
+    const mx = Math.max(...vs), mn = Math.min(...vs);
+    const f = h.single ?? h.fastest, s = h.single ?? h.slowest;
+    const r1 = (v) => Math.round(v * 10) / 10;
+    const ok = f && s && Math.abs(f.value - mx) < 1e-12 && (h.single ? r1(s.value) === r1(mn) && r1(mx) === r1(mn) || sel.length === 1 : Math.abs(s.value - mn) < 1e-12)
+      && f.codes.every((c) => r1(ends[c]) === r1(mx)) && s.codes.every((c) => r1(ends[c]) === r1(s.value))
+      && (sel.length > 1 || h.single);
+    if (!ok) bad++;
+  }
+}
+check(bad === 0, `headline fastest/slowest: ${combos} combos, ${bad} wrong`);
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
