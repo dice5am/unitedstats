@@ -305,7 +305,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 7 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 13 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -529,10 +529,61 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const srcOf = (id) => { const m = meta.match(new RegExp(`^  "?${id}"?: \\{ id: "${id}", src: \\[([^\\]]*)\\]`, "m")); return m ? [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]) : null; };
   const cc = rd("ChartCard.tsx"), line = (re) => (cc.match(re) || [""])[0];
   const lines = { gdp: line(/Source: OECD quarterly national accounts/), unemp: line(/Source: OECD · unemployment rate/), jobs: line(/Source: OECD · employment 15\+/), "7": line(/Source: BIS central bank policy rates/),
-    "1": (rd("Comeback.tsx").match(/source=\{?["`]([^"`]+)/) || [])[1], "2": (rd("HeatStrip.tsx").match(/source="([^"]+)"/) || [])[1], "22": (rd("Scorecard.tsx").match(/source="([^"]+)"/) || [])[1] };
+    "1": (rd("Comeback.tsx").match(/source=\{?["`]([^"`]+)/) || [])[1], "2": (rd("HeatStrip.tsx").match(/"(Source: OECD · unemployment[^"]+)"/) || [])[1], "22": (rd("Scorecard.tsx").match(/source="([^"]+)"/) || [])[1],
+    ...(() => { const fin = readFileSync(new URL("../src/charts/finance.tsx", import.meta.url), "utf8"); const o = {};
+      for (const m of fin.matchAll(/id: "(\d+)"[\s\S]*?source: (?:\(v\) => )?[`"](Source: [^`"]+)/g)) o[m[1]] = m[2];
+      o["21"] = (rd("StackBar.tsx").match(/source="([^"]+)"/) || [])[1]; return o; })() };
   const bad = Object.entries(lines).filter(([id, l]) => { const s = srcOf(id); return !s || !s.length || !l || !s.every((n) => l.includes(n)); }).map(([id]) => id);
   const hard = /srctag">\{?["'`](OECD|BIS)/.test(cc + rd("kit.tsx"));
   check(!bad.length && !hard, `source tags: every built chart's tag names (${Object.keys(lines).map((id) => `${id}=${(srcOf(id) || []).join("+")}`).join(", ")}) appear in its full source line; none hard-coded${bad.length ? ` (BAD: ${bad})` : ""}`); }
+// ---- Finance wave: Warehouse reference figures (REFERENCE-FIGURES.md) + independent in-test maths + structure ----
+{ const F = await import("../lib/finance.mjs"); const md = readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8");
+  const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
+  const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const raw = (file, c, p) => { const s = file.series[c], i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+  const lastOf = (file, c) => { const s = file.series[c]; for (let i = s.values.length - 1; i >= 0; i--) if (s.values[i] !== null) return [s.periods[i], s.values[i]]; };
+  const mm = [];
+  // #10 debt: latest actual − 2007
+  { const f = J("imf_weo_GGXWDG_NGDP.json"), d = F.dumbbell(f, "2007");
+    for (const [c, per, vals] of sec(10)) { const [p0, p1] = per.split("→"), [a, b] = vals.split(" (")[0].split("→").map(Number), dl = +/Δ (-?[\d.]+)/.exec(vals)[1];
+      const r = d.rows.find((x) => x.code === c), [lp, lv] = lastOf(f, c), ind = lv - raw(f, c, "2007");
+      if (r.end !== p1 || lp !== p1 || p0 !== "2007" || Math.abs(r.change - dl) > 0.05 || Math.abs(ind - r.change) > 1e-9 || Math.abs(r.startValue - a) > 0.05 || Math.abs(r.endValue - b) > 0.05) mm.push(`#10 ${c}: ours ${r.end} ${r.change?.toFixed(2)} vs Warehouse ${p1} ${dl}`); }
+    const sorted = d.rows.every((r, i) => !i || d.rows[i - 1].change >= r.change);
+    check(!mm.length && sorted && d.rows.every((r) => +r.end <= 2025), `#10 debt vs Warehouse: all 7 match (Δ within 0.05; ends = each country's last actual, CAN/FRA/JPN 2024, others 2025); sorted by increase; no projection years`); }
+  // #6 house prices: % change, 2010-Q1 → own latest
+  { const f = J("oecd_house_price_to_income.json"), d = F.dumbbell(f, "2010-Q1", "pct"); const n0 = mm.length;
+    for (const [c, per, vals] of sec(6)) { const p1 = per.split("→")[1], pc = +/\((-?[\d.]+)%\)/.exec(vals)[1], r = d.rows.find((x) => x.code === c);
+      const [lp, lv] = lastOf(f, c), ind = (lv / raw(f, c, "2010-Q1") - 1) * 100;
+      if (r.end !== p1 || lp !== p1 || Math.abs(r.change - pc) > 0.05 || Math.abs(ind - r.change) > 1e-9) mm.push(`#6 ${c}: ours ${r.end} ${r.change?.toFixed(2)}% vs Warehouse ${p1} ${pc}%`); }
+    check(mm.length === n0 && d.rows.find((r) => r.code === "JPN").end === "2025-Q4", `#6 house prices vs Warehouse: all 7 match (% change within 0.05); Japan dated to its own Q4 2025`); }
+  // #20 household credit: 2007-Q4 and latest
+  { const f = J("bis_household_credit_pct_gdp.json"), m = F.multiples(f, "2006-Q1", "2007-Q4"); const n0 = mm.length;
+    for (const [c, per, vals] of sec(20)) { const [a, b] = vals.split("→").map(Number), p = m.panels.find((x) => x.code === c);
+      if (p.last.period !== per.split("→")[1] || Math.abs(p.ref.value - a) > 0.05 || Math.abs(p.last.value - b) > 0.05) mm.push(`#20 ${c}: ours ${p.ref.value?.toFixed(1)}→${p.last.value.toFixed(1)} vs Warehouse ${vals}`); }
+    const shared = m.min === Math.min(0, ...m.panels.flatMap((p) => p.points.map((x) => x.value)).filter((v) => v !== null));
+    check(mm.length === n0 && shared && /770 = "Percentage of GDP"/.test(f.unit), `#20 household credit vs Warehouse: Q4 2007 and latest (Q1 2026) match for all 7; shared y-scale; unit 770 = % of GDP confirmed in the file`); }
+  // #19 current account: latest quarter; gaps stay null; late starters flagged
+  { const f = J("oecd_bop_current_account_pct_gdp_q.json"), m = F.multiples(f, F.winFromQ("2026-Q2", 50)); const n0 = mm.length;
+    for (const [c, per, v] of sec(19)) { const p = m.panels.find((x) => x.code === c); if (p.last.period !== per || Math.abs(p.last.value - +v) > 0.05) mm.push(`#19 ${c}: ours ${p.last.period} ${p.last.value.toFixed(2)} vs Warehouse ${per} ${v}`); }
+    const late = m.panels.filter((p) => p.late).map((p) => `${p.code} ${p.late}`), zeroFill = m.panels.some((p) => p.points.some((x, i) => x.value === 0 && raw(f, p.code, x.period) !== 0));
+    const w10 = F.winFromQ("2026-Q2", 10) === "2016-Q2";
+    check(mm.length === n0 && !zeroFill && w10 && late.join() === "CAN 1981-Q1,JPN 1996-Q1,DEU 1991-Q1,FRA 1999-Q1,ITA 1995-Q1", `#19 current account vs Warehouse: latest Q2 2026 matches for all 7; 10Y window from Q2 2016; 50Y late starters ${late.join(", ")}; no gap filled with 0`); }
+  // #21 openness: latest year per country (Warehouse) vs our year view
+  { const e = J("wb_NE.EXP.GNFS.ZS.json"), i = J("wb_NE.IMP.GNFS.ZS.json"); const n0 = mm.length;
+    for (const [c, y, vals] of sec(21)) { const tot = +/= ([\d.]+)/.exec(vals)[1], o = F.openness(e, i, y).rows.find((x) => x.code === c);
+      if (o.total === null || Math.abs(o.total - tot) > 0.05 || Math.abs(o.total - (raw(e, c, y) + raw(i, c, y))) > 1e-9) mm.push(`#21 ${c} ${y}: ours ${o.total?.toFixed(2)} vs Warehouse ${tot}`); }
+    const d24 = F.openness(e, i, F.OPEN_DEFAULT), d25 = F.openness(e, i, "2025");
+    const na25 = d25.rows.filter((r) => r.total === null).map((r) => `${r.code} (${r.latestYear} latest)`).join(", ");
+    check(mm.length === n0 && F.OPEN_DEFAULT === "2024" && d24.rows.every((r) => r.total !== null) && na25 === "USA (2024 latest), JPN (2024 latest)", `#21 openness vs Warehouse: each country's latest-year total matches (2025, US/Japan 2024); default 2024 has all seven (never mixes years); 2025 shows ${na25}`); }
+  // #13 inflation: latest month headline and core; fixed diverging bands; heat cells never filled
+  { const { heatStrip } = await import("../lib/charts.mjs"); const hl = J("oecd_cpi_headline_yoy.json"), co = J("oecd_cpi_core_yoy.json"); const n0 = mm.length;
+    for (const [c, per, vals] of sec(13)) { const [h, k] = [/headline (-?[\d.]+)/, /core (-?[\d.]+)/].map((re) => +re.exec(vals)[1]);
+      const H1 = heatStrip(hl, 1), C1 = heatStrip(co, 1), col = H1.cols.findIndex((x) => x.key === per);
+      const hv = H1.rows.find((r) => r.code === c).vals[col], cv = C1.rows.find((r) => r.code === c).vals[C1.cols.findIndex((x) => x.key === per)];
+      if (hv === null || cv === null || Math.abs(hv - h) > 1e-6 || Math.abs(cv - k) > 1e-6) mm.push(`#13 ${c} ${per}: ours ${hv}/${cv} vs Warehouse ${h}/${k}`); }
+    const steps = [-0.5, 0, 0.99, 1, 1.49, 1.5, 2, 2.49, 2.5, 3.9, 4, 5.9, 6, 9].map(F.cpiStep).join("");
+    check(mm.length === n0 && steps === "01122333445566", `#13 inflation vs Warehouse: Aug 2026 headline and core match for all 7 (1Y cells = published monthly values); fixed bands around 2% (step map ${steps})`); }
+  if (mm.length) console.log("  FINANCE MISMATCHES:\n  " + mm.join("\n  ")); }
 // display rule: % changes 1 dp with "%", pts 2 dp; labels follow the displayed rounding
 { const { DISPLAY_DP } = await import("../lib/series.mjs"); const H = (a, b, m) => headlineLabels({ fastest: { value: a }, slowest: { value: b } }, m);
   const ok = DISPLAY_DP.pct === 1 && DISPLAY_DP.pts === 2 && fmtHeadline(283.1749, "index") === "+283.2%" && fmtHeadline(99.08, "index") === "+99.1%" && fmtHeadline(-0.5321, "unemp") === "−0.53"

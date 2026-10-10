@@ -53,6 +53,54 @@
       "cards": [
         "#2"
       ]
+    },
+    "oecd_cpi_headline_yoy.json": {
+      "sha256": "a51c2b1642dce257e7a3bd669c56a11c6e7a39a0b694e791341ee36166d0fbdf",
+      "cards": [
+        "#13"
+      ]
+    },
+    "oecd_cpi_core_yoy.json": {
+      "sha256": "0f3ed9dccfc00f22e7e45595e718ee4175b2afc34ac1f6a681bbd6113be5a878",
+      "cards": [
+        "#13"
+      ]
+    },
+    "imf_weo_GGXWDG_NGDP.json": {
+      "sha256": "bdcc1949a8f5d75a9d2c14ac21eeeefe7bcf8af2ecd91c89cee84d67605502bf",
+      "cards": [
+        "#10"
+      ]
+    },
+    "bis_household_credit_pct_gdp.json": {
+      "sha256": "0d657fe0ffad006b5e144a25d28985cf72097517cb7b00b0671ee03c3e22cb8a",
+      "cards": [
+        "#20"
+      ]
+    },
+    "oecd_bop_current_account_pct_gdp_q.json": {
+      "sha256": "e080ea0bf1190c0556f958eb8de572ba7d2e954ac2aab3230f6410ca329c4564",
+      "cards": [
+        "#19"
+      ]
+    },
+    "oecd_house_price_to_income.json": {
+      "sha256": "dcef327ef801013091c6924527a200f474045ed1e25d04999a8b6e20527c9f67",
+      "cards": [
+        "#6"
+      ]
+    },
+    "wb_NE.EXP.GNFS.ZS.json": {
+      "sha256": "e84d36c312e06180457a9169c91f5ad93bb3e557790bfea7efff6774257180ca",
+      "cards": [
+        "#21"
+      ]
+    },
+    "wb_NE.IMP.GNFS.ZS.json": {
+      "sha256": "56d55de646b63d8428db40563a3242927cc40ae8a4fd92fc6f33a58e94592e05",
+      "cards": [
+        "#21"
+      ]
     }
   }
 }

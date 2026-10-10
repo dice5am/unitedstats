@@ -33,6 +33,25 @@ export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentT
   "7": {
     load: async () => { const [{ default: bis }, { policyDataset }, { default: ChartCard }] = await Promise.all([import("@/data/bis_policy_rate_m.json"), import("@/lib/series.mjs"), import("@/src/components/ChartCard")]);
       const sets = { policy: policyDataset(bis) }; return { default: ({ initial }: Init) => <ChartCard kind="policy" sets={sets} primary initialSearch={initial} /> }; } },
+  // ---- Finance wave ----
+  "13": {
+    load: async () => { const [{ default: hl }, { default: core }, F, { default: H }] = await Promise.all([import("@/data/oecd_cpi_headline_yoy.json"), import("@/data/oecd_cpi_core_yoy.json"), import("./finance"), import("@/src/components/HeatStrip")]);
+      const cfg = F.cpiCfg(hl, core); return { default: ({ initial }: Init) => <H cfg={cfg} initial={initial} /> }; } },
+  "10": {
+    load: async () => { const [{ default: f }, F, { default: D }] = await Promise.all([import("@/data/imf_weo_GGXWDG_NGDP.json"), import("./finance"), import("@/src/components/Dumbbell")]);
+      return { default: () => <D file={f} spec={F.debtSpec} /> }; } },
+  "6": {
+    load: async () => { const [{ default: f }, F, { default: D }] = await Promise.all([import("@/data/oecd_house_price_to_income.json"), import("./finance"), import("@/src/components/Dumbbell")]);
+      return { default: () => <D file={f} spec={F.houseSpec} /> }; } },
+  "20": {
+    load: async () => { const [{ default: f }, F, { default: M }] = await Promise.all([import("@/data/bis_household_credit_pct_gdp.json"), import("./finance"), import("@/src/components/Multiples")]);
+      return { default: ({ initial }: Init) => <M file={f} spec={F.creditSpec} initial={initial} /> }; } },
+  "19": {
+    load: async () => { const [{ default: f }, F, { default: M }] = await Promise.all([import("@/data/oecd_bop_current_account_pct_gdp_q.json"), import("./finance"), import("@/src/components/Multiples")]);
+      return { default: ({ initial }: Init) => <M file={f} spec={F.bopSpec} initial={initial} /> }; } },
+  "21": {
+    load: async () => { const [{ default: e }, { default: i }, { default: S }] = await Promise.all([import("@/data/wb_NE.EXP.GNFS.ZS.json"), import("@/data/wb_NE.IMP.GNFS.ZS.json"), import("@/src/components/StackBar")]);
+      return { default: ({ initial }: Init) => <S exp={e} imp={i} initial={initial} /> }; } },
 };
 
 const cache: Partial<Record<BuiltId, ComponentType<Init>>> = {};

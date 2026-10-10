@@ -399,3 +399,38 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
  .fig+.fig{padding-left:0;border-left:0;padding-top:16px;border-top:1px solid var(--grid)}
  .figv,.figv.pts,.figv.sm{font-size:40px}
 }
+/* dumbbell: grey start dot, country end dot, 2px connector */
+.db .sct{height:14px}
+.dbc{position:absolute;top:6px;height:2px;border-radius:1px;opacity:.55}
+.db .dbs,.db .dbe{position:absolute;top:2px;width:10px;height:10px;border-radius:50%;transform:translateX(-50%)}
+.db .dbs{background:var(--muted)}
+.db .dbe{box-shadow:0 0 0 2px var(--card-solid)}
+.notes i.dbs,.notes i.dbe{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:-1px}
+.notes i.dbs{background:var(--muted)}.notes i.dbe{background:var(--text)}
+.db .scv em{display:block;margin:0;font-size:11px}
+/* finance small multiples */
+.fm .smp.ca{border-color:var(--CAN);box-shadow:inset 0 0 0 1px var(--CAN)}
+.fm figcaption{font-weight:600;font-size:13px;margin-bottom:4px}.fm figcaption b{color:var(--text);font-variant-numeric:tabular-nums}
+.fm figcaption .from{font-weight:400;font-size:11px;color:var(--text-2)}
+.fm svg{display:block}.fm .gl{stroke:var(--grid)}.fm .zl{stroke:var(--text-2);stroke-opacity:.5}
+.fm .refl{stroke:var(--text-2);stroke-dasharray:3 3}.fm .refd{fill:var(--text-2)}.fm .xh{stroke:var(--text-2)}
+.notes i.refl{display:inline-block;width:16px;border-top:1px dashed var(--text-2);margin-right:8px;vertical-align:3px}
+/* stacked bar: neutral one-hue ramp, 1px card-colour gap between parts */
+.stb .sct{height:16px}
+.stk{position:absolute;top:0;height:16px;box-shadow:inset -1px 0 0 var(--card-solid)}
+.stk.s0{background:color-mix(in oklab,var(--heat-hi) 85%,var(--heat-lo));border-radius:3px 0 0 3px}
+.stk.s1{background:color-mix(in oklab,var(--heat-hi) 40%,var(--heat-lo));border-radius:0 3px 3px 0}
+.notes i.stk{position:static;display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+/* diverging heatmap around a target (#13 inflation, 2%): below target = neutral steps, near target = base, above = one hue */
+.hd0{background:color-mix(in oklab,var(--text-2) 55%,var(--heat-lo))}
+.hd1{background:color-mix(in oklab,var(--text-2) 32%,var(--heat-lo))}
+.hd2{background:color-mix(in oklab,var(--text-2) 14%,var(--heat-lo))}
+.hd3{background:var(--heat-lo);box-shadow:inset 0 0 0 1px var(--grid)}
+.hd4{background:color-mix(in oklab,var(--heat-hi) 35%,var(--heat-lo))}
+.hd5{background:color-mix(in oklab,var(--heat-hi) 68%,var(--heat-lo))}
+.hd6{background:var(--heat-hi)}
+.hlegend.div .hbar i{flex:1}
+.notes li.cpik{display:inline-flex;align-items:center;gap:6px;margin-right:12px}
+.notes li.cpik i{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+/* 390: generic cards with two switches put the timeframe on its own full-width line (Round 4b) */
+@media (max-width:767px){.cardsec .bar:not(.solo){flex-direction:column;align-items:stretch;gap:8px;border-radius:24px}.cardsec .bar:not(.solo)>[role=radiogroup]{width:100%}}

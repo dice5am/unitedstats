@@ -1,0 +1,16 @@
+export const ORDER: string[];
+export function stOf(s: any, i: number): string | null;
+export function lastNN(s: any): number;
+export type DbRow = { code: string; start: string; startValue: number | null; end: string | null; endValue: number | null; change: number | null };
+export function dumbbell(file: any, start: string, change?: "pts" | "pct"): { rows: DbRow[]; start: string; latest: string; ends: string[] };
+export type Panel = { code: string; points: { period: string; value: number | null; status: string | null }[]; late: string | null; last: { period: string; value: number; status: string | null }; ref: { period: string; value: number | null } | null };
+export function multiples(file: any, from: string, ref?: string | null): { panels: Panel[]; from: string; to: string; min: number; max: number };
+export function qs(i: number): string;
+export function winFromQ(endQ: string, years: number): string;
+export type OpenRow = { code: string; exports: number | null; imports: number | null; total: number | null; latestYear: number };
+export function openness(exp: any, imp: any, year: string | number): { year: string; rows: OpenRow[] };
+export const OPEN_YEARS: string[];
+export const OPEN_DEFAULT: string;
+export const CPI_BANDS: number[];
+export const CPI_LABELS: string[];
+export function cpiStep(v: number): number;

@@ -1,7 +1,7 @@
 // Central chart registry metadata. The id is the stable link key (?chart=<id>), never the title.
 // Titles are plain and follow the selected view. One factual description line per chart.
-export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7";
-export type ChartId = BuiltId | "3" | "25" | "15" | "17" | "12" | "18" | "24" | "13" | "10" | "6" | "20" | "19" | "21" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
+export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21";
+export type ChartId = BuiltId | "3" | "25" | "15" | "17" | "12" | "18" | "24" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
 export type TabId = "economy" | "labour" | "finance" | "society" | "environment";
 export type ChartMeta = { id: ChartId; brief: string | null; tab: TabId; titles: Record<string, string>; desc: string; params: string[]; data: string[]; built?: boolean; src?: string[] };
 // src: short source names for the headline tag ("BIS · Aug 2026"); must match the names in the chart's full source line.
@@ -19,13 +19,13 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "12": { id: "12", brief: "#12", tab: "labour", titles: { _: "Real average wages" }, desc: "Average annual wages, constant prices, USD at PPP", params: [], data: [] },
   "18": { id: "18", brief: "#18", tab: "labour", titles: { _: "Annual hours worked per worker" }, desc: "Average annual hours actually worked per worker", params: [], data: [] },
   "24": { id: "24", brief: "#24", tab: "labour", titles: { _: "Labour share of income" }, desc: "Labour income as % of GDP", params: [], data: [] },
-  "13": { id: "13", src: ["OECD"], brief: "#13", tab: "finance", titles: { _: "Inflation (headline and core)" }, desc: "Consumer prices, % change on a year earlier, monthly", params: [], data: [] },
+  "13": { id: "13", src: ["OECD"], built: true, brief: "#13", tab: "finance", titles: { _: "Inflation (headline and core)" }, desc: "Consumer prices, % change on a year earlier, monthly", params: ["in_view", "in_win"], data: ["oecd_cpi_headline_yoy.json", "oecd_cpi_core_yoy.json"] },
   "7": { id: "7", src: ["BIS"], built: true, brief: "#7", tab: "finance", titles: { policy: "Central bank policy rates" }, desc: "Central bank policy rate, %, end of month; euro area from 1999", params: ["pr_win", "pr_on"], data: ["bis_policy_rate_m.json"] },
-  "10": { id: "10", src: ["IMF"], brief: "#10", tab: "finance", titles: { _: "Government debt, % of GDP" }, desc: "General government gross debt, % of GDP", params: [], data: [] },
-  "6": { id: "6", src: ["OECD"], brief: "#6", tab: "finance", titles: { _: "House prices vs incomes" }, desc: "House prices ÷ disposable income per person, index", params: [], data: [] },
-  "20": { id: "20", src: ["BIS"], brief: "#20", tab: "finance", titles: { _: "Household debt, % of GDP" }, desc: "Credit to households, % of GDP", params: [], data: [] },
-  "19": { id: "19", src: ["OECD"], brief: "#19", tab: "finance", titles: { _: "Current account balance, % of GDP" }, desc: "Current account balance, % of GDP, quarterly", params: [], data: [] },
-  "21": { id: "21", src: ["World Bank"], brief: "#21", tab: "finance", titles: { _: "Exports and imports, % of GDP" }, desc: "Exports and imports of goods and services, % of GDP", params: [], data: [] },
+  "10": { id: "10", src: ["IMF"], built: true, brief: "#10", tab: "finance", titles: { _: "Government debt, 2007 vs now" }, desc: "General government gross debt, % of GDP", params: [], data: ["imf_weo_GGXWDG_NGDP.json"] },
+  "6": { id: "6", src: ["OECD"], built: true, brief: "#6", tab: "finance", titles: { _: "House prices vs incomes since 2010" }, desc: "House prices ÷ disposable income per person, index", params: [], data: ["oecd_house_price_to_income.json"] },
+  "20": { id: "20", src: ["BIS"], built: true, brief: "#20", tab: "finance", titles: { _: "Household debt since 2007" }, desc: "Credit to households, % of GDP", params: ["hd_win"], data: ["bis_household_credit_pct_gdp.json"] },
+  "19": { id: "19", src: ["OECD"], built: true, brief: "#19", tab: "finance", titles: { _: "Current account balance, % of GDP" }, desc: "Current account balance, % of GDP, quarterly", params: ["ca_win"], data: ["oecd_bop_current_account_pct_gdp_q.json"] },
+  "21": { id: "21", src: ["World Bank"], built: true, brief: "#21", tab: "finance", titles: { _: "Trade, % of GDP" }, desc: "Exports and imports of goods and services, % of GDP", params: ["tr_year"], data: ["wb_NE.EXP.GNFS.ZS.json", "wb_NE.IMP.GNFS.ZS.json"] },
   "4": { id: "4", brief: "#4", tab: "society", titles: { _: "Population aged 65+" }, desc: "People aged 65 and over, % of population", params: [], data: [] },
   "11": { id: "11", brief: "#11", tab: "society", titles: { _: "Fertility rate" }, desc: "Births per woman", params: [], data: [] },
   "23": { id: "23", brief: "#23", tab: "society", titles: { _: "Foreign-born population share" }, desc: "International migrant stock, % of population", params: [], data: [] },
