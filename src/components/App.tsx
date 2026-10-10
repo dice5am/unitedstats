@@ -237,7 +237,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
               <div className="grp"><h3>Rules</h3><ul className="rules">
                 <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
                 <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" /><circle cx="8" cy="3" r="2" fill="currentColor" /></svg></span>Quarterly: line + dot per quarter</li>
-                <li><span className="ic"><svg width="2" height="12"><rect width="2" height="12" rx="1" fill="var(--text-2)" /></svg></span>{view === "jobs" ? "Series breaks marked by year" : "Series breaks marked by quarter"}</li>
+                <li><span className="ic"><svg width="5" height="15"><rect x="1.5" y="1.5" width="2" height="12" rx="1" fill="var(--text-2)" stroke="var(--card-solid)" strokeWidth="3" paintOrder="stroke" /></svg></span>{view === "jobs" ? "Series breaks marked by year" : "Series breaks marked by quarter"}</li>
                 {!E && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
                 {hasProv && <li><span className="ic">P</span>Latest quarters may be provisional</li>}
                 <li><span className="ic">—</span>No data at start: left out</li>
