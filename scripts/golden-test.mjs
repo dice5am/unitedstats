@@ -767,3 +767,9 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(UL.monthly.ITA.status["1983-01"] === "P" && UL.monthly.ITA.status["1991-12"] === "P" && !estAt(UL, "ITA", "1990-01") && usOct.value === null && it.points.filter((p) => p.mi < 1983 * 12 + 2).every((p) => p.value === null),
     "unemployment labels: Italy 1983–1991 provisional (stats box tag; line solid, not dashed); US Oct 2025 n/a; n/a before each start, never 0"); }
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
+// Popovers on row charts anchor beside the tapped row and flip (Scorecard #22, like #18/#24/#15/#10).
+{ const sc = readFileSync("src/components/Scorecard.tsx", "utf8");
+  check(/at=\{at\}/.test(sc) && /setAt\(anchorOf\(e\.currentTarget\)\)/.test(sc), "#22 stats box anchors beside the tapped row and flips (never covers it)"); }
+// #3 Germany no-data band (same spec as the GDP 50Y band: --ndband white 5% / black 4%, 11px text-2 label, legend at 390).
+{ const b = readFileSync("src/components/Bump.tsx", "utf8"), css = readFileSync("src/app/globals.css", "utf8");
+  check(/className="ndband" data-code="DEU"/.test(b) && /!narrow && <text[^>]*className="from ndlabel"/.test(b) && /narrow && deJ > 0 && <li><i className="ndkey" \/>\{deLabel\}/.test(b) && css.includes('--ndband:rgba(255,255,255,.05)') && css.includes('--ndband:rgba(0,0,0,.04)') && /\.ndlabel\{font-size:11px;fill:var\(--text-2\)\}/.test(css), "#3 'Germany: no data before 1991' band, GDP 50Y band spec; label inside ≥560px, in the legend at 390"); }

@@ -373,6 +373,8 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 :root,[data-theme="dark"]{--ndband:rgba(255,255,255,.05)}[data-theme="light"]{--ndband:rgba(0,0,0,.04)}
 .ndband{animation:fadein .15s ease both}
 @media (prefers-reduced-motion:reduce){.ndband{animation:none}}
+.ndlabel{font-size:11px;fill:var(--text-2)}
+.notes i.ndkey,i.ndkey{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--ndband);border:1px solid var(--grid);vertical-align:-1px;margin-right:6px}
 .notes i.ndsw{width:12px;height:10px;border-radius:2px;background:var(--text-2);opacity:.35;display:inline-block;margin-right:6px;vertical-align:middle}
 .notes li.ndleg{color:var(--text-2)}
 

@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { league, ORDER, DEU_FROM } from "@/lib/waves.mjs";
+import { NO_DATA_BAND_LABEL } from "@/lib/series.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, Seg, StatBox, useParams, useWidth, writeParams, type Init } from "./kit";
@@ -40,6 +41,8 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
   const last = L.years.length - 1, end = L.years[last];
   const byRank = ORDER.map((c) => ({ c, r: L.rank[c][last]! })).sort((a, b) => a.r - b.r);
   const hi = hover === null ? null : i0 + hover;
+  // Germany not ranked before 1991: grey no-data band, same spec as the GDP 50Y band (label inside; in the legend at 390).
+  const deJ = years.indexOf(String(DEU_FROM)), deLabel = NO_DATA_BAND_LABEL.replace("{country}", "Germany").replace("{year}", String(DEU_FROM));
   const ticks = years.filter((yr, j) => j === 0 || j === n - 1 || (+yr % (n > 30 ? 10 : 5) === 0 && j > 2 && j < n - 3));
   const pick = (cx: number) => { const r = svg.current!.getBoundingClientRect(); setHover(Math.max(0, Math.min(n - 1, Math.round(((cx - r.left - padL) / iw) * (n - 1))))); };
   return (
@@ -47,7 +50,7 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
       tag={srcTag("3", end)}
       controls={<div className="bar solo"><Seg label="Timeframe" value={st.lg_win} options={WINS.map((v) => [v, `${v}Y`])} onChange={(v) => { setHover(null); set("lg_win", v); }} /></div>}
       headline={<HeadFigs tag={srcTag("3", end)} figs={[byRank[0], byRank[6]].map((b, k) => ({ code: b.c, label: k ? "Rank 7 (lowest)" : "Rank 1 (highest)", value: usd(L.value[b.c][last]!), date: `${end} · per person, PPP` }))} />}
-      legend={<><li>Rank 1 = highest GDP per person that year</li><li>Ranked only in years all seven publish</li></>}
+      legend={<>{narrow && deJ > 0 && <li><i className="ndkey" />{deLabel}</li>}<li>Rank 1 = highest GDP per person that year</li><li>Ranked only in years all seven publish</li></>}
       source="Source: OECD · GDP per head, US dollars, current prices and current PPPs"
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>GDP per person</dt><dd>GDP per head at current prices and current purchasing power parities (PPPs adjust for price differences between countries), US dollars. Already per person, so no per-capita toggle.</dd></dl></div>
@@ -66,6 +69,11 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
           {[1, 2, 3, 4, 5, 6, 7].map((r) => <g key={r}><line x1={padL} x2={padL + iw} y1={y(r)} y2={y(r)} className="bgl" /></g>)}
           {ticks.map((yr) => <text key={yr} x={x(years.indexOf(yr))} y={H - 8} className="ax" textAnchor={yr === years[0] ? "start" : yr === years[n - 1] ? "end" : "middle"}>{yr}</text>)}
           {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={padT - 8} y2={H - padB + 6} className="bxh" />}
+          {deJ > 0 && <g className="ndband" data-code="DEU" pointerEvents="none">
+            <defs><linearGradient id="ndb3-DEU" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="var(--ndband)" /><stop offset={Math.max(0, 1 - 8 / Math.max(8, x(deJ) - padL))} stopColor="var(--ndband)" /><stop offset="1" stopColor="var(--ndband)" stopOpacity="0" /></linearGradient></defs>
+            <rect x={padL} y={padT} width={Math.max(0, x(deJ) - padL)} height={H - padT - padB} fill="url(#ndb3-DEU)" />
+            {!narrow && <text x={padL + 8} y={padT + 17} className="from ndlabel">{deLabel}</text>}
+          </g>}
           {ORDER.map((c) => { const rs = L.rank[c].slice(i0); let d = ""; rs.forEach((r, j) => { if (r === null) return; d += `${d && rs[j - 1] !== null ? "L" : "M"}${x(j).toFixed(1)},${y(r).toFixed(1)}`; });
             return <g key={c} style={{ color: `var(--${c})` }}>
               <path d={d} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
