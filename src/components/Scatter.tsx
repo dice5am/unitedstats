@@ -54,8 +54,10 @@ export default function Scatter({ spec, initial }: { spec: ScatterSpec } & Init)
               {p.trail && <circle cx={x(p.trail[0].x)} cy={y(p.trail[0].y)} r={3.5} fill="var(--card-solid)" stroke="currentColor" strokeWidth={1.5} />}
               <circle cx={x(p.x!)} cy={y(p.y!)} r={5} fill="currentColor" stroke="var(--card-solid)" strokeWidth={2} />
               <circle cx={x(p.x!)} cy={y(p.y!)} r={18} fill="transparent" />
-              <line x1={x(p.x!) + 8} x2={x(p.x!) + 14} y1={y(p.y!)} y2={ly[i]} stroke="currentColor" strokeWidth={1} opacity={0.4} />
-              <text x={x(p.x!) + 16} y={ly[i] + 4} className="scl2">{narrow ? CODE[p.code] : NAME[p.code]}{p.date && !narrow ? ` ${p.date}` : ""}</text>
+              {/* connected scatter (#5): labels sit in the right-hand gutter, spread apart, with a leader to the latest dot, so they never sit on another country's trail or dot */}
+              {p.trail ? <polyline points={`${x(p.x!) + 6},${y(p.y!)} ${w - pr + 2},${ly[i]} ${w - pr + 6},${ly[i]}`} fill="none" stroke="currentColor" strokeWidth={1} opacity={0.45} />
+                : <line x1={x(p.x!) + 8} x2={x(p.x!) + 14} y1={y(p.y!)} y2={ly[i]} stroke="currentColor" strokeWidth={1} opacity={0.4} />}
+              <text x={p.trail ? w - pr + 8 : x(p.x!) + 16} y={ly[i] + 4} className="scl2">{narrow ? CODE[p.code] : NAME[p.code]}{p.date && !narrow ? ` ${p.date}` : ""}</text>
             </g>); })}
         </svg>}
       </div>

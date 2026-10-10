@@ -776,3 +776,11 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
 // ≥1024 fixed-height charts size from the viewport (useFitH), never below Design's minimums (480 / 340 under 800px tall).
 { const k = readFileSync("src/components/kit.tsx", "utf8"), use = ["Slope", "Scatter", "Multiples", "YearMultiples"].filter((f) => /useFitH\(/.test(readFileSync(`src/components/${f}.tsx`, "utf8")));
   check(/innerHeight < 800 \? 340 : 480/.test(k) && use.length === 4, `viewport-fit heights on ${use.join(", ")} (#4 #12 #24 #8 #5 #19 #20 #11), minimums 480/340 kept`); }
+// Round of Design / App Lead fixes on d2d3975.
+{ const rd = (f) => readFileSync(f, "utf8"), soc = rd("src/charts/society.tsx"), kit = rd("src/components/kit.tsx"), tm = rd("src/components/TileMap.tsx"), cc = rd("src/components/ChartCard.tsx"), lc = rd("src/components/LineChart.tsx"), lab = rd("src/charts/labour.tsx"), mx = rd("src/components/MixArea.tsx");
+  check(/win: \{ param: "gr_win", old: "gr_start" \}/.test(soc) && /param: "fe_win", old: "fe_from"/.test(soc) && /LEGACY_START[^\n]*"1960": "50"[^\n]*"1990": "20"[^\n]*"2005": "10"/.test(kit), "#4 and #11 use the standard 10Y/20Y/50Y switch; old gr_start/fe_from links map 1960→50Y, 1990→20Y, 2005→10Y");
+  check(!/not ranked/.test(tm) && /--text-2" : "--heat-hi"/.test(tm), "#14 diverging tiles around zero (grey = lower, heat hue = higher); no 'not ranked' text");
+  check(/URLV\[vv\] === qv \|\| vv === qv/.test(cc), "j_view=jpc (and j_view=pc) restore Jobs per capita");
+  check(/<td>\{\/Q\/\.test\(p\.period\) \? qLabel\(p\.period\) : fmtM\(p\.mi\)\}<\/td>/.test(lc) && !/April 2026/.test(rd("src/charts/finance.tsx")), "periods read 'Apr 2026' (screen-reader tables and #10 WEO edition), never '2026-04'/'April 2026'");
+  check(/sub: \(latest\) => <>Youth unemployment rate \(age 15–24\) ÷ overall rate/.test(lab), "#17 description reads 'Youth unemployment rate (age 15–24) ÷ overall rate'");
+  check(/YearPick label="Country"/.test(mx) && /pl = 44/.test(mx) && /className="mixa"[^\n]*onPointerLeave/.test(mx), "#9 country dropdown (no overlap), 100% tick inside the plot, hover survives the stats box"); }

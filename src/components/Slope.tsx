@@ -5,13 +5,13 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { slope, wholeFlag } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, useWinParam, lastYearOf, STD_WINS, type Init } from "./kit";
 import { HeadFigs, rankLabels, sgn } from "./HeadFigs";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const CODE: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
 export type SlopeSpec = {
-  id: ChartId; eyebrow: string; start: number; starts?: string[]; param?: string; change: "pct" | "pts"; dp: number; valueFmt: (v: number) => string; unitLabel: string;
+  id: ChartId; eyebrow: string; start: number; starts?: string[]; param?: string; win?: { param: string; old: string }; change: "pct" | "pts"; dp: number; valueFmt: (v: number) => string; unitLabel: string;
   labels: { up: string; down: string; upSmall: string; downSmall: string }; flagNote?: Record<string, string>;
   sub: (ends: string[], start: string) => ReactNode; source: string; calc: (d: ReturnType<typeof slope>) => ReactNode;
 };
@@ -26,8 +26,8 @@ export function spread(ys: number[], gap: number, lo: number, hi: number) {
 
 export default function Slope({ file, spec, initial }: { file: unknown; spec: SlopeSpec; initial?: Init["initial"] }) {
   const fallback = useRef<string | null>(null);
-  const [st, set] = useParams(initial ?? fallback, (spec.param ? { [spec.param]: [String(spec.start), spec.starts!] } : {}) as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
-  const start = spec.param ? +st[spec.param] : spec.start;
+  const [win, setWin] = useWinParam(initial ?? fallback, spec.win?.param ?? "_nowin", spec.win?.old ?? "_noold");
+  const start = spec.win ? lastYearOf(file) - +win : spec.start;
   const d = useMemo(() => slope(file, start, spec.change), [file, start, spec.change]);
   const [sel, setSel] = useState<string | null>(null);
   const [ref, w] = useWidth<HTMLDivElement>();
@@ -47,7 +47,7 @@ export default function Slope({ file, spec, initial }: { file: unknown; spec: Sl
   const flagOf = (code: string) => wholeFlag(file, code);
   return (
     <CardFrame id={`chart-${spec.id}`} eyebrow={spec.eyebrow} title={chartTitle(spec.id)} sub={spec.sub(ends, d.start)} tag={srcTag(spec.id, latest)}
-      controls={spec.param ? <div className="bar solo"><Seg label="Start year" value={st[spec.param]} options={spec.starts!.map((v) => [v, v])} onChange={(v) => { setSel(null); set(spec.param!, v); }} /></div> : undefined}
+      controls={spec.win ? <div className="bar solo"><Seg label="Timeframe" value={win} options={STD_WINS.map((v) => [v, `${v}Y`])} onChange={(v) => { setSel(null); setWin(v); }} /></div> : undefined}
       headline={top && bot && <HeadFigs tag={srcTag(spec.id, latest)} figs={[[top, true], [bot, false]].map(([x, f]) => { const q = x as typeof top; return { code: q.code, label: rankLabels(q.change!, f as boolean, shown(q.change!), spec.labels), value: fmtC(q.change!), unit, date: `${d.start} → ${q.end}` }; })} />}
       legend={<>
         <li>Left: {d.start} · right: {mixed ? "each country’s latest year, dated" : latest}</li>

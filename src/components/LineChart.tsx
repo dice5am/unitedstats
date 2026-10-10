@@ -397,7 +397,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         <caption>{summary}</caption>
         <thead><tr><th>Period</th>{lines.map((l) => <th key={l.code}>{l.name}</th>)}</tr></thead>
         <tbody>{(lines.find((l) => l.freq === "monthly") ?? lines[0])?.points.map((p) => (
-          <tr key={p.period}><td>{p.period}</td>{lines.map((l) => { const q = ptAt(l, p.mi); return <td key={l.code}>{q && q.value !== null ? q.value.toFixed(R ? DISPLAY_DP.rate : 1) : "n/a"}</td>; })}</tr>
+          <tr key={p.period}><td>{/Q/.test(p.period) ? qLabel(p.period) : fmtM(p.mi)}</td>{lines.map((l) => { const q = ptAt(l, p.mi); return <td key={l.code}>{q && q.value !== null ? q.value.toFixed(R ? DISPLAY_DP.rate : 1) : "n/a"}</td>; })}</tr>
         ))}</tbody>
       </table></div>
     </div>

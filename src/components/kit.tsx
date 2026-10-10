@@ -159,12 +159,12 @@ export type Init = { initial: MutableRefObject<string | null> };
 export const anchorOf = (b: HTMLElement) => { const box = b.closest(".sc") as HTMLElement; return { y: b.getBoundingClientRect().top - box.getBoundingClientRect().top, h: b.offsetHeight, H: box.offsetHeight }; };
 
 // Year picker for long year lists (more than fit as a segmented control at 390): ‹ year › with a native select in the middle.
-export function YearPick({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+export function YearPick({ label, value, options, onChange, labels }: { label: string; value: string; options: string[]; onChange: (v: string) => void; labels?: Record<string, string> }) {
   const i = options.indexOf(value);
   return (
     <div className="ypick" role="group" aria-label={label}>
       <button type="button" aria-label={`Previous ${label.toLowerCase()}`} disabled={i <= 0} onClick={() => onChange(options[i - 1])}>‹</button>
-      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o} value={o}>{labels?.[o] ?? o}</option>)}</select>
       <button type="button" aria-label={`Next ${label.toLowerCase()}`} disabled={i >= options.length - 1} onClick={() => onChange(options[i + 1])}>›</button>
     </div>
   );
@@ -186,3 +186,19 @@ export function useFitH(ref: { current: Element | null }, curRef: { current: num
   });
   return fit;
 }
+
+// Standard timeframe switch for yearly charts (10Y / 20Y / 50Y, default 50Y), counted back from the chart's own last year.
+// Old start-year links (e.g. gr_start=1990) map to the window they meant, the way #3 maps lg_from.
+export const STD_WINS = ["10", "20", "50"] as const;
+export const LEGACY_START: Record<string, string> = { "1960": "50", "1970": "50", "1990": "20", "2005": "10" };
+export function useWinParam(initial: MutableRefObject<string | null>, key: string, oldKey: string) {
+  const q0 = useRef<string | null>(null);
+  if (q0.current === null) {
+    const raw = initial.current ?? (typeof location === "undefined" ? null : location.search);
+    if (raw !== null) { const q = new URLSearchParams(raw), f = q.get(oldKey); if (f !== null) { if (!q.has(key) && LEGACY_START[f]) q.set(key, LEGACY_START[f]); q.delete(oldKey); } q0.current = "?" + q.toString(); }
+  }
+  const [st, set] = useParams(q0, { [key]: ["50", STD_WINS] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
+  useEffect(() => { if (new URLSearchParams(location.search).has(oldKey)) writeParams({ [key]: st[key] }, [oldKey]); }, [st[key]]); // eslint-disable-line react-hooks/exhaustive-deps
+  return [st[key], (v: string) => set(key, v)] as const;
+}
+export const lastYearOf = (file: any) => Math.max(...Object.values(file.series as Record<string, { periods: string[]; values: (number | null)[] }>).map((s) => { let i = s.values.length - 1; while (i >= 0 && s.values[i] === null) i--; return i >= 0 ? +s.periods[i].slice(0, 4) : 0; }));

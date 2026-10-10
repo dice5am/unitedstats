@@ -33,7 +33,7 @@ export const debtSpec: DumbbellSpec = {
   id: "10", eyebrow: "Finance", start: "2007", change: "pts", per: Y, unitLabel: "gross debt, % of GDP", valueFmt: pct1, tickFmt: (v) => `${v}%`,
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" },
   sub: () => <>General government gross debt, % of GDP · 2007 vs latest actual year · actuals to 2024 or 2025, no projections</>,
-  source: "Source: IMF World Economic Outlook (April 2026) · general government gross debt (GGXWDG_NGDP), % of GDP, actuals only",
+  source: "Source: IMF World Economic Outlook (Apr 2026) · general government gross debt (GGXWDG_NGDP), % of GDP, actuals only",
   calc: (d) => <>
     <div className="grp"><h3>Measures</h3><dl><dt>Debt</dt><dd>General government gross debt as % of GDP. Already a share of GDP, so no per-capita view.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">IMF WEO · GGXWDG_NGDP</dd><dt>Actuals</dt><dd>Cut at each country’s last actual year: {d.rows.map((r) => `${r.code} ${r.end}`).join(", ")}. IMF projections are not shown.</dd></dl></div>

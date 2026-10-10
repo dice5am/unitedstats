@@ -1,7 +1,7 @@
 "use client";
 // Tile map (#14): G7 as equal rounded tiles in a fixed geographic-ish layout (North America left, Europe centre, Japan right);
 // fill = sequential neutral scale by the size of the change; values printed in the tiles. Tap a tile to expand its line.
-// Toggle: total emissions / per person. Early enders (US to 2022) are drawn and dated but not ranked.
+// Toggle: total emissions / per person. Early enders (US to 2022) are drawn and dated; left out of the headline figures.
 import { useMemo, useState } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { emissions } from "@/lib/waves.mjs";
@@ -22,7 +22,8 @@ export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & 
   const ends = rows.map((r) => r.end!).sort(), common = ends[Math.floor(ends.length / 2)];
   const ranked = rows.filter((r) => r.end === common && r.change !== null).sort((a, b) => a.change! - b.change!), early = rows.filter((r) => r.end !== common);
   const max = Math.max(...rows.map((r) => Math.abs(r.change ?? 0)));
-  const shade = (v: number) => `color-mix(in oklab, var(--heat-hi) ${Math.round(15 + 70 * (Math.abs(v) / max))}%, var(--heat-lo))`;
+  // Diverging around zero (same scheme as #13): falls = neutral grey steps, rises = the one heat hue; darker = bigger.
+  const shade = (v: number) => v === 0 ? "var(--heat-lo)" : `color-mix(in oklab, var(${v < 0 ? "--text-2" : "--heat-hi"}) ${Math.round(10 + (v < 0 ? 45 : 60) * (Math.abs(v) / max))}%, var(--heat-lo))`;
   const fmt = (v: number) => sgn(Math.round(v * 10) / 10, 1, "%");
   const unit = view === "pp" ? "t CO2e per person" : "Mt CO2e";
   const val = (v: number | null) => (v === null ? "n/a" : view === "pp" ? `${v.toFixed(2)} t` : `${(v / 1000).toFixed(0)} Mt`);
@@ -35,16 +36,16 @@ export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & 
       tag={srcTag("14", common)}
       controls={<div className="bar solo"><Seg label="Measure" value={view} options={VIEWS.map(([v, l]) => [v, l])} onChange={(v) => { setSel(null); set("gh_view", v); }} /></div>}
       headline={top && bot && <HeadFigs tag={srcTag("14", common)} figs={[bot, top].map((z, k) => { const r = Math.round(z.change! * 10) / 10; return { code: z.code, label: r === 0 ? "No change" : k === 0 ? (r < 0 ? "Biggest cut" : "Smallest rise") : (r > 0 ? "Biggest rise" : "Smallest cut"), value: fmt(z.change!), date: `1990 → ${z.end}` }; })} />}
-      legend={<><li>Darker tile = bigger change</li>{early.map((r) => <li key={r.code}>{NAME[r.code]}: to {r.end}, not ranked</li>)}{view === "pp" && rows.some((r) => r.pts.some((q) => q.est)) && <li><i className="dashk" />Dashed: population estimated from yearly figures</li>}</>}
+      legend={<><li>Grey = lower than 1990, orange = higher; darker = bigger change</li>{early.map((r) => <li key={r.code}>{NAME[r.code]}: to {r.end}</li>)}{view === "pp" && rows.some((r) => r.pts.some((q) => q.est)) && <li><i className="dashk" />Dashed: population estimated from yearly figures</li>}</>}
       source={`Source: OECD · greenhouse gas emissions excluding LULUCF (UN inventories)${view === "pp" ? "; population: OECD quarterly, earlier years from OECD annual" : ""}`}
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>Emissions</dt><dd>All greenhouse gases in CO2 equivalent, excluding land use, land-use change and forestry (LULUCF).</dd>
           <dt>Per person</dt><dd>Total ÷ yearly population, tonnes CO2e per person. Yearly population = mean of the four quarters of OECD population; quarters estimated from OECD annual figures count as present.</dd></dl></div>
-        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD AIR_GHG · total excl. LULUCF · thousand t CO2e</dd><dt>Years</dt><dd>1990 to {common}; the US to 2022 (two years behind), shown but not ranked.</dd></dl></div>
+        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD AIR_GHG · total excl. LULUCF · thousand t CO2e</dd><dt>Years</dt><dd>1990 to {common}; the US to 2022 (two years behind), shown but left out of the headline figures.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>value(latest) ÷ value(1990) − 1</code></div>
           {(() => { const c = rows.find((r) => r.code === "CAN")!; const a = c.pts[0], b = c.pts[c.pts.length - 1]; return a.value !== null && b.value !== null && <p className="ex">Canada: <b>{val(b.value)} ÷ {val(a.value)} − 1 = {fmt(c.change!)}</b></p>; })()}</div></div>
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["14"]}</p></div>
-        <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps are never filled</li><li><span className="ic">→</span>Early enders are drawn and dated, not ranked</li></ul></div>
+        <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps are never filled</li><li><span className="ic">→</span>Early enders are drawn and dated, and left out of the headline figures (they end earlier)</li></ul></div>
       </>}>
       <div className="tmap" ref={ref} onPointerDown={() => setSel(null)} style={{ height: tw ? th * 2 + gap : undefined }}>
         {tw > 0 && rows.map((r) => { const [cx, cy] = POS[r.code]; return (
@@ -53,7 +54,7 @@ export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & 
             aria-label={`${NAME[r.code]}: ${r.change === null ? "n/a" : fmt(r.change)} since 1990, to ${r.end}`}>
             <span className="tn"><i style={{ background: `var(--${r.code})` }} />{NAME[r.code]}</span>
             <b className="tv">{r.change === null ? "n/a" : fmt(r.change)}</b>
-            <span className="te">1990 → {r.end}{r.end !== common ? " · not ranked" : ""}</span>
+            <span className="te">1990 → {r.end}</span>
           </button>); })}
       </div>
       {r0 && <Expand r={r0} view={view} unit={unit} val={val} onClose={() => setSel(null)} />}

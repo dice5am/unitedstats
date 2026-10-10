@@ -43,7 +43,10 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
   const hi = hover === null ? null : i0 + hover;
   // Germany not ranked before 1991: grey no-data band, same spec as the GDP 50Y band (label inside; in the legend at 390).
   const deJ = years.indexOf(String(DEU_FROM)), deLabel = NO_DATA_BAND_LABEL.replace("{country}", "Germany").replace("{year}", String(DEU_FROM));
-  const ticks = years.filter((yr, j) => j === 0 || j === n - 1 || (+yr % (n > 30 ? 10 : 5) === 0 && j > 2 && j < n - 3));
+  // year ticks: both ends plus round years, dropping any closer than 36px to a kept neighbour (no collisions at 390)
+  const ticks = (() => { const c = years.filter((yr, j) => j === 0 || j === n - 1 || +yr % (n > 30 ? 10 : 5) === 0); const out: string[] = [];
+    for (const yr of c) { const j = years.indexOf(yr); if (j === n - 1) { while (out.length > 1 && x(n - 1) - x(years.indexOf(out[out.length - 1])) < 36) out.pop(); out.push(yr); } else if (!out.length || x(j) - x(years.indexOf(out[out.length - 1])) >= 36) out.push(yr); }
+    return out; })();
   const pick = (cx: number) => { const r = svg.current!.getBoundingClientRect(); setHover(Math.max(0, Math.min(n - 1, Math.round(((cx - r.left - padL) / iw) * (n - 1))))); };
   return (
     <CardFrame id="chart-3" eyebrow="Economy" title={chartTitle("3")} sub={<>GDP per person at current purchasing power parities, US dollars · rank 1 = highest each year{+years[0] < DEU_FROM ? " · Germany from 1991" : ""} · {years[0]}–{end}</>}
@@ -60,12 +63,12 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["3"]}</p></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps are never filled</li><li><span className="ic">E</span>Latest years may be OECD estimates or provisional; the stats box tags them</li></ul></div>
       </>}>
-      <div className="bump" ref={ref} onPointerDown={() => setHover(null)}>
+      <div className="bump" ref={ref} onPointerDown={() => setHover(null)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
         {hi !== null && <StatBox title={`${L.years[hi]} · rank (GDP per person)`} onClose={() => setHover(null)} rows={ORDER.map((c) => ({ c, r: L.rank[c][hi] })).sort((a, b) => (a.r ?? 9) - (b.r ?? 9)).map(({ c, r }) => {
           const f = L.status(c, L.years[hi]); return { code: c, name: NAME[c], value: r === null ? "n/a" : `${r} · ${usd(L.value[c][hi]!)}`, note: f === "E" ? "OECD estimate" : f === "P" ? "provisional" : undefined }; })} />}
         {w > 0 && <svg ref={svg} width={w} height={H} role="img" style={{ touchAction: "pan-y" }}
           aria-label={`GDP per person rank, ${years[0]} to ${end}: ${byRank.map((b) => `${b.r} ${NAME[b.c]}`).join(", ")}`}
-          onPointerDown={(e) => { e.stopPropagation(); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
+          onPointerDown={(e) => { e.stopPropagation(); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}>
           {[1, 2, 3, 4, 5, 6, 7].map((r) => <g key={r}><line x1={padL} x2={padL + iw} y1={y(r)} y2={y(r)} className="bgl" /></g>)}
           {ticks.map((yr) => <text key={yr} x={x(years.indexOf(yr))} y={H - 8} className="ax" textAnchor={yr === years[0] ? "start" : yr === years[n - 1] ? "end" : "middle"}>{yr}</text>)}
           {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={padT - 8} y2={H - padB + 6} className="bxh" />}
@@ -80,7 +83,7 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
               {n <= 25 && rs.map((r, j) => r !== null && <circle key={j} cx={x(j)} cy={y(r)} r={2.5} fill="currentColor" />)}
               <circle cx={x(n - 1)} cy={y(rs[n - 1]!)} r={4} fill="currentColor" />
               {rs[0] !== null && <text x={x(0) - 8} y={y(rs[0]) + 4} className="bl" textAnchor="end">{narrow ? CODE[c] : `${NAME[c]} ${rs[0]}`}</text>}
-              {rs[0] === null && (() => { const j = rs.findIndex((r) => r !== null); return j > 0 ? <><circle cx={x(j)} cy={y(rs[j]!)} r={4} fill="var(--card-solid)" stroke="currentColor" strokeWidth={1.5} /><text x={x(j)} y={y(rs[j]!) - 8} className="bl" textAnchor="middle">{`${CODE[c]} from ${years[j]}`}</text></> : null; })()}
+              {rs[0] === null && (() => { const j = rs.findIndex((r) => r !== null); return j > 0 ? <><circle cx={x(j)} cy={y(rs[j]!)} r={4} fill="var(--card-solid)" stroke="currentColor" strokeWidth={1.5} /><text x={x(j)} y={y(rs[j]!) - 8} className="bl" textAnchor="middle">{narrow ? null : `${CODE[c]} from ${years[j]}`}</text></> : null; })()}
               <text x={x(n - 1) + 10} y={y(rs[n - 1]!) + 4} className="bl">{narrow ? CODE[c] : `${rs[n - 1]} ${NAME[c]}`}</text>
             </g>; })}
         </svg>}

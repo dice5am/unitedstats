@@ -4,16 +4,16 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, useWinParam, lastYearOf, STD_WINS, type Init } from "./kit";
 import { HeadFigs } from "./HeadFigs";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const ORDER = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
-export type YMSpec = { id: ChartId; eyebrow: string; param: string; froms: string[]; def: string; ref?: { value: number; label: string }; dp: number; unitLabel: string;
+export type YMSpec = { id: ChartId; eyebrow: string; param: string; old: string; ref?: { value: number; label: string }; dp: number; unitLabel: string;
   labels: [string, string]; sub: (from: string, to: string) => ReactNode; source: string; calc: (rows: { code: string; end: string; value: number }[]) => ReactNode };
 export default function YearMultiples({ file, spec, initial }: { file: any; spec: YMSpec } & Init) {
-  const [st, set] = useParams(initial, { [spec.param]: [spec.def, spec.froms] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
-  const from = st[spec.param];
+  const [win, setWin] = useWinParam(initial, spec.param, spec.old);
+  const from = String(lastYearOf(file) - +win);
   const panels = useMemo(() => ORDER.map((c) => { const s = file.series[c]; const pts = s.periods.map((p: string, i: number) => ({ y: +p, v: s.values[i] as number | null })).filter((q: any) => q.y >= +from);
     const last = [...pts].reverse().find((q: any) => q.v !== null); return { code: c, pts, end: String(last.y), value: last.v as number }; }), [file, from]);
   const [wrap, w] = useWidth<HTMLDivElement>();
@@ -29,7 +29,7 @@ export default function YearMultiples({ file, spec, initial }: { file: any; spec
   const sorted = [...panels].sort((a, b) => b.value - a.value), p0 = sel ? panels.find((p) => p.code === sel)! : null;
   return (
     <CardFrame id={`chart-${spec.id}`} eyebrow={spec.eyebrow} title={chartTitle(spec.id)} sub={spec.sub(from, String(y1))} tag={srcTag(spec.id, String(y1))}
-      controls={<div className="bar solo"><Seg label="From" value={from} options={spec.froms.map((v) => [v, v])} onChange={(v) => { setSel(null); set(spec.param, v); }} /></div>}
+      controls={<div className="bar solo"><Seg label="Timeframe" value={win} options={STD_WINS.map((v) => [v, `${v}Y`])} onChange={(v) => { setSel(null); setWin(v); }} /></div>}
       headline={<HeadFigs tag={srcTag(spec.id, String(y1))} figs={[[sorted[0], spec.labels[0]], [sorted[6], spec.labels[1]]].map(([q, l]) => { const z = q as typeof sorted[0]; return { code: z.code, label: l as string, value: z.value.toFixed(spec.dp), date: z.end }; })} />}
       legend={<>{spec.ref && <li><i className="refk" />{spec.ref.label}</li>}<li>Same scale in all panels: {lo} to {hi}, gridlines every {step}</li></>}
       source={spec.source} calc={spec.calc(sorted)}>

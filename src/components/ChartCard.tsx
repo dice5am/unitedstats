@@ -73,7 +73,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
     const hasOld = q.has("view") || q.has("win") || q.has("on");
     const legacy = hasOld && kind !== "policy" && (E || (kind === "unemp" && lv === "rate") || (kind === "jobs" && lv !== "rate"));
     const qv = keys.view ? (q.get(keys.view) ?? (legacy && E ? lv : null)) : null;
-    const v = views.find(([vv]) => URLV[vv] === qv)?.[0] ?? views[0][0];
+    const v = views.find(([vv]) => URLV[vv] === qv || vv === qv)?.[0] ?? views[0][0];
     const qw = Number(q.get(keys.win) ?? (legacy ? q.get("win") : null)), w = WINDOWS.includes(qw) ? qw : 1;
     const codes = parseOn(q.get(keys.on) ?? (legacy ? q.get("on") : null));
     setView(v); setYears(w); setOn(Object.fromEntries(codes.map((c) => [c, true])));
@@ -108,6 +108,8 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const hasProv = ["monthly", "quarterly"].some((f) => Object.values(ds[f] || {}).some((x) => Object.values((x as { status?: Record<string, string> }).status || {}).includes("P")));
   const shown = lines.filter((l) => onX[l.code] && !l.excluded);
   const lates = shown.filter((l) => l.late && !(ds.noLateMark || []).includes(l.code));
+  // a country already named by a grey "no data before" band is not repeated under "Starts later"
+  const latesL = lates.filter((l) => !bandLeg.some((t) => t.startsWith(`${l.name}:`)));
   const hasEst = shown.some((l) => l.points.some((p) => p.value !== null && estAt(ds, l.code, p.period)));
   const allPts = lines.flatMap((l) => l.points), m0 = Math.min(...allPts.map((p) => p.mi)), m1 = Math.max(...allPts.map((p) => p.mi));
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
@@ -312,7 +314,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         {brks.length > 0 && <li><i className="tick" />{PR ? "Series break: euro area from Jan 1999" : `Series break, by ${brkUnit}`}</li>}
         {bandLeg.map((t) => <li key={t} className="ndleg"><i className="ndsw" />{t}</li>)}
         {hasEst && <li><i className="dash" />Dashed: population estimated from yearly figures</li>}
-        {lates.length > 0 && <li><i className="late" />Starts later: {lates.map((l) => `${l.name} from ${l.late!.slice(0, 4)}`).join(", ")}</li>}
+        {latesL.length > 0 && <li><i className="late" />Starts later: {latesL.map((l) => `${l.name} from ${l.late!.slice(0, 4)}`).join(", ")}</li>}
       </ul>
       <p className="source">{PR ? `Source: BIS central bank policy rates (WS_CBPOL), end of month · as of ${asOfStr}` : E ? `Source: OECD quarterly national accounts · ${view === "pc" ? "real GDP and population" : "real GDP"}, SA · as of ${asOfStr}`
         : R ? `Source: OECD · unemployment rate 15+, ${UM ? "monthly, " : ""}seasonally adjusted · as of ${asOfStr}`

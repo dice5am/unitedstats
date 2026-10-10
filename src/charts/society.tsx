@@ -9,7 +9,7 @@ import type { DumbbellSpec } from "@/src/components/Dumbbell";
 
 const pct1 = (v: number) => `${v.toFixed(1)}%`;
 export const greySpec: SlopeSpec = {
-  id: "4", eyebrow: "Society", start: 1990, starts: ["1960", "1990", "2005"], param: "gr_start", change: "pts", dp: 1, unitLabel: "share aged 65+", valueFmt: pct1,
+  id: "4", eyebrow: "Society", start: 1990, win: { param: "gr_win", old: "gr_start" }, change: "pts", dp: 1, unitLabel: "share aged 65+", valueFmt: pct1,
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" },
   sub: (ends, start) => <>People aged 65 and over, % of the population · {start} vs {ends[ends.length - 1]}</>,
   source: "Source: World Bank WDI · population ages 65 and above, % of total population (SP.POP.65UP.TO.ZS)",
@@ -22,7 +22,7 @@ export const greySpec: SlopeSpec = {
   </>; },
 };
 export const fertSpec: YMSpec = {
-  id: "11", eyebrow: "Society", param: "fe_from", froms: ["1960", "1990", "2005"], def: "1960", ref: { value: 2.1, label: "Dashed: 2.1 births per woman, a common rule of thumb for a stable population (not from the dataset)" }, dp: 2, unitLabel: "births per woman",
+  id: "11", eyebrow: "Society", param: "fe_win", old: "fe_from", ref: { value: 2.1, label: "Dashed: 2.1 births per woman, a common rule of thumb for a stable population (not from the dataset)" }, dp: 2, unitLabel: "births per woman",
   labels: ["Highest", "Lowest"],
   sub: (f, t) => <>Total fertility rate, births per woman · {f}–{t} · same scale in every panel</>,
   source: "Source: World Bank WDI · fertility rate, total, births per woman (SP.DYN.TFRT.IN)",
