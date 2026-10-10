@@ -1,3 +1,4 @@
+import { writeFileSync as writeFileSync, unlinkSync } from "node:fs";
 // Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -129,7 +130,8 @@ check(headlineLabels({ single: null, fastest: { value: 0.4 }, slowest: { value: 
     if (h.single) { if (lb.fast !== null || lb.slow !== null) badL++; continue; }
     const sOk = (v, t) => (v > 0 ? t.startsWith("+") : v < 0 ? t.startsWith("−") : !/^[+−]/.test(t));
     if (!sOk(roundShown(h.fastest.value, "jobs"), fmtHeadline(h.fastest.value, "jobs")) || !sOk(roundShown(h.slowest.value, "jobs"), fmtHeadline(h.slowest.value, "jobs"))) badL++;
-    if (lb.fast !== "Fastest growth" || lb.slow !== "Slowest growth") badL++;
+    const want = (v, l) => (roundShown(v, "jobs") === 0 ? "No change" : l); // zero at displayed 1 dp reads "No change"
+    if (lb.fast !== want(h.fastest.value, "Fastest growth") || lb.slow !== want(h.slowest.value, "Slowest growth")) badL++;
   }
   check(badL === 0, `jobs headline labels match sign of rounded figures: ${n} combos x windows, ${badL} wrong`); }
 // v6: Economy — GDP and GDP per capita (OECD QNA), recomputed independently from the raw file
@@ -489,6 +491,46 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
 { const { applyStarts } = await import("../lib/series.mjs"); const JD = applyStarts(data);
   console.log("Jobs 50Y (ours): " + ALL.map((c) => { const l = buildLine(JD, c, 50, "jobs"), f = l.points.find((p) => p.value !== null), e = [...l.points].reverse().find((p) => p.value !== null);
     return `${c} ${f.period} → ${e.period} ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(2)}%${l.full ? "" : " (from " + l.late + ", not ranked)"}`; }).join("; ")); }
+// every data file's sha256 must be listed by the Warehouse (crosscheck/chart_gate/export_shas.txt) or in a gate note
+{ const { readdirSync } = await import("node:fs"); const WH = "/workspace/skyscraper/unitedstats-warehouse";
+  const listed = readFileSync(`${WH}/crosscheck/chart_gate/export_shas.txt`, "utf8").split("\n").map((l) => l.trim().split(/\s+/)[0]).filter((x) => /^[0-9a-f]{8,}$/.test(x));
+  const notes = readdirSync(`${WH}/gates`).filter((f) => f.endsWith(".md")).map((f) => readFileSync(`${WH}/gates/${f}`, "utf8")).join("\n");
+  // gate-note shas: full hashes, or "prefix…suffix" / "prefix X, suffix Y" forms
+  const pairs = [...notes.matchAll(/\b([0-9a-f]{8,64})(?:\s*(?:…|\.\.\.|,? suffix )\s*([0-9a-f]{4,}))?/g)].map((m) => [m[1], m[2] || ""]);
+  const gated = (sha) => listed.some((x) => sha.startsWith(x)) || pairs.some(([a, b]) => sha.startsWith(a) && (!b || sha.endsWith(b)));
+  const shaOf = (f) => createHash("sha256").update(readFileSync(f)).digest("hex");
+  const man = JSON.parse(readFileSync(new URL("../data/MANIFEST.json", import.meta.url)));
+  const unl = Object.keys(man.files).filter((f) => !gated(shaOf(new URL(`../data/${f}`, import.meta.url))));
+  for (const f of unl) console.log(`  UNLISTED sha: data/${f} ${shaOf(new URL(`../data/${f}`, import.meta.url)).slice(0, 12)}`);
+  // self-test: a modified temp copy of a live file must be caught
+  const f0 = Object.keys(man.files)[0], tmp = `/tmp/gatecheck-${process.pid}.json`; writeFileSync(tmp, Buffer.concat([readFileSync(new URL(`../data/${f0}`, import.meta.url)), Buffer.from(" ")]));
+  const caught = !gated(shaOf(tmp)); unlinkSync(tmp);
+  check(unl.length === 0 && caught, `Warehouse sha list: all ${Object.keys(man.files).length} data files listed in export_shas.txt or a gate note${unl.length ? ` (UNLISTED: ${unl.join(", ")})` : ""}; self-test: modified temp copy of ${f0} ${caught ? "caught" : "NOT caught"}`); }
+// App Lead round: flag tags, ranked dates, own-latest end values, US January note scope
+{ const { flagTags, jobsDataset, applyStarts } = await import("../lib/series.mjs"); const JD = jobsDataset(data), JPD = applyStarts(jobsPerCapitaDataset(data, POPJ));
+  const G = applyStarts(EV.gdp), PC = applyStarts(EV.pc), j = (d, p) => flagTags(d, "DEU", p).join(" · ");
+  const deuJobs = JD.quarterly.DEU.periods.filter((p, i) => JD.quarterly.DEU.values[i] !== null).every((p) => flagTags(JD, "DEU", p).includes("OECD estimate"));
+  const gdpOk = [G, PC].every((d) => j(d, "1995-Q1") === "" && j(d, "2022-Q4") === "" && j(d, "2023-Q1") === "provisional" && j(d, "2026-Q1") === "provisional");
+  const jpcOk = j(JPD, "2022-Q4") === "OECD estimate" && j(JPD, "2023-Q1") === "OECD estimate · provisional";
+  const orderOk = ["Estimated population", "OECD estimate", "provisional"].join() === ["provisional", "Estimated population", "OECD estimate"].sort((a, b) => ["Estimated population", "OECD estimate", "provisional"].indexOf(a) - ["Estimated population", "OECD estimate", "provisional"].indexOf(b)).join();
+  check(deuJobs && gdpOk && jpcOk && orderOk, `flag tags: Germany Jobs "OECD estimate" on every point; GDP/GDP pc none before 2023-Q1, "provisional" from 2023-Q1; Jobs pc 2023-Q1 "${j(JPD, "2023-Q1")}"; order estimate · OECD estimate · provisional`);
+  const UL = (await import("../lib/series.mjs")).unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
+  const hj = headlinePick(JD, ["USA", "CAN"], 1, "jobs"), hu = headlinePick(UL, ALL, 50, "unemp"), hp = headlinePick(JPD, ["USA", "CAN"], 1, "index");
+  const per = (h) => [...(h.fastest?.periods || []), ...(h.slowest?.periods || []), ...(h.single?.periods || [])];
+  check(per(hj).every((p) => p <= "2026-08") && per(hj).includes("2026-08") && per(hu).every((p) => p === "2026-08" || /Q/.test(p)) && per(hp).every((p) => p === "2026-03"), `ranked dates: US Jobs 1Y ${per(hj).join("/")}, unemployment 50Y ${[...new Set(per(hu))].join("/")}, Jobs pc ${[...new Set(per(hp))].join("/")}`);
+  const lasts = ["CAN", "JPN", "USA"].map((c) => buildLine(JD, c, 50, "jobs").last);
+  check(lasts.every((v) => v !== null), `Jobs 50Y end labels use each country's own latest value (CAN ${lasts[0]?.toFixed(1)}, JPN ${lasts[1]?.toFixed(1)}, USA ${lasts[2]?.toFixed(1)}), never n/a`);
+  const cc = readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8");
+  check(/kind === "jobs" \? \{\} : \{ janJumps: \[\]/.test(cc) && /hasJan = kind === "jobs"/.test(cc), `US January note: Jobs and Jobs per capita only (cleared on every other chart)`);
+  const lc = readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");
+  check(/allQ \? `\$\{qL\(m0\)\} to \$\{qL\(m1\)\}`/.test(lc), `screen-reader summary uses quarters on quarterly-only charts ("Q2 1976 to Q2 2026")`); }
+// display rule: % changes 1 dp with "%", pts 2 dp; labels follow the displayed rounding
+{ const { DISPLAY_DP } = await import("../lib/series.mjs"); const H = (a, b, m) => headlineLabels({ fastest: { value: a }, slowest: { value: b } }, m);
+  const ok = DISPLAY_DP.pct === 1 && DISPLAY_DP.pts === 2 && fmtHeadline(283.1749, "index") === "+283.2%" && fmtHeadline(99.08, "index") === "+99.1%" && fmtHeadline(-0.5321, "unemp") === "−0.53"
+    && fmtHeadline(0.04, "index") === "0.0%" && fmtHeadline(-0.04, "jobs") === "0.0%" && fmtHeadline(-0.004, "unemp") === "0.00"
+    && H(0.04, -0.04, "index").fast === "No change" && H(0.04, -0.04, "index").slow === "No change" && H(0.06, -0.3, "jobs").fast === "Fastest growth" && H(0.004, -0.6, "unemp").fast === "No change" && H(0.004, -0.6, "unemp").slow === "Biggest fall";
+  let bad = 0; for (const d of [EV.gdp, EV.pc]) for (const y of [1, 5, 10, 20, 50]) { const h = headlinePick(d, ALL, y, "index"); for (const v of [h.fastest?.value, h.slowest?.value]) if (v != null) { const t = fmtHeadline(v, "index"); if (!t.endsWith("%") || /^[+−]0\.0%$/.test(t)) bad++; } }
+  check(ok && !bad, `display rule: % changes "+283.2%" (1 dp, % on every figure), pts "−0.53" (2 dp); ±0.04% shows "0.0%" and reads "No change"; never "+0.0%"/"−0.0%"`); }
 // Germany no-data band + US jobs ranking at the shared Aug 2026 (line to Sep)
 { const { noDataBands, jobsDataset, applyStarts, NO_DATA_BAND_LABEL } = await import("../lib/series.mjs"); const JD = jobsDataset(data), JPD = jobsPerCapitaDataset(data, POPJ);
   const cs = [[applyStarts(EV.gdp), "index"], [applyStarts(EV.pc), "index"], [JD, "jobs"], [applyStarts(JPD), "index"]];

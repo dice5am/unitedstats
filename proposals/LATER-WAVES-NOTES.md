@@ -52,3 +52,17 @@ Gate note: /workspace/skyscraper/unitedstats-warehouse/gates/PULL-GATE-2026-10-1
 - Toggles everywhere: total first (default), per capita second.
 
 ## Tabs (pending Cavin; shell on hold): Economy, Labour, Money, Demographics, Planet — 4–5 tabs, one hero chart at a time with a chart switcher (?chart=<id>).
+
+## #9 Electricity mix (LAST wave; do not build until the Ember file is gated)
+- Source: Ember yearly electricity data, 2000–2025, all 7 countries. Cite it exactly like every other chart (same source-line format and How it's calculated entry, e.g. "Ember (CC BY 4.0)"), with no special styling.
+- Six stacked bands, bottom to top, darkest to lightest on the neutral single-hue scale: Coal; Gas; Other fossil (oil and the rest); Nuclear; Hydro; Wind, solar and other renewables. Same order for every country, with a 1px card-colour gap between bands.
+- Labels go on the bands where they fit, otherwise in the legend in the same order.
+- The stats box lists all nine Ember sources separately.
+- Golden: for each country and year the six bands sum to 100 within 0.1, and each band equals the sum of its grouped Ember sources.
+- FINAL mapping (supersedes the band wording above): Band1 Coal; Band2 Gas; Band3 Other fossil; Band4 Nuclear; Band5 Hydro; Band6 Wind + Solar + Bioenergy + Other renewables, labelled "Wind, solar & other renewables". The stats box lists all nine Ember sources separately, with Bioenergy on its own line. The golden grouping check must also FAIL if the Ember file has any source not in this mapping.
+- GATED: /workspace/skyscraper/unitedstats-warehouse/export/ember_electricity_mix_share.json (sha 7859146f…1731, in export_shas.txt); gate note gates/EMBER-ELEC-MIX-GATE.md. Still built LAST.
+  - Source line: "Ember, Yearly Electricity Data (CC BY 4.0)", same format as every other chart.
+  - Never add the aggregates_not_to_sum groups.
+  - UK Other renewables is n/a for 2020–2025, never 0. Canada and Japan publish no Other renewables: leave that row out of their stats box; band 6 = wind + solar + bioenergy only.
+  - Bands sum only available sources.
+  - Golden: each country-year total within 0.1 of 100; each band equals the sum of its available sources; app file byte-identical to the export; any unmapped source fails.

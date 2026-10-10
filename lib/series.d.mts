@@ -18,6 +18,8 @@ export function headlinePick(data: unknown, codes: string[], years: number): { s
 export function glowLeaders(series: { code: string; at: (mi: number) => number | null }[], m0: number, m1: number): (string | null)[];
 export function buildLine(data: unknown, code: string, years: number, mode?: Mode): unknown;
 export function headlinePick(data: unknown, codes: string[], years: number, mode?: Mode): { single: Pick; fastest: Pick; slowest: Pick; none?: boolean; fullCodes?: string[] };
+export const DISPLAY_DP: { pct: number; pts: number };
+export function isPts(mode?: Mode): boolean;
 export function headlineDp(mode?: Mode): number;
 export function roundShown(v: number, mode?: Mode): number;
 export function fmtHeadline(v: number, mode?: Mode): string;
@@ -51,3 +53,4 @@ export function applyStarts<T>(ds: T): T;
 export function noDataBands(data: unknown, codes: string[], years: number, mode?: Mode): { code: string; to: number; period: string; label: string }[];
 export const NO_DATA_BAND_LABEL: string;
 export function jobsDataset(raw: unknown): any;
+export function flagTags(data: any, code: string, period: string | null): string[];

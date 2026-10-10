@@ -96,7 +96,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
 
   const ds = sets[view]; const UM = ds.kind === "unemp_m"; const mode = MODE[view]; const R = mode === "unemp"; const L = mode === "level"; const PR = kind === "policy";
   // #7: DE/FR/IT national lines end Dec 1998; one euro-area line (XM) carries them from Jan 1999 when any is picked.
-  const lines = useMemo(() => [...COUNTRIES.map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short })),
+  const lines = useMemo(() => [...COUNTRIES.map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
     ...(PR ? [{ ...(buildLine(ds, "XM", years, mode) as Line), name: "Euro area" }] : [])], [ds, years, mode, PR]);
   const onX: Record<string, boolean> = PR ? { ...on, XM: EURO.some((c) => on[c]) } : on;
   const sel = [...DEFAULT_ON.filter((c) => on[c]), ...(onX.XM ? ["XM"] : [])];
@@ -109,7 +109,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const allPts = lines.flatMap((l) => l.points), m0 = Math.min(...allPts.map((p) => p.mi)), m1 = Math.max(...allPts.map((p) => p.mi));
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
   const brkUnit = brks.length && brks.every((b) => b.label.includes("Q")) ? "quarter" : "year";
-  const hasJan = years <= 5 && shown.some((l) => l.janJumps.length > 0);
+  const hasJan = kind === "jobs" && years <= 5 && shown.some((l) => l.janJumps.length > 0);
   const naNote = Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`]));
   const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); return s.length && s.every((l) => l.excluded) ? `No OECD data for ${s.map((l) => COUNTRIES.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
   const windowRow = <><dt>Start – end</dt><dd className="strong">{wl.range}{wl.freq === "quarterly" ? " · quarterly" : ""}</dd></>;
@@ -289,7 +289,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
                 <div key={`${view}-${c.k ?? "one"}-${c.label}`} className="fig">
                   <div className="figl">{c.k ? c.label : null}</div>
                   <div className="figc" key={c.p.codes.join()}>{c.p.codes.map((cc) => <span key={cc}><i style={{ background: `var(--${cc})` }} />{nm(cc)}</span>)}</div>
-                  <div className={R || L ? "figv pts" : "figv"}><Tween value={c.p.value} format={(x) => fmtHeadline(x, mode)} /><span>{R || L ? "pts" : "%"}</span></div>
+                  <div className={R || L ? "figv pts" : "figv"}><Tween value={c.p.value} format={(x) => fmtHeadline(x, mode)} />{(R || L) && <span>pts</span>}</div>
                   <div className="figp">{per(c.p.periods)}</div>
                 </div>
               ));

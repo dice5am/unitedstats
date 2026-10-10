@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands } from "@/lib/series.mjs";
+import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands, flagTags } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
@@ -61,7 +61,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const wide = w >= 768;
   // ≥1024: the chart fills the rest of the window, sized from the viewport height (not the content), min 480.
   // <1024: fixed heights, so switching charts never changes the plot height.
-  const h = vh ? Math.max(480, vh - 545) : wide ? 500 : 320; // 545 = header, title, figures row, source and disclosure
+  // Short windows (<800px tall): 340 min and compact chrome (title 28, figures 32, no description, 12px gap); else 480 min.
+  const h = vh ? (vh < 800 ? Math.max(340, vh - 400) : Math.max(480, vh - 545)) : wide ? 500 : 320; // offsets = header, title, figures row, legend + source line
   const lblPx = wide ? 13 : 12;
   // <768: names, falling back to 2-letter codes when the names won't fit (width or vertical spread)
   const minGap = Math.ceil(lblPx * 1.25) + 4; // label box height + >= 4px clear between labels
@@ -107,7 +108,11 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   // no-data bands (excluded earlier years): visual only
   const bands = noDataBands(data, lines.map((l) => l.code), years, mode).map((b) => {
     const bx = x(b.to), tw = textW(b.label, 11, 400);
-    return { ...b, bx, inside: tw + 16 <= bx - pad.l };
+    const room = bx - pad.l - 16, cut = b.label.indexOf(": ");
+    const lines2 = cut > 0 ? [b.label.slice(0, cut + 1), b.label.slice(cut + 2)] : [b.label];
+    // one line if it fits with 8px clear each side; else two lines (split after the colon); else legend row
+    const rows = tw <= room ? [b.label] : lines2.length === 2 && Math.max(...lines2.map((t) => textW(t, 11, 400))) <= room ? lines2 : null;
+    return { ...b, bx, rows, inside: !!rows };
   });
   bandOut.current = bands.filter((b) => !b.inside).map((b) => b.label).join("|"); // labels that don't fit go to the legend row
   // gaps: blank stretches inside visible monthly lines
@@ -152,7 +157,6 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const rows = hover === null ? [] : picked.map((l) => {
     const p = l.excluded ? null : ptAt(l, hover);
     const lvl = p ? rawLevel(data, l.code, p.period) : null;
-    const prov = p && statusAt(data, l.code, p.period) === "P";
     const band = bands.find((b) => b.code === l.code && hover < b.to);
     if (band) return { l, p: null, v: null, lvl: null, note: band.label, tag: null };
     const pre = l.late && hover < l.points.find((q) => q.value !== null)!.mi ? `from ${l.late.includes("Q") ? qLabel(l.late) : fmtM(Number(l.late.slice(0, 4)) * 12 + Number(l.late.slice(5)) - 1)}` : null;
@@ -160,9 +164,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     const lastP = [...l.points].reverse().find((q) => q.value !== null);
     if (!l.excluded && l.freq === "monthly" && lastP && lastP.mi < m1 && hover > lastP.mi) { const oc = R ? ownChange(data, l.code, years) : null;
       return { l, p: lastP, v: lastP.value, lvl: null, tag: `to ${fmtM(lastP.mi)}${oc ? ` · ${oc.change > 0.004 ? "+" : oc.change < -0.004 ? "−" : ""}${Math.abs(oc.change).toFixed(2)} pts over ${years}Y` : ""}` }; }
-    const est = p && p.value !== null && estAt(data, l.code, p.period);
-    const oe = p && p.value !== null && wholeEstimate(data, l.code);
-    return { l, p, v: p ? p.value : null, lvl, oe, note: [est ? "Estimated population" : null, oe ? "OECD estimate" : null].filter(Boolean).join(" · "), tag: pre ?? (l.freq === "monthly" && p && p.value !== null && statusAt(data, l.code, p.period) === "P" ? "provisional" : null) ?? (l.freq === "quarterly" && p ? `${qLabel(p.period)}${prov ? " · provisional" : ""}` : null) };
+    const fl = p && p.value !== null ? flagTags(data, l.code, p.period) : []; // general rule: estimate · OECD estimate · provisional
+    return { l, p, v: p ? p.value : null, lvl, oe: fl.includes("OECD estimate"), note: fl.join(" · "), tag: pre ?? (l.freq === "quarterly" && p ? qLabel(p.period) : null) };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
@@ -175,7 +178,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const tipW = wide ? 340 : 0;
   const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
-  const summary = `${RU ? "Unemployment rate" : R ? "Policy rate" : "Index"}, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
+  const summary = `${RU ? "Unemployment rate" : R ? "Policy rate" : "Index"}, ${allQ ? `${qL(m0)} to ${qL(m1)}` : `${fmtM(m0)} to ${fmtM(m1)}`}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
   // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
   const valAt = (l: Line, mi: number): number | null => {
     if (l.freq === "monthly") { const p = l.points.find((q) => q.mi === mi); return p ? p.value : null; }
@@ -250,12 +253,12 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           <g key={`band${b.code}`} className="ndband" data-code={b.code} pointerEvents="none">
             <defs><linearGradient id={`ndb-${b.code}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="var(--ndband)" /><stop offset={Math.max(0, 1 - 8 / Math.max(8, b.bx - pad.l))} stopColor="var(--ndband)" /><stop offset="1" stopColor="var(--ndband)" stopOpacity="0" /></linearGradient></defs>
             <rect x={pad.l} y={pad.t} width={Math.max(0, b.bx - pad.l)} height={ih} fill={`url(#ndb-${b.code})`} />
-            {b.inside && <text x={pad.l + 8} y={pad.t + 8 + 9} className="from ndlabel">{b.label}</text>}
+            {b.inside && <text x={pad.l + 8} y={pad.t + 8 + 9} className="from ndlabel" aria-label={b.label}>{b.rows!.map((t, i) => <tspan key={i} x={pad.l + 8} dy={i ? 14 : 0}>{t}</tspan>)}</text>}
           </g>
         ))}
         {covid && <g>
           <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
-          <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
+          {wide && <text x={x(covid.a) + 6} y={pad.t + 14} className="ax covlbl">COVID-19</text>}
         </g>}
         {ticks.map((v) => (
           <g key={v}>
@@ -330,7 +333,6 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           if (ty !== undefined) boxes.push([tx, ty - 10, tx + tw, ty]);
           return (<g key={`ls${l.code}`} className="late fadein" data-code={l.code}>
             <circle cx={fx} cy={fy} r={3} fill="var(--card-solid)" stroke={col(l.code)} strokeWidth={1.5} />
-            {ty !== undefined && <text x={tx} y={ty} className="from">{t}</text>}
           </g>);
         }); })()}
         {lines.flatMap((l) => l.breaks.map((bk) => {
@@ -375,6 +377,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
               {"note" in r && r.note && <span className="tipnote">{r.note}</span>}
             </div>
           ))}
+          {!wide && covid && hover !== null && hover >= covid.a && hover <= covid.b && <div className="tipn covtip">Shaded: COVID-19 (Mar 2020 – Jun 2021)</div>}
           {jan && <div className="tipn"><i className="dot amber" />US January jump: cause not confirmed</div>}
           {brk.map((b) => <div key={b} className="tipn">{b}</div>)}
         </div>
