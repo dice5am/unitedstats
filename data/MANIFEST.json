@@ -1,0 +1,34 @@
+{
+  "note": "Every file in data/: sha256 and the card ids that use it. '#n' = card n in proposals/decision-brief.md; 'live:*' = cards already shipped before Round 4. Checked by scripts/golden-test.mjs.",
+  "files": {
+    "c1_employment_rate.json": {
+      "sha256": "30bbdc9f597ecc901ccc0df2058ffda171fd78b592353f123c3e54ce6f02deac",
+      "cards": [
+        "#22"
+      ]
+    },
+    "c1_labour_series.json": {
+      "sha256": "fa432222b6c64a9e12c1159970e1813f6147ab1dda3988ed07e84fd26b330250",
+      "cards": [
+        "live:jobs",
+        "live:jobs-pc"
+      ]
+    },
+    "c1_unemployment_rate.json": {
+      "sha256": "7c77ec1f71358c42a1f9633e03e2e2078e138224c1bcb78ee8b4e3ce91d4483a",
+      "cards": [
+        "live:unemp",
+        "#2"
+      ]
+    },
+    "econ_gdp_series.json": {
+      "sha256": "228d4521df801539ffbe36bba75b6dfd012aaf205bfc4c834ec2cc2d4f9adbec",
+      "cards": [
+        "live:gdp",
+        "live:gdp-pc",
+        "live:jobs-pc",
+        "#1"
+      ]
+    }
+  }
+}

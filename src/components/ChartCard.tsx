@@ -4,6 +4,7 @@ import { COUNTRIES, WINDOWS, buildLine, headlinePick, headlineLabels, fmtHeadlin
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
+import { writeParams, CalcDisclosure } from "./kit";
 
 // One self-contained chart card: measure toggle, timeframe, picker, headline, chart, legend, How it's calculated.
 // Every card on a page owns its own state and its own URL params (prefix), sharing nothing with its siblings.
@@ -38,15 +39,6 @@ const sign = (v: number) => (v > 0.0049 ? "+" : v < -0.0049 ? "−" : "");
 const fmtL = (v: number) => (v >= 1000 ? Math.round(v).toLocaleString("en-GB") : v.toLocaleString("en-GB", { maximumFractionDigits: 3 }));
 const k = (v: number) => `${v.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
 
-// Merge this card's params into the URL (other cards' params untouched); commas kept readable.
-function writeParams(set: Record<string, string>, drop: string[]) {
-  const q = new URLSearchParams(location.search);
-  for (const d of drop) q.delete(d);
-  for (const [k2, v] of Object.entries(set)) q.set(k2, v);
-  const qs = [...q.entries()].map(([a, b]) => `${a}=${encodeURIComponent(b).replace(/%2C/g, ",")}`).join("&");
-  const next = `${location.pathname}${qs ? "?" + qs : ""}${location.hash}`;
-  if (next !== location.pathname + location.search + location.hash) history.replaceState(null, "", next);
-}
 
 export default function ChartCard({ kind, sets, primary = false, initialSearch }: {
   kind: Kind; sets: Partial<Record<View, DS>>; primary?: boolean; initialSearch: MutableRefObject<string | null>;
@@ -217,6 +209,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
 
   return (
     <section className="cardsec" ref={secRef} aria-labelledby={`h-${kind}`} id={`card-${kind}`}>
+      <p className="eyebrow">{E ? "Economy" : "Labour"}</p>
       <H id={`h-${kind}`} key={view} className="h1 fadein">{HEAD[view]}</H>
       <p key={`s${view}`} className="sub fadein">{SUB[view]}</p>
       {views.length > 1 && (
@@ -282,21 +275,4 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   );
 }
 
-function CalcDisclosure({ hid, children }: { hid: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const pid = `${hid}-panel`;
-  return (
-    <div className={open ? "calcd open" : "calcd"}>
-      <h2 id={hid} className="calch">
-        <button type="button" aria-expanded={open} aria-controls={pid} onClick={() => setOpen((o) => !o)}>
-          <span>How it’s calculated</span><span className="chev" aria-hidden>▾</span>
-        </button>
-      </h2>
-      <div id={pid} role="region" aria-labelledby={hid} hidden={!open}>
-        <p className="sub">Same inputs and maths as the chart above.</p>
-        {children}
-      </div>
-    </div>
-  );
-}
 

@@ -1,0 +1,11 @@
+export const qi: (p: string) => number;
+export const qs: (i: number) => string;
+export const ORDER: string[];
+export const COMEBACK_BASE: string;
+export const SCORE_BASE: string;
+export const HEAT_STEPS: number;
+export type CPoint = { period: string; qi: number; value: number | null; prov: boolean };
+export function comeback(econ: unknown, view?: "pc" | "gdp"): { view: string; end: string; base: string; panels: { code: string; base: number | null; points: CPoint[]; back: string | null; last: number | null }[]; min: number; max: number };
+export function scorecard(rate: unknown): { base: string; end: string; rows: { code: string; start: number | null; end: number | null; change: number | null; est: boolean }[] };
+export function heatStrip(un: unknown, years: number): { end: string; unit: "quarter" | "year"; cols: { key: string; label: string; qs: string[]; partial: boolean }[]; rows: { code: string; vals: (number | null)[] }[]; min: number; max: number };
+export function heatStep(v: number, min: number, max: number): number;

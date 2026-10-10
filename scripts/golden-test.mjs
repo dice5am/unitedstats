@@ -1,11 +1,11 @@
-// Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
+// Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { avgChange, glowLeaders, mIdx, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
-const golden = JSON.parse(readFileSync(new URL("../data/c1_golden.json", import.meta.url)));
+const golden = JSON.parse(readFileSync(new URL("./golden/c1_golden.json", import.meta.url)));
 const tol = golden.tolerance_pct;
 const ends = commonEnds(data);
 let fail = 0;
@@ -74,7 +74,7 @@ function JPd() { return jobsPerCapitaDataset(data, JSON.parse(readFileSync(new U
 // v11: Unemployment rate (OECD UNE_LF, 15+, SA) — recomputed independently from the raw file
 const uraw = readFileSync(new URL("../data/c1_unemployment_rate.json", import.meta.url));
 const un = JSON.parse(uraw);
-const G3 = JSON.parse(readFileSync(new URL("../data/golden_round3.json", import.meta.url)));
+const G3 = JSON.parse(readFileSync(new URL("./golden/golden_round3.json", import.meta.url)));
 const rv = (code, p) => { const s = un.monthly[code]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
 const prevM = (p, k) => { const [yy, mm] = p.split("-").map(Number); const t = yy * 12 + mm - 1 - k; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; };
 const a3 = (code, p) => { const v = [0, 1, 2].map((k) => rv(code, prevM(p, k))); return v.some((x) => x === null) ? null : (v[0] + v[1] + v[2]) / 3; };
@@ -224,6 +224,92 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
   const j20 = buildLine(JP, "JPN", 20, "index");
   check(j20.excluded && !buildLine(JP, "JPN", 10, "index").excluded && !headlinePick(JP, ["JPN"], 20, "index").single, "jobs per capita: Japan (population from Q3 2007) excluded from 20Y only; Japan-only 20Y headline n/a");
   check(JP.monthly.CAN.periods[JP.monthly.CAN.periods.length - 1] === "2026-03" && Object.values(JP.quarterly).every((s) => s.end === "2026-Q1"), "jobs per capita: monthly lines stop at Mar 2026, quarterly at Q1 2026 (no extrapolation)"); }
+// ---- Round 4 Wave 1 cards: recomputed independently from the raw files ----
+{ const { comeback, scorecard, heatStrip, heatStep, ORDER } = await import("../lib/charts.mjs");
+  const qn = (p) => { const [y, q] = p.split("-Q").map(Number); return y * 4 + q - 1; };
+  const qp = (i) => `${Math.floor(i / 4)}-Q${(i % 4) + 1}`;
+  const val = (s, p) => { const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+  check(ORDER.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA", "r4 structure: fixed G7 row/panel order, Canada first");
+  // #1 comeback race
+  for (const [view, key, end] of [["pc", "gdp_per_capita", "2026-Q1"], ["gdp", "gdp", "2026-Q2"]]) {
+    const c = comeback(econ, view); let bad = 0; const backs = [];
+    for (const p of c.panels) { const s = econ[key][p.code], b = val(s, "2019-Q4");
+      const e = val(s, end) / b * 100; if (Math.abs(p.last - e) > 1e-9) bad++;
+      let back = null; for (let i = qn("2020-Q2"); i <= qn(end); i++) { const v = val(s, qp(i)); if (v !== null && v / b * 100 >= 100) { back = qp(i); break; } }
+      if (back !== p.back) bad++; backs.push(`${p.code} ${back}`);
+      if (p.points[0].period !== "2019-Q1" || p.points[p.points.length - 1].period !== end || Math.abs(p.points.find((q) => q.period === "2019-Q4").value - 100) > 1e-12) bad++; }
+    check(bad === 0 && c.end === end, `comeback ${view}: index(Q4 2019)=100, end ${end} = raw ratio, back-to-100 quarter recomputed for all 7 (${backs.join(", ")})`); }
+  // #22 jobs recovery scorecard
+  { const rraw = JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url)));
+    const sc = scorecard(rraw); const want = ORDER.map((c) => { const s = rraw.quarterly[c]; return [c, val(s, "2026-Q2") - val(s, "2019-Q4")]; }).sort((a, b) => b[1] - a[1]);
+    const ok = sc.end === "2026-Q2" && sc.rows.every((r, i) => r.code === want[i][0] && Math.abs(r.change - want[i][1]) < 1e-9);
+    check(ok, `recovery scorecard: Q2 2026 − Q4 2019 (pts), ranked: ${want.map(([c, v]) => `${c} ${v >= 0 ? "+" : ""}${v.toFixed(2)}`).join(", ")}`);
+    check(sc.rows.find((r) => r.code === "DEU").est && !sc.rows.find((r) => r.code === "CAN").est, "recovery scorecard: Germany's estimated (E) quarter flagged; others not"); }
+  // #2 heat strip
+  { let bad = 0; const shape = [];
+    for (const y of [1, 5, 10, 20]) { const h = heatStrip(un, y); shape.push(`${y}Y ${h.cols.length} ${h.unit}s`);
+      if (h.end !== "2026-Q2" || h.rows.map((r) => r.code).join() !== ORDER.join()) bad++;
+      if ((y <= 5 && (h.cols.length !== y * 4 || h.unit !== "quarter")) || (y > 5 && (h.cols.length !== y || h.unit !== "year"))) bad++;
+      for (const r of h.rows) h.cols.forEach((c, i) => {
+        let want; if (y <= 5) want = val(un.quarterly[r.code], c.key);
+        else { const n = c.key === "2026" ? 2 : 4; const v = []; for (let k = 1; k <= n; k++) v.push(val(un.quarterly[r.code], `${c.key}-Q${k}`)); want = v.some((x) => x === null) ? null : v.reduce((a, b) => a + b, 0) / n; }
+        if ((want === null) !== (r.vals[i] === null) || (want !== null && Math.abs(want - r.vals[i]) > 1e-9)) bad++;
+        if (r.vals[i] !== null) { const st = heatStep(r.vals[i], h.min, h.max); if (st < 0 || st > 6) bad++; } }); }
+    const h20 = heatStrip(un, 20), us = h20.rows.find((r) => r.code === "USA");
+    check(bad === 0, `heat strip: every cell recomputed from raw quarters (${shape.join(", ")}); 7 steps within 0–6`);
+    check(us.vals[h20.cols.findIndex((c) => c.key === "2025")] === null && heatStrip(un, 1).rows.find((r) => r.code === "USA").vals[1] === null, "heat strip: US Q4 2025 n/a (quarter and 2025 year cell), never filled");
+    check(heatStep(h20.min, h20.min, h20.max) === 0 && heatStep(h20.max, h20.min, h20.max) === 6, `heat strip 20Y: scale ${h20.min.toFixed(2)}–${h20.max.toFixed(2)}% maps to steps 0 and 6`); }
+}
+// ---- data/MANIFEST.json: every data file listed, sha matches, used by an approved (or live) card, imported by a page ----
+{ const { readdirSync } = await import("node:fs");
+  const man = JSON.parse(readFileSync(new URL("../data/MANIFEST.json", import.meta.url)));
+  const LIVE = ["live:unemp", "live:jobs", "live:jobs-pc", "live:gdp", "live:gdp-pc"];
+  const okCard = (id) => LIVE.includes(id) || (/^#(\d+)$/.test(id) && +id.slice(1) >= 1 && +id.slice(1) <= 25);
+  const pages = ["economy", "labour"].map((t) => readFileSync(new URL(`../src/app/${t}/page.tsx`, import.meta.url), "utf8")).join("\n");
+  const files = readdirSync(new URL("../data/", import.meta.url)).filter((f) => f !== "MANIFEST.json").sort();
+  const probs = [];
+  for (const f of files) { const e = man.files[f];
+    if (!e) { probs.push(`${f}: not in manifest`); continue; }
+    const h = createHash("sha256").update(readFileSync(new URL(`../data/${f}`, import.meta.url))).digest("hex");
+    if (h !== e.sha256) probs.push(`${f}: sha ${h.slice(0, 8)} ≠ manifest ${e.sha256.slice(0, 8)}`);
+    if (!Array.isArray(e.cards) || !e.cards.length || !e.cards.every(okCard)) probs.push(`${f}: no valid card id`);
+    if (!pages.includes(`@/data/${f}`)) probs.push(`${f}: not imported by any page`); }
+  for (const f of Object.keys(man.files)) if (!files.includes(f)) probs.push(`${f}: in manifest but missing from data/`);
+  check(probs.length === 0, `data manifest: ${files.length} files, sha256 match, each used by a card (${files.map((f) => `${f} → ${man.files[f]?.cards.join(" ")}`).join("; ")})${probs.length ? " — " + probs.join("; ") : ""}`); }
+// ---- Warehouse independent reference figures (scripts/golden/REFERENCE-FIGURES.md), Wave 1 cards, every country ----
+// Like-for-like comparisons must match (check). Where the card's convention differs (shared end vs own latest,
+// quarterly vs monthly), the difference is printed as a DIFF line with ours vs theirs — never forced to match.
+{ const { comeback, scorecard, heatStrip } = await import("../lib/charts.mjs");
+  const md = readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8");
+  const sect = (n) => { const m = new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md); return m[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => { const [c, per, v, note] = l.slice(2).split(" | "); return { c, per, v: +v, note: note || "" }; }); };
+  const val = (s, p) => { const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+  const diffs = [];
+  // #1
+  { const ref = sect(1), cb = comeback(econ, "pc"); let bad = 0, same = 0;
+    for (const r of ref) { const p = cb.panels.find((x) => x.code === r.c); const back = /back to 100 at (\d{4}-Q\d)/.exec(r.note)[1];
+      if (p.back !== back) bad++;
+      const s = econ.gdp_per_capita[r.c], mine = val(s, r.per) / val(s, "2019-Q4") * 100; // same formula at their period
+      if (Math.abs(mine - r.v) > 0.05) bad++;
+      if (r.per === cb.end) { same++; if (Math.abs(p.last - r.v) > 0.05) bad++; }
+      else diffs.push(`#1 ${r.c}: card shows ${p.last.toFixed(1)} at ${cb.end} (shared end); Warehouse ${r.v} at ${r.per} (own latest)`); }
+    check(bad === 0, `ref #1 comeback: back-to-100 quarter matches for all 7; index formula matches Warehouse at their period for all 7 (±0.05); card figure matches where periods agree (${same} of 7)`); }
+  // #22
+  { const ref = sect(22), sc = scorecard(JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url)))); let bad = 0, same = 0;
+    const rr = JSON.parse(readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url)));
+    for (const r of ref) { const [a, b] = r.per.split("→"); const row = sc.rows.find((x) => x.code === r.c);
+      const mine = val(rr.quarterly[r.c], b) - val(rr.quarterly[r.c], a);
+      if (Math.abs(mine - r.v) > 0.005 || a !== sc.base) bad++;
+      if (b === sc.end) { same++; if (Math.abs(row.change - r.v) > 0.005) bad++; }
+      else diffs.push(`#22 ${r.c}: card ${row.change >= 0 ? "+" : ""}${row.change.toFixed(2)} pts to ${sc.end} (shared end); Warehouse ${r.v >= 0 ? "+" : ""}${r.v.toFixed(2)} to ${b} (own latest)`); }
+    check(bad === 0, `ref #22 scorecard: change formula matches Warehouse for all 7 (±0.005 pts); card figure matches where periods agree (${same} of 7)`); }
+  // #2
+  { const ref = sect(2), h = heatStrip(un, 1); let bad = 0, cmp = 0;
+    for (const r of ref) { const m = un.monthly[r.c]; const row = h.rows.find((x) => x.code === r.c), q = row.vals[row.vals.length - 1];
+      if (m) { cmp++; if (Math.abs(val(m, r.per) - r.v) > 0.05) bad++; }
+      diffs.push(`#2 ${r.c}: card (quarterly) ${q.toFixed(2)}% at ${h.end}; Warehouse (monthly file) ${r.v}% at ${r.per}${m ? "" : " — monthly series not held"}`); }
+    check(bad === 0, `ref #2 heat strip: latest monthly values in our held file match Warehouse for the ${cmp} countries we hold monthly (CAN, USA, JPN); card is quarterly, so no like-for-like card figure yet`); }
+  for (const d of diffs) console.log("DIFF " + d);
+}
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("unemployment sha256", createHash("sha256").update(uraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
