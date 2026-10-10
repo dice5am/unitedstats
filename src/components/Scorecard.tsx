@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { COUNTRIES, qLabel } from "@/lib/series.mjs";
 import { scorecard } from "@/lib/charts.mjs";
 import { chartTitle } from "@/src/charts/meta";
+import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, StatBox } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -34,6 +35,7 @@ export default function Scorecard({ rate }: { rate: unknown }) {
         <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">{qLabel(s.base)} → {qLabel(s.end)}</dd><dt>Ends</dt><dd>{qLabel(s.end)}, the latest quarter all seven share.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>change = rate(end) − rate(Q4 2019), in points</code></div>
           {ca.change !== null && <p className="ex">Canada: <b>{ca.end!.toFixed(2)}% − {ca.start!.toFixed(2)}% = {pts(ca.change)} pts</b></p>}</div></div>
+        <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["22"]}</p></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps (n/a) are never filled</li><li><span className="ic">E</span>Estimated quarters are marked est.</li></ul></div>
       </>}>
       <div className="sc" onPointerDown={() => setSel(null)}>

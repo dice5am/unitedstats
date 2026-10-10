@@ -290,3 +290,35 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .smp{position:relative}
 .smbtn{position:absolute;right:6px;bottom:4px;font-size:11px;color:var(--muted);padding:4px 6px;border-radius:6px;opacity:0}
 .smbtn:focus-visible{opacity:1;outline:2px solid var(--focus)}
+.diffnote{margin:4px 0 0;color:var(--text-2);line-height:1.5}
+
+/* ---- Round 4b shell: 5 tabs, hero chart, switcher ---- */
+.tabs5{display:flex;border-bottom:1px solid var(--grid);max-width:calc(1120px + 2*var(--pad));margin:0 auto;padding:0 var(--pad);gap:8px}
+.tabs5 a{font-size:14px;font-weight:500;text-decoration:none;color:var(--muted);min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0 8px;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s}
+.tabs5 a:hover{color:var(--text)}.tabs5 a.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
+.tabs5 a:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;border-radius:6px}
+@media (max-width:767px){.tabs5{padding:0 8px;gap:0;justify-content:space-between}.tabs5 a{font-size:13px;flex:1 1 auto}}
+.tabbody{display:block;padding-top:16px}
+.rail{display:none}
+.cpick{display:flex;align-items:stretch;gap:6px;margin:4px 0 8px}
+.cpbtn{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:0 16px;border-radius:14px;border:1px solid var(--card-border);background:var(--glass);color:var(--text);font:inherit;font-weight:600;font-size:15px;text-align:left}
+.cpbtn span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpar{width:44px;flex:none;border-radius:14px;border:1px solid var(--card-border);background:var(--glass);color:var(--text-2);font-size:22px;line-height:1}
+.cpar:hover,.cpbtn:hover{color:var(--text)}
+.cpbtn:focus-visible,.cpar:focus-visible,.rail a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.hero{min-height:1180px}
+.hero .cardsec{margin-top:24px}
+@media (min-width:1024px){
+ .tabbody{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;padding-top:32px}
+ .rail{display:block;position:sticky;top:24px;align-self:start}
+ .rail ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+ .rail a{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;text-decoration:none;color:var(--text-2);border-left:2px solid transparent}
+ .rail a b{font-weight:600;font-size:14px;color:var(--text-2)}
+ .rail a span{font-size:12px;color:var(--muted);line-height:1.35}
+ .rail a:hover{background:var(--glass-hl)}
+ .rail a.on{background:var(--glass-hl);border-left-color:var(--text)}.rail a.on b{color:var(--text)}
+ .cpick{display:none}
+ .hero .cardsec{margin-top:0}
+}
+.wipcard{margin-top:24px;min-height:360px;display:grid;place-items:center;color:var(--muted)}
+.wipcard p{margin:0;font-size:var(--fs-3)}

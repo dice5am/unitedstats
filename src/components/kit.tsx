@@ -133,18 +133,12 @@ export function jumpTo(id: string) {
   requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })));
 }
 
-// document.title follows the chart currently at the top of the viewport ("<chart title> · unitedstats").
-const visibleTitles = new Map<Element, string>();
-function applyTitle() {
-  let best: [number, string] | null = null;
-  for (const [el, t] of visibleTitles) { const top = Math.abs(el.getBoundingClientRect().top); if (!best || top < best[0]) best = [top, t]; }
-  if (best) document.title = `${best[1]} · unitedstats`;
-}
-export function useDocTitle(ref: React.RefObject<Element | null>, title: string) {
+// One hero chart per page (Round 4b): the tab title is the shown chart's title, per view.
+// Re-applied briefly after mount because Next's static metadata can land after hydration.
+export function useDocTitle(_ref: React.RefObject<Element | null>, title: string) {
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const io = new IntersectionObserver((es) => { for (const e of es) { if (e.isIntersecting) visibleTitles.set(el, title); else visibleTitles.delete(el); } applyTitle(); }, { threshold: [0, 0.25] });
-    io.observe(el); const sc = () => applyTitle(); addEventListener("scroll", sc, { passive: true });
-    return () => { io.disconnect(); visibleTitles.delete(el); removeEventListener("scroll", sc); };
-  }, [ref, title]);
+    const t = `${title} · unitedstats`, set = () => { if (document.title !== t) document.title = t; };
+    set(); const ids = [50, 300, 1000].map((ms) => setTimeout(set, ms));
+    return () => ids.forEach(clearTimeout);
+  }, [title]);
 }

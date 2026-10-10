@@ -1,3 +1,3 @@
-import Shell, { InProgress } from "@/src/components/Shell";
-export const metadata = { title: "Environment & energy · unitedstats" };
-export default function Page() { return <Shell tab="environment" cards={[]}><InProgress tab="environment" /></Shell>; }
+import TabPage from "@/src/components/TabPage";
+export const metadata = { title: "Environment · unitedstats" };
+export default function Page() { return <TabPage tab="environment" />; }

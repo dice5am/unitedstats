@@ -268,10 +268,11 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
 }
 // ---- data/MANIFEST.json: every data file listed, sha matches, used by an approved (or live) card, imported by a page ----
 { const { readdirSync } = await import("node:fs");
+  const reg_built = (c) => /built: true/.test((readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8").split("\n").find((l) => l.includes(`id: "${c.slice(1)}"`)) || ""));
   const man = JSON.parse(readFileSync(new URL("../data/MANIFEST.json", import.meta.url)));
   const LIVE = ["live:unemp", "live:jobs", "live:jobs-pc", "live:gdp", "live:gdp-pc"];
   const okCard = (id) => LIVE.includes(id) || (/^#(\d+)$/.test(id) && +id.slice(1) >= 1 && +id.slice(1) <= 25);
-  const pages = ["economy", "labour"].map((t) => readFileSync(new URL(`../src/app/${t}/page.tsx`, import.meta.url), "utf8")).join("\n");
+  const pages = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8"); // charts load their data through the registry
   const files = readdirSync(new URL("../data/", import.meta.url)).filter((f) => f !== "MANIFEST.json").sort();
   const probs = [];
   for (const f of files) { const e = man.files[f];
@@ -279,10 +280,10 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const h = createHash("sha256").update(readFileSync(new URL(`../data/${f}`, import.meta.url))).digest("hex");
     if (h !== e.sha256) probs.push(`${f}: sha ${h.slice(0, 8)} ≠ manifest ${e.sha256.slice(0, 8)}`);
     if (!Array.isArray(e.cards) || !e.cards.length || !e.cards.every(okCard)) probs.push(`${f}: no valid card id`);
-    if (!pages.includes(`@/data/${f}`)) probs.push(`${f}: not imported by any page`); }
+    if (!pages.includes(`@/data/${f}`) && !man.files[f].cards.every((c) => c.startsWith("#") && !reg_built(c))) probs.push(`${f}: not loaded by any chart`); }
   for (const f of Object.keys(man.files)) if (!files.includes(f)) probs.push(`${f}: in manifest but missing from data/`);
   // self-test: a changed file (any file, live ones included) must be caught by the sha comparison
-  { const f0 = files.find((f) => man.files[f].cards.some((c) => c.startsWith("live:")));
+  { const f0 = files.find((f) => man.files[f]?.cards.some((c) => c.startsWith("live:")));
     const tampered = createHash("sha256").update(Buffer.concat([readFileSync(new URL(`../data/${f0}`, import.meta.url)), Buffer.from(" ")])).digest("hex");
     check(tampered !== man.files[f0].sha256, `data manifest self-test: a one-byte change to live file ${f0} no longer matches its manifest sha (would fail)`); }
   // registry: every chart's data files are in the manifest; prefixed params never collide between charts
@@ -292,9 +293,10 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const prefOk = ids.every((x) => x.params.every((p) => /^[a-z]+_/.test(p)) && new Set(x.params.map((p) => p.split("_")[0])).size <= 1);
     const dataOk = ids.every((x) => x.data.every((f) => man.files[f]));
     const keyOk = ids.every((x) => x.id === x.key) && ["1", "2", "22"].every((n) => ids.some((x) => x.id === n));
+    const built = [...reg.matchAll(/^  "?(\w+)"?: \{ id: "\w+", built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
-    const loadOk = ids.every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(ids.length === 6 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} standalone charts, ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
+    check(built.length === 6 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -329,6 +331,14 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
   for (const e of exp) console.log("EXPECTED " + e);
   for (const m of mism) console.log("MISMATCH " + m);
 }
+// Difference notes: exact text from the Warehouse gate file, for #3 #7 #10 #14 #22 #25; #22 rendered in its card.
+{ const { DIFFERENCE_NOTES } = await import("../lib/differenceNotes.mjs");
+  const md = readFileSync(new URL("./golden/DIFFERENCE-NOTES.md", import.meta.url), "utf8");
+  const want = Object.fromEntries(md.split("\n").map((l) => /^- \*\*#(\d+) [^*]+:\*\* (.+)$/.exec(l)).filter(Boolean).map((m) => [m[1], m[2]]));
+  const ids = ["3", "7", "10", "14", "22", "25"];
+  const sc = readFileSync(new URL("../src/components/Scorecard.tsx", import.meta.url), "utf8");
+  check(ids.every((i) => want[i] && DIFFERENCE_NOTES[i] === want[i]) && Object.keys(DIFFERENCE_NOTES).sort().join() === ids.slice().sort().join() && sc.includes('DIFFERENCE_NOTES["22"]'),
+    `difference notes: exact text stored for #${ids.join(", #")}; #22 shown in its How it's calculated`); }
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("unemployment sha256", createHash("sha256").update(uraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));

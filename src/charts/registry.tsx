@@ -4,11 +4,11 @@
 // mount exactly one chart. The switcher itself is not built yet.
 import { lazy, Suspense, useRef, type ComponentType, type MutableRefObject } from "react";
 
-import { CHART_META, type ChartId } from "./meta";
+import { CHART_META, type ChartId, type BuiltId } from "./meta";
 export { CHART_META, type ChartId };
 type Init = { initial: MutableRefObject<string | null> };
 // Loaders only; id, titles, description, tab, params and data files live in ./meta (CHART_META).
-export const CHARTS: Record<ChartId, { load: () => Promise<{ default: ComponentType<Init> }> }> = {
+export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentType<Init> }> }> = {
   gdp: {
     load: async () => { const [{ default: econ }, { econDataset }, { default: ChartCard }] = await Promise.all([import("@/data/econ_gdp_series.json"), import("@/lib/series.mjs"), import("@/src/components/ChartCard")]);
       const sets = { gdp: econDataset(econ, "gdp"), pc: econDataset(econ, "pc") }; return { default: ({ initial }: Init) => <ChartCard kind="econ" sets={sets} primary initialSearch={initial} /> }; } },
@@ -29,9 +29,12 @@ export const CHARTS: Record<ChartId, { load: () => Promise<{ default: ComponentT
       return { default: () => <S rate={rate} /> }; } },
 };
 
-const cache: Partial<Record<ChartId, ComponentType<Init>>> = {};
+const cache: Partial<Record<BuiltId, ComponentType<Init>>> = {};
+export const isBuilt = (id: ChartId): id is BuiltId => id in CHARTS;
+// Warm a chart's code and data in the background (idle preload of the next chart).
+export function preload(id: ChartId) { if (isBuilt(id)) CHARTS[id].load().catch(() => {}); }
 // Render one chart by id, standalone. Reads its own prefixed params from the URL on mount.
-export function ChartById({ id }: { id: ChartId }) {
+export function ChartById({ id }: { id: BuiltId }) {
   const initial = useRef<string | null>(null);
   if (initial.current === null && typeof window !== "undefined") initial.current = location.search;
   const C = (cache[id] ??= lazy(CHARTS[id].load));

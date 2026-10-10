@@ -8,6 +8,9 @@ export default {
     return [
       ...labourKeys.map((key) => ({ source: "/", has: [{ type: "query", key }], destination: "/labour", permanent: false })),
       { source: "/", destination: "/economy", permanent: false },
+      // Round 4 interim nine-tab routes -> the five locked tabs (Round 4b)
+      ...[["demographics", "society"], ["health", "society"], ["education", "society"], ["housing", "finance"], ["trade", "finance"], ["innovation", "economy"]]
+        .map(([a, b]) => ({ source: `/${a}`, destination: `/${b}`, permanent: false })),
     ];
   },
 };

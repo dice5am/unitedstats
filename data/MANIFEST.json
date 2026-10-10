@@ -1,6 +1,12 @@
 {
   "note": "Every file in data/: sha256 and the card ids that use it. '#n' = card n in proposals/decision-brief.md; 'live:*' = cards already shipped before Round 4. Checked by scripts/golden-test.mjs.",
   "files": {
+    "bis_policy_rate_m.json": {
+      "sha256": "1731dce20c0d04bac366b612b34f8af83f6268be170c3a61da728b59a8d520a9",
+      "cards": [
+        "#7"
+      ]
+    },
     "c1_employment_rate.json": {
       "sha256": "30bbdc9f597ecc901ccc0df2058ffda171fd78b592353f123c3e54ce6f02deac",
       "cards": [
