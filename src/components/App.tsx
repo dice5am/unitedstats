@@ -37,7 +37,7 @@ export default function App({ data, tab }: { data: any; tab: Tab }) {
     <main className="shell">
       <header className="top">
         <div className="titles">
-          <h1>Canada vs the world</h1>
+          <h1>unitedstats</h1>
           <p className="sub">{tab === "labour" ? "Employment, indexed to 100 at window start" : "Economy"}</p>
         </div>
         <span className="badge">Data as of {dataAsOf}</span>
