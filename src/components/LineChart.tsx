@@ -131,7 +131,7 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
   const area = canFirst && canLast ? `${monotonePath(canPts)}L${canLast.x},${bottom}L${canFirst.x},${bottom}Z` : "";
 
   return (
-    <div ref={ref} className="chart" style={{ height: h }} tabIndex={0} aria-label="Employment chart; use arrow keys to step months"
+    <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0} aria-label="Employment chart; use arrow keys to step months"
       onKeyDown={(e) => {
         if (e.key === "Escape") return setHover(null);
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -159,7 +159,7 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
           </g>
         ))}
         {!ticks.some((v) => Math.abs(v - 100) < 1e-9) && <line x1={pad.l} x2={pad.l + iw} y1={y(100)} y2={y(100)} className="base" />}
-        {xt.map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? fmtM(mi, !wide) : Math.floor(mi / 12)}</text>)}
+        {xt.filter((mi) => !gaps.some((g) => Math.abs(x(mi) - (x(g.a) + x(g.b)) / 2) < (wide ? 36 : 26))).map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? fmtM(mi, !wide) : Math.floor(mi / 12)}</text>)}
 
         {on.CAN && area && <path key={`a${years}`} d={area} fill="url(#caArea)" className="fadein" />}
         {on.CAN && <path key={`g${years}`} d={monotonePath(canPts)} fill="none" stroke="var(--CAN)" strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" className="fadein" />}
@@ -194,7 +194,7 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
           const px = Math.min(Math.max(mid - tw / 2, pad.l), pad.l + iw - tw);
           return (
             <g key={g.a} className="gap">
-              <path d={`M${a},${bottom - 2}v6M${a},${bottom + 4}H${b}M${b},${bottom - 2}v6`} className="bracket gapb" />
+              <path d={`M${a},${bottom - 2}v6M${a},${bottom + 4}H${b}M${b},${bottom - 2}v6M${mid},${bottom + 4}V${py - 10}`} className="bracket gapb" />
               <rect x={px} y={py - 10} width={tw} height={20} rx={10} className="pill" />
               <text x={px + tw / 2} y={py + 4} textAnchor="middle" className="ax">{g.label}</text>
             </g>
@@ -215,6 +215,11 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
         </g>}
       </svg>
 
+      {!wide && (
+        <div className="dockslot" style={{ height: 30 + lines.length * 22 + (jan ? 22 : 0) }}>
+          {hover === null && <span className="dockhint">Tap or drag the chart to read values</span>}
+        </div>
+      )}
       {hover !== null && (
         <div ref={tipRef} className={`tip ${wide ? "" : "dock"}`} style={wide ? { left: tipLeft, top: tipTop } : undefined} role="status">
           <div className="tiph"><span>{fmtM(hover)}</span>{wide && <span className="cols">index · employed</span>}</div>

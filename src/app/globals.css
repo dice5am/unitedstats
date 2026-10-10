@@ -133,8 +133,12 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
  .sub{white-space:normal}
  .figs{gap:16px}.fig+.fig{padding-left:16px}
  .figv{font-size:min(var(--fs-fig),12.5vw)}
- .chartcard{padding-top:60px;position:relative}
- .tip.dock{top:-52px;transform:none;left:4px;right:4px}
+ .tip.dock{top:0;transform:none;left:4px;right:4px;flex-direction:column;flex-wrap:nowrap;gap:0;padding:6px 12px;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;animation:none}
+ .tip.dock .tipr{height:22px}
+ .tip.dock .tipr b{margin-left:auto;padding-left:12px}
+ .dockslot{display:flex;align-items:center;justify-content:center;margin:0 4px 8px;border-radius:12px;background:var(--glass-hl);border:1px solid var(--card-border)}
+ .chart{display:flex;flex-direction:column}.dockslot{order:-1}
+ .dockhint{color:var(--muted);font-size:var(--fs-1)}
  .calc{margin-top:64px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.draw{stroke-dashoffset:0}}
