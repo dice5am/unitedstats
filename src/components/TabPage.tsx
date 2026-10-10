@@ -9,6 +9,19 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import { CHART_META, TABS, TAB_CHARTS, chartTitle, type ChartId, type TabId } from "@/src/charts/meta";
 import { ChartById, isBuilt, preload } from "@/src/charts/registry";
+import SPARKS from "@/src/charts/sparks.json";
+
+// Sheet / rail sparkline: a tiny static shape (scripts/gen-sparks.mjs), so the list never loads chart data.
+function Spark({ id }: { id: ChartId }) {
+  const sp = (SPARKS as Record<string, { kind: string; v: number[] }>)[id];
+  const W = 56, H = 22;
+  if (!sp) return <svg className="spark none" width={W} height={H} aria-hidden><line x1={4} x2={W - 4} y1={H / 2} y2={H / 2} /></svg>;
+  const n = sp.v.length;
+  if (sp.kind === "heat") return <svg className="spark" width={W} height={H} aria-hidden>{sp.v.map((v, i) => <rect key={i} x={(i * W) / n} y={4} width={W / n - 1} height={H - 8} rx={1} style={{ opacity: 0.25 + 0.75 * v }} />)}</svg>;
+  if (sp.kind === "bars") return <svg className="spark" width={W} height={H} aria-hidden>{sp.v.map((v, i) => <rect key={i} x={i * (W / n) + 1} y={H - 2 - v * (H - 6) - 2} width={W / n - 3} height={v * (H - 6) + 2} rx={1} />)}</svg>;
+  const d = sp.v.map((v, i) => `${i ? "L" : "M"}${((i * (W - 4)) / (n - 1) + 2).toFixed(1)},${(H - 3 - v * (H - 6)).toFixed(1)}`).join("");
+  return <svg className="spark" width={W} height={H} aria-hidden><path d={d} /></svg>;
+}
 
 const STORE = "us-chart-params";
 const mem = (): Record<string, string> => { try { return JSON.parse(sessionStorage.getItem(STORE) || "{}"); } catch { return {}; } };
@@ -61,8 +74,9 @@ export default function TabPage({ tab }: { tab: TabId }) {
     sessionStorage.setItem(STORE, JSON.stringify(m));
     const keep = m[next] ? `&${m[next]}` : "";
     history.pushState({ chart: next }, "", `${location.pathname}?chart=${next}${keep}`);
+    const y = scrollY; // no jump: hold the page where it is while the next chart mounts
     setChart(next); setNonce((n) => n + 1); setSheet(false);
-    scrollTo({ top: 0 });
+    for (const ms of [0, 50, 200, 600]) setTimeout(() => { if (Math.abs(scrollY - y) > 1) scrollTo({ top: y }); }, ms);
   }, [chart]);
 
   // Idle-preload the next chart in this tab.
@@ -120,7 +134,7 @@ export default function TabPage({ tab }: { tab: TabId }) {
           <div className="sheet moresheet" role="dialog" aria-modal="true" aria-label="Charts" onPointerDown={(e) => e.stopPropagation()}>
             <div className="grab" aria-hidden />
             <ul>{list.map((c, k) => <li key={c}><a href={`?chart=${c}`} className={c === chart ? "on" : ""} aria-current={c === chart ? "true" : undefined} autoFocus={k === i}
-              onClick={(e) => { e.preventDefault(); go(c); }}><b>{chartTitle(c)}</b><span>{CHART_META[c].desc}</span></a></li>)}</ul>
+              onClick={(e) => { e.preventDefault(); go(c); }}><Spark id={c} /><span className="st"><b>{chartTitle(c)}</b><span>{CHART_META[c].desc}</span></span></a></li>)}</ul>
             <button type="button" className="done" onClick={() => setSheet(false)}>Done</button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { avgChange, glowLeaders, mIdx, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -70,9 +70,10 @@ for (const y of [1, 5, 10, 20]) {
 }
 check(bad === 0, `headline fastest/slowest: ${combos} combos, ${bad} wrong`);
 
-function JPd() { return jobsPerCapitaDataset(data, JSON.parse(readFileSync(new URL("../data/econ_gdp_series.json", import.meta.url)))); }
+const POPJ = JSON.parse(readFileSync(new URL("../data/econ_population_joined.json", import.meta.url))), PCJ = JSON.parse(readFileSync(new URL("../data/econ_gdp_per_capita_joined.json", import.meta.url)));
+function JPd() { return jobsPerCapitaDataset(data, POPJ); }
 // v11: Unemployment rate (OECD UNE_LF, 15+, SA) — recomputed independently from the raw file
-const uraw = readFileSync(new URL("../data/c1_unemployment_rate.json", import.meta.url));
+const uraw = readFileSync(new URL("./golden/c1_unemployment_rate.json", import.meta.url));
 const un = JSON.parse(uraw);
 const G3 = JSON.parse(readFileSync(new URL("./golden/golden_round3.json", import.meta.url)));
 const rv = (code, p) => { const s = un.monthly[code]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
@@ -98,7 +99,7 @@ check(rv("USA", "2025-10") === null && ["2025-10", "2025-11", "2025-12"].every((
   const got = Object.keys(un.breaks_annual).flatMap((c) => buildLine(un, c, 20, "unemp").breaks.filter((b) => /· \d{4}$/.test(b.label)).map((b) => `${c}:${b.label.slice(-4)}`)).sort();
   const in20 = ALL.flatMap((c) => { const l = buildLine(un, c, 20, "unemp"); return l.breaks.filter((b) => b.mi >= l.points[0].mi && b.mi <= l.points[l.points.length - 1].mi).map((b) => `${c}:${b.label.slice(-4)}`); }).sort();
   check(JSON.stringify(got) === JSON.stringify(want) && in20.join() === "DEU:2009,DEU:2010,DEU:2019,FRA:2013,FRA:2020,ITA:2020", `unemployment: breaks_annual carried (${want.length}); inside 20Y window: ${in20.join(" ")}`); }
-{ let n = 0, bad = 0, cnt = { "Biggest fall": 0, "Smallest rise": 0, "Biggest rise": 0, "Smallest fall": 0 };
+{ let n = 0, bad = 0, cnt = { "Biggest fall": 0, "Smallest rise": 0, "Biggest rise": 0, "Smallest fall": 0, "No change": 0 };
   for (const y of [1, 5, 10, 20]) { const g = Object.fromEntries(ALL.map((c) => [c, buildLine(un, c, y, "unemp").growth]));
     for (let mask = 1; mask < 128; mask++) { const sel = ALL.filter((_, i) => mask & (1 << i)); n++;
       const h = headlinePick(un, sel, y, "unemp"), lb = headlineLabels(h, "unemp"), vs = sel.map((c) => g[c]);
@@ -106,7 +107,7 @@ check(rv("USA", "2025-10") === null && ["2025-10", "2025-11", "2025-12"].every((
       if (h.single) { if (lb.fast !== null) bad++; continue; }
       if (Math.abs(h.slowest.value - Math.min(...vs)) > 1e-12) bad++;
       const mx = roundShown(h.fastest.value, "unemp"), mn = roundShown(h.slowest.value, "unemp");
-      if (lb.slow !== (mn < 0 ? "Biggest fall" : "Smallest rise") || lb.fast !== (mx > 0 ? "Biggest rise" : "Smallest fall") || !lb.lowerBetter) bad++;
+      if (lb.slow !== (mn === 0 ? "No change" : mn < 0 ? "Biggest fall" : "Smallest rise") || lb.fast !== (mx === 0 ? "No change" : mx > 0 ? "Biggest rise" : "Smallest fall") || !lb.lowerBetter) bad++;
       const sOk = (v, t) => (v > 0 ? t.startsWith("+") : v < 0 ? t.startsWith("−") : !/^[+−]/.test(t));
       if (!sOk(mx, fmtHeadline(h.fastest.value, "unemp")) || !sOk(mn, fmtHeadline(h.slowest.value, "unemp"))) bad++;
       cnt[lb.slow]++; cnt[lb.fast]++; } }
@@ -133,19 +134,24 @@ check(headlineLabels({ single: null, fastest: { value: 0.4 }, slowest: { value: 
   check(badL === 0, `jobs headline labels match sign of rounded figures: ${n} combos x windows, ${badL} wrong`); }
 // v6: Economy — GDP and GDP per capita (OECD QNA), recomputed independently from the raw file
 const eraw = readFileSync(new URL("../data/econ_gdp_series.json", import.meta.url));
-const econ = JSON.parse(eraw);
+const econRaw = JSON.parse(eraw);
+const econ = { ...econRaw, population: POPJ.population, gdp_per_capita: PCJ.gdp_per_capita }; // gated joined population (Data Lead pass 2026-10-10)
 const EV = { gdp: econDataset(econ, "gdp"), pc: econDataset(econ, "pc") };
 check(commonEnds(EV.gdp).quarterEnd === "2026-Q2", `gdp: shared end ${commonEnds(EV.gdp).quarterEnd}`);
-check(commonEnds(EV.pc).quarterEnd === "2026-Q1" && econ.gdp_per_capita.FRA.values[econ.gdp_per_capita.FRA.periods.indexOf("2026-Q2")] === null, `per capita: shared end ${commonEnds(EV.pc).quarterEnd} (France Q2 2026 null)`);
+check(commonEnds(EV.pc).quarterEnd === "2026-Q1" && (econ.gdp_per_capita.FRA.values[econ.gdp_per_capita.FRA.periods.indexOf("2026-Q2")] ?? null) === null, `per capita: shared end ${commonEnds(EV.pc).quarterEnd} (France Q2 2026 null)`);
 const rawQ = (s, p) => { const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
 const qBack = (p, n) => { const [yy, q] = p.split("-Q").map(Number); const t = yy * 4 + q - 1 - n; return `${Math.floor(t / 4)}-Q${t % 4 + 1}`; };
 for (const [k, src] of [["gdp", econ.gdp], ["pc", econ.gdp_per_capita]]) {
   let nb = 0, n = 0; const end = commonEnds(EV[k]).quarterEnd;
-  for (const y of [1, 5, 10, 20]) for (const c of ALL) {
+  for (const y of [1, 5, 10, 20, 50]) for (const c of ALL) {
     const l = buildLine(EV[k], c, y, "index"), st = qBack(end, 4 * y); n++;
     const a = rawQ(src[c], st), b = rawQ(src[c], end);
+    if (c === "DEU" && st < "1991-Q1") { if (l.late !== "1991-Q1" || l.full) nb++; continue; } // Germany starts Q1 1991 (Cavin)
     if (l.points[0].period !== st || l.points[l.points.length - 1].period !== end) { nb++; continue; }
-    if (a === null) { if (!l.excluded || l.growth !== null) nb++; continue; }
+    if (a === null) { // late starter: drawn from its own first reading, rebased to 100 there, never ranked
+      const f = l.points.find((p) => p.value !== null), fr = f ? rawQ(src[c], f.period) : null;
+      if (l.full || (f ? (Math.abs(f.value - 100) > 1e-9 || l.late !== f.period || Math.abs(l.last - (b / fr) * 100) > 1e-9 || l.points.slice(0, l.points.indexOf(f)).some((p) => p.value !== null)) : !l.excluded)) nb++;
+      continue; }
     if (Math.abs(l.points[0].value - 100) > 1e-12 || Math.abs(l.last - (b / a) * 100) > 1e-9 || Math.abs(l.growth - ((b / a) * 100 - 100)) > 1e-9) nb++;
   }
   check(nb === 0, `${k}: index starts at 100 and end = raw ratio × 100, ${n} country-windows, ${nb} wrong`);
@@ -157,17 +163,17 @@ for (const [k, src] of [["gdp", econ.gdp], ["pc", econ.gdp_per_capita]]) {
   check(pb === 0, `per capita = GDP ÷ population recomputed: ${pn} quarters, ${pb} wrong`); }
 check(["gdp", "pc"].every((k) => buildLine(EV[k], "ITA", 20, "index").breaks.some((b) => b.label === "Series break · Q1 2010")), "gdp + per capita: Italy Q1 2010 break carried");
 { const j = buildLine(EV.pc, "JPN", 20, "index"), h = headlinePick(EV.pc, ["JPN"], 20, "index"), h2 = headlinePick(EV.pc, ["CAN", "JPN"], 20, "index");
-  check(j.excluded && j.growth === null && j.points.every((p) => p.value === null) && !buildLine(EV.pc, "JPN", 10, "index").excluded, "per capita: Japan (starts Q3 2007) excluded from 20Y only");
-  check(!h.single && !h.fastest && !h.slowest && h2.single && h2.single.codes.join() === "CAN", "per capita 20Y: Japan-only -> headline n/a; CAN+JPN -> Canada alone"); }
+  // joined population (annual-derived before Q3 2007): Japan now has the whole 20Y window and can rank. Values PENDING Warehouse re-issue (not hard-coded).
+  check(j.full && !j.late && h.single && h.single.codes.join() === "JPN" && h2.fastest && h2.slowest, `per capita 20Y: Japan full coverage with joined population (${fmtHeadline(j.growth, "index")}%, PENDING Warehouse re-issue); CAN+JPN ranked`); }
 for (const k of ["gdp", "pc"]) {
   let n = 0, bad = 0;
-  for (const y of [1, 5, 10, 20]) {
-    const g = Object.fromEntries(ALL.map((c) => [c, buildLine(EV[k], c, y, "index").growth]));
+  for (const y of [1, 5, 10, 20, 50]) {
+    const g = Object.fromEntries(ALL.map((c) => { const l = buildLine(EV[k], c, y, "index"); return [c, l.full ? l.growth : null]; }));
     for (let mask = 1; mask < 128; mask++) {
       const sel = ALL.filter((_, i) => mask & (1 << i)); n++;
       const h = headlinePick(EV[k], sel, y, "index"), lb = headlineLabels(h, "index");
       const vs = sel.map((c) => g[c]).filter((v) => v !== null);
-      if (!vs.length) { if (h.single || h.fastest) bad++; continue; }
+      if (sel.length > 1 ? vs.length < 2 : !vs.length) { if (!h.none || h.single || h.fastest) bad++; continue; }
       const f = h.single ?? h.fastest;
       if (!f || Math.abs(f.value - Math.max(...vs)) > 1e-12 || f.codes.some((c) => g[c] === null)) { bad++; continue; }
       if (h.slowest && Math.abs(h.slowest.value - Math.min(...vs)) > 1e-12) bad++;
@@ -180,7 +186,7 @@ for (const k of ["gdp", "pc"]) {
   check(bad === 0, `${k}: headline fastest/slowest + labels, ${n} combos x windows, ${bad} wrong`);
 }
 { let ov = 0, segs = 0;
-  for (const k of ["gdp", "pc"]) for (const y of [1, 5, 10, 20]) for (const c of ALL) { const l = buildLine(EV[k], c, y, "index"); let run = [];
+  for (const k of ["gdp", "pc"]) for (const y of [1, 5, 10, 20, 50]) for (const c of ALL) { const l = buildLine(EV[k], c, y, "index"); let run = [];
     const t = () => { for (const [p0, c1, c2, p3] of mseg(run)) { segs++; const lo = Math.min(p0.y, p3.y) - 1e-9, hi = Math.max(p0.y, p3.y) + 1e-9;
       for (let q = 1; q < 50; q++) { const tt = q / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { ov++; break; } } } run = []; };
     for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
@@ -211,18 +217,19 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
   const jm = (c, p) => { const s = data.monthly[c]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
   const pcAvg = (c, p) => { const v = [0, 1, 2].map((k) => { const q = prevM(p, k), j = jm(c, q), pp = popM(c, q); return j === null || pp === null ? null : j / pp; }); return v.some((x) => x === null) ? null : (v[0] + v[1] + v[2]) / 3; };
   let nb = 0, n = 0;
-  for (const y of [1, 5, 10, 20]) for (const c of ALL) { n++; const l = buildLine(JP, c, y, "index");
+  for (const y of [1, 5, 10, 20, 50]) for (const c of ALL) { n++; const l = buildLine(JP, c, y, "index");
     if (data.monthly[c]) { const st = prevM("2026-03", y * 12), a = pcAvg(c, st), b = pcAvg(c, "2026-03");
-      if (a === null) { if (!l.excluded) nb++; continue; }
+      if (a === null) { const f = l.points.find((p) => p.value !== null); if (l.full || !f || Math.abs(f.value - 100) > 1e-9 || Math.abs(l.growth - (b / pcAvg(c, f.period) * 100 - 100)) > 1e-9) nb++; continue; }
       if (l.points[0].period !== st || Math.abs(l.points[0].value - 100) > 1e-9 || Math.abs(l.growth - (b / a * 100 - 100)) > 1e-9) nb++; }
+    else if (c === "DEU" && l.points[0].period < "1991-Q1") { if (l.late !== "1991-Q1" || l.full) nb++; }
     else { const q0 = l.points[0].period, a = rawQ(data.quarterly[c], q0) / popQ(c, q0), b = rawQ(data.quarterly[c], "2026-Q1") / popQ(c, "2026-Q1");
-      if (popQ(c, q0) === null) { if (!l.excluded) nb++; continue; }
+      if (popQ(c, q0) === null || rawQ(data.quarterly[c], q0) === null) { const f = l.points.find((p) => p.value !== null), a2 = rawQ(data.quarterly[c], f.period) / popQ(c, f.period); if (l.full || Math.abs(f.value - 100) > 1e-9 || Math.abs(l.last - b / a2 * 100) > 1e-9) nb++; continue; }
       if (l.points[l.points.length - 1].period !== "2026-Q1" || Math.abs(l.points[0].value - 100) > 1e-9 || Math.abs(l.last - b / a * 100) > 1e-9) nb++; } }
   check(nb === 0, `jobs per capita: index starts at 100 and end = raw ratio (independent interpolation), ${n} country-windows, ${nb} wrong`);
   for (const [c, byW] of Object.entries(G3.jobs_per_capita_pct)) for (const [wk, want] of Object.entries(byW)) { const y = parseInt(wk), l = buildLine(JP, c, y, "index");
     check(Math.abs(l.growth - want) < 0.001 && l.points[l.points.length - 1].period === "2026-03", `jobs per capita ${y}Y ${c}: app ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(4)}% vs Warehouse golden ${want >= 0 ? "+" : ""}${want.toFixed(4)}% (to Mar 2026)`); }
   const j20 = buildLine(JP, "JPN", 20, "index");
-  check(j20.excluded && !buildLine(JP, "JPN", 10, "index").excluded && !headlinePick(JP, ["JPN"], 20, "index").single, "jobs per capita: Japan (population from Q3 2007) excluded from 20Y only; Japan-only 20Y headline n/a");
+  check(j20.full && !j20.late && headlinePick(JP, ["JPN"], 20, "index").single, `jobs per capita: Japan full on 20Y with joined population (${fmtHeadline(j20.growth, "index")}%, PENDING Warehouse re-issue)`);
   check(JP.monthly.CAN.periods[JP.monthly.CAN.periods.length - 1] === "2026-03" && Object.values(JP.quarterly).every((s) => s.end === "2026-Q1"), "jobs per capita: monthly lines stop at Mar 2026, quarterly at Q1 2026 (no extrapolation)"); }
 // ---- Round 4 Wave 1 cards: recomputed independently from the raw files ----
 { const { comeback, scorecard, heatStrip, heatStep, ORDER } = await import("../lib/charts.mjs");
@@ -296,7 +303,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: \{ id: "\w+", built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 6 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 7 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -342,4 +349,193 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("unemployment sha256", createHash("sha256").update(uraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
+// ---- Round 4b: 50Y on every timeframe switch, late starters, <2 full-coverage headlines, #7 policy rates ----
+{ const { policyDataset, WINDOWS, estAt } = await import("../lib/series.mjs");
+  const { heatStrip } = await import("../lib/charts.mjs");
+  const BIS = JSON.parse(readFileSync(new URL("../data/bis_policy_rate_m.json", import.meta.url)));
+  const PD = policyDataset(BIS);
+  check(WINDOWS.join() === "1,5,10,20,50", `timeframes: ${WINDOWS.map((w) => w + "Y").join(" ")}`);
+  const { applyStarts: AS } = await import("../lib/series.mjs");
+  const sets = [["unemployment", un, "unemp", ALL], ["jobs", AS(data), "jobs", ALL], ["jobs per capita", JP, "index", ALL], ["gdp", EV.gdp, "index", ALL], ["gdp per capita", EV.pc, "index", ALL], ["policy rates", PD, "level", [...ALL, "XM"]]];
+  const srcOf = (ds, c) => (ds.monthly && ds.monthly[c]) || ds.quarterly[c];
+  for (const [name, ds, mode, codes] of sets) {
+    const { monthEndIdx } = commonEnds(ds); const startMi = monthEndIdx - 600; let bad = [], late = [], full = [];
+    for (const c of codes) { const l = buildLine(ds, c, 50, mode), s = srcOf(ds, c);
+      if (l.points[0].mi < startMi - 2 || l.points[0].mi > startMi + 3) bad.push(`${c} start`);
+      const fi = l.points.findIndex((p) => p.value !== null);
+      if (fi < 0) { if (!l.excluded) bad.push(`${c} empty not excluded`); continue; }
+      // late iff the first drawn reading is after the window's first period; never filled (no value before it)
+      if ((fi > 0) !== !!l.late || (fi > 0 && l.full)) bad.push(`${c} late flag`);
+      if (l.points.slice(0, fi).some((p) => p.value !== null)) bad.push(`${c} filled`);
+      if (mode === "index" && Math.abs(l.points[fi].value - 100) > 1e-9) bad.push(`${c} not 100 at own start`);
+      if (mode === "level") for (const p of l.points) { const i = s.periods.indexOf(p.period), v = i < 0 ? null : s.values[i]; if ((v ?? null) !== p.value) { bad.push(`${c} ${p.period} level`); break; } }
+      if (l.full) full.push(c); else if (l.late) late.push(`${c} from ${l.late}`); else late.push(`${c} ends early (last ${[...l.points].reverse().find((p) => p.value !== null).period})`); }
+    // headline over every combo: ranks only full-window countries; <2 full among >1 selected -> no ranking
+    let hb = 0, hn = 0, nn = 0; const gl = Object.fromEntries(codes.map((c) => { const l = buildLine(ds, c, 50, mode); return [c, l.full ? l.growth : null]; }));
+    for (let m = 1; m < 1 << ALL.length; m++) { const sel = ALL.filter((_, i) => m & (1 << i)); if (mode === "level" && sel.some((c) => ["DEU", "FRA", "ITA"].includes(c))) sel.push("XM"); hn++;
+      const h = headlinePick(ds, sel, 50, mode), vs = sel.map((c) => gl[c]).filter((v) => v !== null && v !== undefined);
+      if (sel.length > 1 ? vs.length < 2 : !vs.length) { nn++; if (!h.none || h.fastest || h.single) hb++; continue; }
+      const f = h.single ?? h.fastest; if (!f || Math.abs(f.value - Math.max(...vs)) > 1e-12 || f.codes.some((c) => gl[c] === null)) hb++; }
+    check(!bad.length && !hb, `50Y ${name}: window from ${mStr(startMi)}; full: ${full.join(" ") || "none"}; not full (late start / ends early): ${late.join(", ") || "none"}; ${hn} combos, ${nn} with <2 full -> "no ranking"${bad.length ? " BAD " + bad.join(",") : ""}${hb ? ` ${hb} headline wrong` : ""}`);
+  }
+  // late-starter cases named by Cavin: France jobs 'from 2003', indexed label case; fewer-than-two-full case
+  { const f = buildLine(data, "FRA", 50, "jobs"), h = headlinePick(data, ["FRA", "ITA"], 50, "jobs"), h2 = headlinePick(EV.gdp, ["CAN", "USA"], 50, "index");
+    check(f.late === "2003-Q1" && !f.full && Math.abs(f.points.find((p) => p.value !== null).value - 100) < 1e-12, `late starter: France jobs 50Y from ${f.late}, 100 on its own first quarter, not ranked`);
+    check(h.none && h.fullCodes.length === 0 && h2.fastest && h2.slowest, "50Y jobs FRA+ITA (both late): no country has the whole period -> no ranking; 50Y GDP CAN+USA (both full) -> ranked"); }
+  // joined population: dashed (estimated) points = exactly the Y-flagged quarters; 1Y/5Y/10Y identical to round 3 /
+  // the unjoined file; no step at any January; no join tick (max gap under 0.3%); Germany note when pre-1991 is in the window
+  { const EVraw = econDataset(econRaw, "pc"), JPraw = jobsPerCapitaDataset(data, econRaw); let dm = 0, dn = 0, same = 0, sn = 0;
+    for (const c of ALL) { const l = buildLine(EV.pc, c, 50, "index"), Ys = new Set(Object.entries(POPJ.population[c].status || {}).filter(([, v]) => v === "Y").map(([p]) => p));
+      for (const p of l.points) { if (p.value === null) continue; dn++; if (estAt(EV.pc, c, p.period) !== Ys.has(p.period)) dm++; }
+      for (const y of [1, 5, 10]) for (const [A, B] of [[EV.pc, EVraw], [JP, JPraw]]) { sn++; const a = buildLine(A, c, y, "index").growth, b = buildLine(B, c, y, "index").growth; if (a !== b) same++; } }
+    check(dm === 0 && dn > 0, `joined population: dashed points match Y flags (${dn} drawn GDP-per-capita points on 50Y, ${dm} mismatched)`);
+    check(same === 0, `joined population: 1Y/5Y/10Y per-capita values identical to the unjoined file for all 7 (${sn} GDP pc + jobs pc country-windows, ${same} differ); round-3 jobs per capita goldens above unchanged`);
+    let jumps = []; for (const c of ALL) { const s = POPJ.population[c], v = s.values.map((x) => x ?? null);
+      for (let i = 2; i < v.length; i++) if (v[i] !== null && v[i - 1] !== null && v[i - 2] !== null) { const d1 = v[i] - v[i - 1], d0 = v[i - 1] - v[i - 2]; if (s.periods[i].endsWith("Q1") && ((s.status || {})[s.periods[i - 1]] === "Y") && Math.abs(d1 - d0) > Math.max(0.002 * v[i], 3 * Math.abs(d0) + 1)) jumps.push(`${c} ${s.periods[i]}`); } }
+    const gaps = Object.entries(POPJ.join_gap_pct).filter(([, g]) => g !== null), maxg = Math.max(...gaps.map(([, g]) => Math.abs(g)));
+    const ticks = ALL.flatMap((c) => buildLine(EV.pc, c, 50, "index").breaks.filter((b) => /Population source/.test(b.label)));
+    check(!jumps.length && maxg < 0.3 && !ticks.length, `joined population: no step at any January in the annual-derived stretch or at the switch (${jumps.join(",") || "none"}); max join gap ${maxg.toFixed(3)}% < 0.3% -> no join tick`);
+    const sw = ALL.filter((c) => POPJ.population[c].derived_until).map((c) => `${c} ${POPJ.population[c].derived_until} -> quarterly`);
+    const cc = readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8"), NM = { CAN: "Canada", FRA: "France", DEU: "Germany", GBR: "UK", ITA: "Italy", JPN: "Japan" };
+    const yr = (c) => { const [y, q] = POPJ.population[c].derived_until.split("-Q").map(Number); return q === 4 ? y + 1 : y; };
+    const want = `Switch to quarterly: ${["CAN", "FRA", "GBR", "ITA", "JPN"].map((c) => `${NM[c]} ${yr(c)}`).join(", ")}.`;
+    check(cc.includes(want) && (cc.match(/\{POP_JOIN_LINE\}/g) || []).length === 2, `How it's calculated population line matches the gated file: "${want}" (GDP per capita + Jobs per capita)`);
+    check(sw.length === 6, `joined population switch quarters (from the gated file): ${sw.join(", ")}`);
+ }
+  // heat strip 50Y: one column per year, labels every 10 years, cells before a country's first monthly reading n/a
+  { const h = heatStrip(JSON.parse(readFileSync(new URL("../data/oecd_unemployment_rate_m_15plus.json", import.meta.url))), 50);
+    const ys = h.cols.map((c) => +c.key), contig = ys.every((y, i) => !i || y === ys[i - 1] + 1);
+    const pre = h.rows.map((r) => { const k = h.cols.findIndex((c) => c.months[11] >= r.first); return `${r.code}:${h.cols.slice(0, k).every((_, i) => r.cells[i].v === null && r.cells[i].why === "before first reading") ? "ok" : "BAD"}@${r.first.slice(0, 4)}`; });
+    check(h.unit === "year" && h.cols.length === 50 && contig && !pre.some((x) => x.includes("BAD")), `heat strip 50Y: ${h.cols.length} yearly columns ${ys[0]}–${ys.at(-1)}; before first reading n/a (${pre.join(" ")})`); }
+  // #7: national lines to Dec 1998, a single break mark at Jan 1999 on the euro-area line, Japan's gaps kept
+  { const xm = buildLine(PD, "XM", 50, "level"), de = buildLine(PD, "DEU", 50, "level"), jp = PD.monthly.JPN;
+    const deLast = [...de.points].reverse().find((p) => p.value !== null).period;
+    const allBreaks = [...ALL, "XM"].flatMap((c) => buildLine(PD, c, 50, "level").breaks);
+    const jpNull = BIS.series.JPN.values.filter((v, i) => v === null && BIS.series.JPN.periods[i] >= "1999-01").length;
+    const eq = BIS.series.XM.periods.every((p, i) => ["DEU", "FRA", "ITA"].every((c) => { const s = BIS.series[c], j = s.periods.indexOf(p); return j >= 0 && s.values[j] === BIS.series.XM.values[i]; }));
+    check(deLast === "1998-12" && xm.late === "1999-01" && allBreaks.length === 1 && allBreaks[0].mi === mIdx("1999-01") && jpNull === 116 && jp.values.filter((v) => v === null).length >= 116 && eq,
+      `#7 policy: DE/FR/IT national to ${deLast}, euro-area line from ${xm.late}, ${allBreaks.length} break mark (Jan 1999), Japan ${jpNull} missing months kept null, BIS DE/FR/IT from 1999 = XM`);
+    const h1 = headlinePick(PD, [...ALL, "XM"], 1, "level"), lb = headlineLabels(h1, "level");
+    check(h1.fastest && h1.slowest && ((roundShown(h1.fastest.value, "level") > 0) === (lb.fast === "Biggest rise")) && ((roundShown(h1.slowest.value, "level") < 0) === (lb.slow === "Biggest fall")),
+      `#7 1Y headline: ${lb.fast} ${h1.fastest.codes} ${fmtHeadline(h1.fastest.value, "level")} / ${lb.slow} ${h1.slowest.codes} ${fmtHeadline(h1.slowest.value, "level")} pts`); }
+}
+// ---- Prepared (not wired): Unemployment rate on c1_unemployment_rate_long.json (OECD monthly), pending the Data Lead's gate ----
+{ const { unempLongDataset, UNEMP_MONTHLY_GATED } = await import("../lib/series.mjs");
+  const rawL = readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url)), F = JSON.parse(rawL);
+  const sha = createHash("sha256").update(rawL).digest("hex"), UMd = unempLongDataset(F);
+  const ce = commonEnds(UMd), us = buildLine(UMd, "USA", 1, "unemp"), uk = buildLine(UMd, "GBR", 1, "unemp");
+  const lastOf = (l) => [...l.points].reverse().find((p) => p.value !== null).period;
+  const h = headlinePick(UMd, ALL, 1, "unemp"), ranked = [...(h.fastest?.codes ?? []), ...(h.slowest?.codes ?? []), ...(h.single?.codes ?? [])];
+  const l50 = Object.fromEntries(ALL.map((c) => [c, buildLine(UMd, c, 50, "unemp").late]));
+  check(sha.startsWith("ccf0417e") && /seasonally adjusted/.test(F.measure) && ce.monthEnd === "2026-09" && UMd.rankEnd === "2026-08" && lastOf(us) === "2026-09" && us.points[0].period === "2025-08"
+    && lastOf(uk) === "2026-06" && !uk.full && !ranked.includes("GBR") && l50.GBR?.startsWith("1983") && l50.FRA?.startsWith("1983") && l50.ITA?.startsWith("1983") && l50.DEU?.startsWith("1991") && !l50.CAN,
+    `unemployment long file (prepared, gated=${UNEMP_MONTHLY_GATED}, sha ${sha.slice(0, 8)}, measure says seasonally adjusted): ranking anchored on ${UMd.rankEnd}, US line + stats box to ${lastOf(us)}; UK ends ${lastOf(uk)} -> not ranked; 50Y late starters UK/FR/IT 1983, DE 1991`);
+  check(UNEMP_MONTHLY_GATED === !!JSON.parse(readFileSync(new URL("../data/MANIFEST.json", import.meta.url))).files["c1_unemployment_rate_long.json"], `unemployment long file: in the manifest only once gated (gated=${UNEMP_MONTHLY_GATED})`);
+  // Warehouse Aug-based references (US given; 20Y being re-confirmed; 50Y + other countries pending) — not round 3
+  const REF = { USA: { 1: -0.10, 5: -1.33, 10: -0.73, 20: -0.53 } }, PROV = { USA: [20] };
+  for (const [c, byW] of Object.entries(REF)) for (const [w, want] of Object.entries(byW)) { const g = buildLine(UMd, c, +w, "unemp").growth;
+    const ok = g !== null && Math.abs(g - want) < 0.01, prov = (PROV[c] || []).includes(+w);
+    if (prov) console.log(`${ok ? "PROVISIONAL-MATCH" : "PROVISIONAL-DIFF"} unemployment long ${w}Y ${c}: app ${g?.toFixed(2)} vs Warehouse ${want} pts (being re-confirmed)`);
+    else check(ok, `unemployment long ${w}Y ${c} (to Aug 2026): app ${g === null ? "n/a" : (g >= 0 ? "+" : "") + g.toFixed(2)} vs Warehouse ${want} pts`); }
+}
+// Zero reads "No change", never +0.00 / −0.00; 50Y start labels follow the shared window rule
+{ const { headlineLabels: HL, fmtHeadline: FH, windowLabel: WL } = await import("../lib/series.mjs");
+  const mk = (a, b) => ({ fastest: { value: a, codes: ["CAN"], periods: [] }, slowest: { value: b, codes: ["USA"], periods: [] } });
+  const z = [HL(mk(0.004, -0.5), "unemp"), HL(mk(0.5, -0.004), "unemp"), HL(mk(0.001, -0.3), "index"), HL(mk(0.2, -0.0049), "level")];
+  const t = [0.004, -0.004, 0.0049, -0.0049, 0].map((v) => FH(v, "unemp"));
+  check(z[0].fast === "No change" && z[1].slow === "No change" && z[2].fast === "No change" && z[3].slow === "No change" && t.every((x) => x === "0.00"),
+    `zero: a figure rounding to 0 reads "No change" (unemployment, growth, policy) and shows ${[...new Set(t)].join("/")} (never +0.00 or −0.00)`);
+  const a = WL(un, ["CAN", "USA"], 50, "unemp"), b = WL(un, ["GBR", "DEU"], 50, "unemp"), c = WL(EV.gdp, ["CAN"], 50, "index");
+  check(a.text.startsWith("Aug 1976 – Aug 2026") && b.text.startsWith("Q3 1976 – Q2 2026") && c.text.startsWith("Q2 1976 – Q2 2026"),
+    `50Y start labels: monthly "${a.text}"; quarterly unemployment "${b.text}"; GDP "${c.text}"`); }
+const WINDOWS_ALL = [1, 5, 10, 20, 50];
+{ const { perCapitaStart } = await import("../lib/series.mjs"); const s = data.quarterly.DEU, v = (p) => s.values[s.periods.indexOf(p)];
+  const j = (v("1991-Q1") / v("1990-Q4") - 1) * 100, fake = { periods: ["1990-Q4", "1991-Q1"], values: [28000, 34500] };
+  check(perCapitaStart("DEU", s) === null && perCapitaStart("DEU", fake) === "1991-Q1" && Math.abs(j) < 10,
+    `Germany territory: jobs Q4 1990 ${v("1990-Q4")}k -> Q1 1991 ${v("1991-Q1")}k (${j.toFixed(1)}%, no West-only jump; 1976-Q1 ${v("1976-Q1")}k = unified scale) -> no per-capita start override; a +23% jump would start per capita at 1991-Q1`); }
+// Whole-series estimate vs partial estimate: German jobs are OECD "E" on every quarter -> solid line + "OECD estimate"
+// tag in every view; dashes only for Y-flagged (estimated population) stretches.
+{ const { wholeEstimate } = await import("../lib/series.mjs"); const J2 = jobsPerCapitaDataset(data, POPJ);
+  const nE = Object.values(data.quarterly.DEU.status).filter((x) => x === "E").length, nV = data.quarterly.DEU.values.filter((v) => v !== null).length;
+  const plainDash = buildLine(data, "DEU", 50, "jobs").points.some((p) => p.value !== null && estAt(data, "DEU", p.period));
+  const pcPts = buildLine(J2, "DEU", 50, "index").points.filter((p) => p.value !== null);
+  const pcDash = pcPts.some((p) => estAt(J2, "DEU", p.period)), firstSolid = pcPts[0].period;
+  const others = ALL.filter((c) => c !== "DEU").filter((c) => wholeEstimate(data, c) || wholeEstimate(J2, c) || wholeEstimate(EV.gdp, c) || wholeEstimate(EV.pc, c));
+  check(nE === nV && wholeEstimate(data, "DEU") && wholeEstimate(J2, "DEU") && !plainDash && !pcDash && firstSolid === "1991-Q1" && !others.length && !wholeEstimate(EV.gdp, "DEU"),
+    `estimates: Germany jobs ${nE}/${nV} quarters OECD "E" -> solid line + "OECD estimate" tag (jobs and jobs per capita); no dashes on any German line (starts ${firstSolid}, no "Estimated population" tag); no other whole-series estimates`); }
+// Data Lead independent rebuild (crosscheck/golden4_rebuild/output.json)
+{ const out = JSON.parse(readFileSync("/workspace/skyscraper/unitedstats-warehouse/crosscheck/golden4_rebuild/output.json")); const UL2 = (await import("../lib/series.mjs")).unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
+  const { ownChange: oc } = await import("../lib/series.mjs"); const JP4 = jobsPerCapitaDataset(data, POPJ); let n = 0; const bad = [];
+  for (const r of out) { const y = parseInt(r.window), c = r.country.slice(0, 3); let ours;
+    if (r.key === "gdp_50Y_pct") ours = buildLine(EV.gdp, c, y, "index").growth; else if (r.key === "gdp_per_capita_50Y_pct") ours = buildLine(EV.pc, c, y, "index").growth;
+    else if (r.key === "jobs_per_capita_pct") ours = buildLine(JP4, c, y, "index").growth;
+    else if (r.key.startsWith("unemployment")) { const l = buildLine(UL2, c, y, "unemp"); ours = r.country.includes("own") ? (oc(UL2, c, y)?.change ?? null) : l.full ? l.growth : null; if (r.country.includes("own") && y === 50) ours = l.full ? ours : null; }
+    else continue; if (c === "DEU" && !r.key.startsWith("unemployment")) continue; n++; // Germany from 1991 (Cavin): rebuild predates it
+    const want = r.rebuilt; if (want === null ? ours !== null : ours === null || Math.abs(ours - want) > 0.0006) bad.push(`${r.key} ${r.country} ${r.window} ours ${ours} vs ${want}`); }
+  check(!bad.length, `Data Lead rebuild (golden4_rebuild/output.json): ${n - bad.length}/${n} match at the rebuild's precision${bad.length ? " — DIFF " + bad.join("; ") : ""}`); }
+// Germany starts Q1 1991 on GDP, GDP per capita, Jobs, Jobs per capita (Cavin): late starter on 50Y, not ranked,
+// stats-box own figure from Q1 1991; 1Y–20Y unchanged
+{ const { applyStarts, SERIES_START } = await import("../lib/series.mjs"); const G4 = JSON.parse(readFileSync(new URL("./golden/golden_round4.json", import.meta.url))).germany_from_1991;
+  const JD = applyStarts(data), JPD = jobsPerCapitaDataset(data, POPJ), rk = (h) => [...(h.fastest?.codes ?? []), ...(h.slowest?.codes ?? []), ...(h.single?.codes ?? [])];
+  const charts = [["GDP", EV.gdp, "index", "gdp_pct"], ["GDP per capita", EV.pc, "index", "gdp_per_capita_pct"], ["Jobs", JD, "jobs", "jobs_pct"], ["Jobs per capita", JPD, "index", "jobs_per_capita_pct"]];
+  const out = [], bad = [];
+  for (const [nm, d, m, key] of charts) { const l = buildLine(d, "DEU", 50, m), f = l.points.find((p) => p.value !== null), e = [...l.points].reverse().find((p) => p.value !== null), h = headlinePick(d, ALL, 50, m);
+    out.push(`${nm} ${f.period}→${e.period} ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(2)}% (round4 ${G4[key].value} to ${G4[key].end})`);
+    if (l.late !== "1991-Q1" || l.full || rk(h).includes("DEU") || e.period !== G4[key].end || Math.abs(l.growth - G4[key].value) > 0.005 || estAt(d, "DEU", f.period)) bad.push(nm);
+    for (const y of [1, 5, 10, 20]) { const raw = nm === "Jobs" ? data : nm === "Jobs per capita" ? null : null; if (raw && buildLine(raw, "DEU", y, m).growth !== buildLine(d, "DEU", y, m).growth) bad.push(`${nm} ${y}Y changed`); } }
+  const cc = readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8") + readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");
+  check(SERIES_START.DEU === "1991-Q1" && !bad.length && !/"not ranked"|unified Germany|unified territory|DEU_NOTE/.test(cc), `Germany from Q1 1991 on GDP / GDP pc / Jobs / Jobs pc: 50Y late starter, unranked, solid, own figures match round4 germany_from_1991 (${out.join("; ")}); no "not ranked" tag or territory footnote${bad.length ? " BAD " + bad.join(",") : ""}`); }
+// Plain Jobs 50Y, every country (room-ready, for Warehouse to check)
+{ const { applyStarts } = await import("../lib/series.mjs"); const JD = applyStarts(data);
+  console.log("Jobs 50Y (ours): " + ALL.map((c) => { const l = buildLine(JD, c, 50, "jobs"), f = l.points.find((p) => p.value !== null), e = [...l.points].reverse().find((p) => p.value !== null);
+    return `${c} ${f.period} → ${e.period} ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(2)}%${l.full ? "" : " (from " + l.late + ", not ranked)"}`; }).join("; ")); }
+// Germany no-data band + US jobs ranking at the shared Aug 2026 (line to Sep)
+{ const { noDataBands, jobsDataset, applyStarts, NO_DATA_BAND_LABEL } = await import("../lib/series.mjs"); const JD = jobsDataset(data), JPD = jobsPerCapitaDataset(data, POPJ);
+  const cs = [[applyStarts(EV.gdp), "index"], [applyStarts(EV.pc), "index"], [JD, "jobs"], [applyStarts(JPD), "index"]];
+  const none = cs.every(([d, m]) => [1, 5, 10, 20].every((y) => !noDataBands(d, ALL, y, m).length));
+  const at50 = cs.every(([d, m]) => { const b = noDataBands(d, ALL, 50, m); return b.length === 1 && b[0].code === "DEU" && b[0].label === "Germany: no data before 1991" && b[0].period === "1991-Q1"; });
+  const off = cs.every(([d, m]) => !noDataBands(d, ALL.filter((c) => c !== "DEU"), 50, m).length);
+  const same = cs.every(([d, m]) => JSON.stringify(headlinePick(d, ALL, 50, m)) === JSON.stringify(headlinePick(d, ALL.filter((c) => c !== "DEU"), 50, m)));
+  check(NO_DATA_BAND_LABEL === "{country}: no data before {year}" && none && at50 && off && same, `no-data band: Germany on GDP/GDP pc/Jobs/Jobs pc only on 50Y ("Germany: no data before 1991", to Q1 1991), only when Germany is selected, none on 1Y–20Y; 50Y headline identical with Germany on and off`);
+  const us = buildLine(JD, "USA", 1, "jobs"), last = [...us.points].reverse().find((p) => p.value !== null).period, R4j = JSON.parse(readFileSync(new URL("./golden/golden_round4.json", import.meta.url)));
+  check(JD.rankEnd === "2026-08" && last === "2026-09" && Math.abs(us.growth - -0.5410) < 0.00005, `jobs: US ranked to the shared Aug 2026 (1Y ${us.growth.toFixed(4)}%), line + stats box run to ${last}`);
+  const r4sha = createHash("sha256").update(readFileSync(new URL("./golden/golden_round4.json", import.meta.url))).digest("hex");
+  check(r4sha.startsWith("232772a6") && r4sha.endsWith("d0f1"), `golden_round4.json LOCKED sha ${r4sha.slice(0, 8)}…${r4sha.slice(-4)}`); }
+// Round 4 goldens (Warehouse analysis/golden_round4.json, copied to scripts/golden/). round3 stays the 1Y/5Y/10Y baseline.
+{ const { unempLongDataset, ownChange, windowLabel: WL, econWithJoinedPopulation } = await import("../lib/series.mjs");
+  const { UNEMP_NOTE, UNEMP_EU_NOTE } = { UNEMP_NOTE: (readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8").match(/UNEMP_NOTE = "([^"]+)"/) || [])[1], UNEMP_EU_NOTE: (readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8").match(/UNEMP_EU_NOTE = "([^"]+)"/) || [])[1] };
+  const r4raw = readFileSync(new URL("./golden/golden_round4.json", import.meta.url)), R4 = JSON.parse(r4raw), r4sha = createHash("sha256").update(r4raw).digest("hex");
+  const r3sha = createHash("sha256").update(readFileSync(new URL("./golden/golden_round3.json", import.meta.url))).digest("hex");
+  const up = createHash("sha256").update(readFileSync("/workspace/skyscraper/canada-factcheck/analysis/golden_round4.json")).digest("hex");
+  check(r3sha.startsWith("5246aebe"), `golden_round3.json kept (sha ${r3sha.slice(0, 8)}) as the 1Y/5Y/10Y baseline`);
+  console.log(`golden_round4.json sha ${r4sha.slice(0, 8)}${up !== r4sha ? ` — Warehouse copy CHANGED (now ${up.slice(0, 8)}): re-copy and re-run` : " (matches Warehouse copy)"}`);
+  const UL = unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
+  const T = R4.unemployment_long_pts_aug2026, rows = [];
+  for (const [k, byW] of Object.entries(T)) { if (!/^[A-Z]{3}/.test(k)) continue; const c = k.slice(0, 3), own = k.includes("own");
+    for (const [wk, want] of Object.entries(byW)) { const y = parseInt(wk), l = buildLine(UL, c, y, "unemp");
+      let got = l.full ? l.growth : null; if (own) { const o = ownChange(UL, c, y); got = o && !l.full ? o.change : null; }
+      rows.push([c + (own ? " (own, to Jun 2026)" : ""), y, want === null ? (got === null ? "ok" : "BAD") : got !== null && Math.abs(got - want) < 0.005 + 1e-9 ? "ok" : "BAD", want, got]); } }
+  const badR = rows.filter((r) => r[2] === "BAD");
+  check(!badR.length, `round4 unemployment (final, Aug 2026 end): ${rows.length - badR.length}/${rows.length} match ±0.005 pts incl. 50Y n/a for DE/FR/IT/UK and UK own figure${badR.length ? " — DIFF " + badR.map(([c, y, , w, g]) => `${c} ${y}Y ours ${g === null ? "n/a" : g.toFixed(3)} vs ${w}`).join("; ") : ""}`);
+  // pending: GDP per capita + jobs per capita 50Y being recomputed by Warehouse
+  const JPR = jobsPerCapitaDataset(data, POPJ), pend = [];
+  for (const [c, want] of Object.entries(R4.gdp_per_capita_50Y_pct || {})) { const g = buildLine(EV.pc, c, 50, "index").growth; pend.push(`pc ${c} ours ${g?.toFixed(2)} vs ${want}`); }
+  for (const c of ["CAN", "USA"]) { const g = buildLine(JPR, c, 50, "index").growth; pend.push(`jobs pc ${c} ours ${g?.toFixed(4)} vs ${R4.jobs_per_capita_pct[c]["50Y"]}`); }
+  for (const c of ALL) { const l = buildLine(JPR, c, 50, "index"), f = l.points.find((p) => p.value !== null), e = [...l.points].reverse().find((p) => p.value !== null);
+    if (R4.jobs_per_capita_pct[c] && R4.jobs_per_capita_pct[c]["50Y"] === null && c === "DEU") check(!l.full, "round4 jobs per capita 50Y DEU: null (late starter)");
+    if (R4.jobs_per_capita_pct[c]?.["50Y"] != null) check(Math.abs(l.growth - R4.jobs_per_capita_pct[c]["50Y"]) < 0.001, `round4 jobs per capita 50Y ${c}: ${f.period} -> ${e.period} ${l.growth.toFixed(4)}% vs ${R4.jobs_per_capita_pct[c]["50Y"]}`);
+    console.log(`jobs per capita 50Y ${c}: ${l.full ? "FULL, ranked" : `late starter from ${l.late}`} ${f.period} -> ${e.period}: ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(4)}%${R4.jobs_per_capita_pct[c] ? ` (round4 ${R4.jobs_per_capita_pct[c]["50Y"]})` : " (not in round4)"}`); }
+  for (const [c, want] of Object.entries(R4.gdp_per_capita_50Y_pct || {})) { if (want === null) { check(!buildLine(EV.pc, c, 50, "index").full, `round4 GDP per capita 50Y ${c}: null (late starter, not ranked)`); continue; } const g = buildLine(EV.pc, c, 50, "index").growth; check(Math.abs(g - want) < 0.005 + 1e-9, `round4 GDP per capita 50Y ${c}: ${g.toFixed(2)}% vs ${want}`); }
+  for (const c of ["CAN", "USA"]) for (const w of ["1Y", "5Y", "10Y", "20Y"]) { const g = buildLine(JPR, c, parseInt(w), "index").growth; check(Math.abs(g - R4.jobs_per_capita_pct[c][w]) < 0.001, `round4 jobs per capita ${w} ${c}: ${g.toFixed(4)} vs ${R4.jobs_per_capita_pct[c][w]}`); }
+  // each chart's 50Y start = its own shared end minus 50 years (same months)
+  const labs = { unemployment: WL(UL, ["CAN", "USA"], 50, "unemp").text, gdp: WL(EV.gdp, ["CAN"], 50, "index").text, "gdp per capita": WL(EV.pc, ["CAN"], 50, "index").text, "jobs per capita": WL(JPR, ["CAN"], 50, "index").text, jobs: WL(data, ["CAN"], 50, "jobs").text };
+  check(labs.unemployment.startsWith("Aug 1976 – ") && labs.gdp.startsWith("Q2 1976 – Q2 2026") && labs["gdp per capita"].startsWith("Q1 1976 – Q1 2026") && labs["jobs per capita"].startsWith("Mar 1976 – Mar 2026"),
+    `50Y start labels per chart: ${Object.entries(labs).map(([k, v]) => `${k} "${v}"`).join("; ")}`);
+  // Canada Dec 1975 break stays in the data but never draws (outside every window)
+  const cb = WINDOWS_ALL.flatMap((y) => buildLine(UL, "CAN", y, "unemp").breaks.filter((b) => { const m0 = buildLine(UL, "CAN", y, "unemp").points[0].mi; return b.mi >= m0; }));
+  check(UL.monthly.CAN.status["1975-12"] === "B" && !cb.length, `unemployment: Canada Dec 1975 break kept in data (B), drawn on no window (1Y–50Y)`);
+  check(UNEMP_NOTE === "OECD monthly estimates; European figures differ from the earlier quarterly series by up to 1.1 points." && UNEMP_EU_NOTE === "smoothed across survey changes; no break flagged by OECD", "unemployment How it's calculated notes: word for word");
+  const it = buildLine(UL, "ITA", 50, "unemp"), usOct = buildLine(UL, "USA", 1, "unemp").points.find((p) => p.period === "2025-10");
+  check(UL.monthly.ITA.status["1983-01"] === "P" && UL.monthly.ITA.status["1991-12"] === "P" && !estAt(UL, "ITA", "1990-01") && usOct.value === null && it.points.filter((p) => p.mi < 1983 * 12 + 2).every((p) => p.value === null),
+    "unemployment labels: Italy 1983–1991 provisional (stats box tag; line solid, not dashed); US Oct 2025 n/a; n/a before each start, never 0"); }
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }

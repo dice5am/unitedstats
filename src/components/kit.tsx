@@ -82,8 +82,10 @@ export function CardFrame({ id, eyebrow, title, sub, controls, headline, legend,
       <p className="eyebrow">{eyebrow}</p>
       <h2 id={`h-${id}`} className="h1">{title}</h2>
       <p className="sub">{sub}</p>
-      {controls && <div className="ctrls">{controls}</div>}
-      {headline}
+      <div className="toprow">
+        {controls && <div className="ctrls ctrls2">{controls}</div>}
+        {headline && <div className="figwrap">{headline}</div>}
+      </div>
       <div className="card chartcard plotcard">{children}</div>
       {legend && <ul className="notes">{legend}</ul>}
       <p className="source">{source}</p>

@@ -322,3 +322,56 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 }
 .wipcard{margin-top:24px;min-height:360px;display:grid;place-items:center;color:var(--muted)}
 .wipcard p{margin:0;font-size:var(--fs-3)}
+/* 50Y heat strip: one column per year, 1px gutter, no in-cell n/a text */
+.hgrid.y50{column-gap:1px}.hgrid.y50 .hc{border-radius:1px}.hgrid.y50 .hc em{display:none}
+.chart .from{font-size:11px;fill:var(--text-2)}
+.notes i.late{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--text-2);background:transparent;display:inline-block}
+.fignone{margin:0;color:var(--text-2);font-size:var(--fs-3,15px);line-height:1.45;max-width:46ch;padding:8px 0}
+:root{--XM:#9AA7B8}[data-theme="light"]{--XM:#4B5768}
+
+/* ---- Round 4b card layout: two-line controls at 390; figures left + controls right at >=1024 ---- */
+.toprow{display:flex;flex-direction:column;margin-top:20px}
+.ctrls2{display:flex;flex-direction:column;gap:8px}
+.cl1{display:flex;align-items:center;gap:8px;min-width:0}
+.cl1 .vseg{margin-top:0;flex:1 1 auto;min-width:0}
+.cl1.solo{justify-content:flex-start}
+.ctrls2 .seg{display:flex;padding:4px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%)}
+.ctrls2 .seg .hl{top:4px}
+.ctrls2 .seg button{flex:1;min-width:0;padding:0 6px}
+.figwrap .figs{margin-top:24px}
+@media (max-width:767px){.cl1 .vseg button{padding:0 10px;font-size:14px}.cl1 .vseg button{white-space:nowrap}}
+@media (min-width:768px) and (max-width:1023px){.ctrls2{flex-direction:row;flex-wrap:wrap}.ctrls2 .seg{flex:1 1 320px}}
+@media (min-width:1024px){
+ .hero .h1{font-size:40px;line-height:1.05}
+ .hero .sub{margin-top:6px}
+ .hero .toprow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;margin-top:16px}
+ .hero .figwrap{grid-column:1;grid-row:1}.hero .ctrls2{grid-column:2;grid-row:1;align-items:flex-end}
+ .hero .figwrap .figs{margin-top:0}
+ .hero .figv{font-size:48px}
+ .hero .span{margin-top:8px}
+ .hero .ctrls2 .seg{min-width:340px}
+ .hero .chartcard,.hero .plotcard{margin-top:16px}
+ .hero .notes{margin-top:8px}.hero .source{margin-top:4px}.hero .calc{margin-top:8px}
+ .hero .fignone{font-size:15px}
+}
+/* steady plot box at <1024: every hero chart reserves the same card height so switching never jumps */
+@media (max-width:1023px){.hero .chartcard,.hero .plotcard{min-height:340px}}
+.moresheet a{display:flex;align-items:center;gap:12px}
+.moresheet a .st{display:flex;flex-direction:column;gap:2px;min-width:0}
+.spark{flex:none;color:var(--text-2)}
+.spark path{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.spark rect{fill:currentColor}
+.spark.none line{stroke:var(--grid);stroke-width:1.5;stroke-dasharray:2 3}
+.moresheet a.on .spark{color:var(--text)}
+.page{overflow-anchor:none}
+.moresheet li a{flex-direction:row !important;align-items:center}
+.notes i.dash{width:16px;height:0;border-top:2px dashed var(--text-2);display:inline-block;vertical-align:middle;margin-right:6px}
+.notes li.deu{color:var(--text-2)}
+.tip em.oe{color:var(--text-2);font-style:normal}
+.tipr{flex-wrap:wrap}
+.tipr .tipnote{flex-basis:100%;padding-left:18px;color:var(--text-2);font-size:12px;line-height:1.35;white-space:normal;overflow:visible}
+:root,[data-theme="dark"]{--ndband:rgba(255,255,255,.05)}[data-theme="light"]{--ndband:rgba(0,0,0,.04)}
+.ndband{animation:fadein .15s ease both}
+@media (prefers-reduced-motion:reduce){.ndband{animation:none}}
+.notes i.ndsw{width:12px;height:10px;border-radius:2px;background:var(--text-2);opacity:.35;display:inline-block;margin-right:6px;vertical-align:middle}
+.notes li.ndleg{color:var(--text-2)}

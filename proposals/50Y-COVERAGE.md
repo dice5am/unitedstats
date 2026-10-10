@@ -1,4 +1,4 @@
-# 50Y coverage audit (need data from mid-1976: 1976-07 monthly, 1976-Q3 quarterly)
+# 50Y coverage audit (50Y = same rule as other windows: end month minus 50 years, e.g. Aug 2026 -> Aug 1976 (Jun–Aug 1976 avg); quarterly Q3 1976 – Q2 2026)
 
 Every data file behind a timeframe switch, per country: first non-null reading. Nothing padded or filled.
 
@@ -81,3 +81,20 @@ Every data file behind a timeframe switch, per country: first non-null reading. 
 - Jobs per capita (jobs ÷ OECD population): CAN from 1981, DEU 1991, FRA 2003 (jobs), GBR 1995, ITA 1998 (jobs), JPN 2007-Q3 (population); only USA covers 1976.
 - GDP per capita: as gdp_per_capita above (population-limited).
 - #7 policy rates: XM (euro area) starts 1999-01 by construction; DEU/FRA/ITA national rates cover before 1999 (national lines to Dec 1998). JPN has 116 missing months from 1999-03 (stay as gaps).
+
+## Data rule (2026-10-10)
+Only extend a series with earlier data from the SAME dataset. Never splice a different source onto the front
+(e.g. World Bank or annual population in front of the OECD quarterly series). If Warehouse returns no earlier data,
+the country stays a late starter. Re-run: `node scripts/coverage-audit.cjs`.
+
+Status 2026-10-10 06:30 UK: no longer exports yet. Warehouse export shas unchanged (labour fa432222, unemployment
+7c77ec1f, econ 228d4521, monthly unemployment 3b47f4f6, BIS 1731dce2). `econ_population_annual.json` exists in the
+Warehouse but is a different dataset (annual), so it is NOT used to extend the quarterly population.
+
+## Re-audit 2026-10-10 ~06:50 UK, after the gated files landed (`node scripts/coverage-audit.cjs`)
+50Y start = each chart's own shared end minus 50 years: GDP Q2 1976, GDP per capita Q1 1976, jobs per capita Mar 1976 (quarterly: Q1 1976), unemployment Aug 1976, jobs Aug 1976.
+- Population and GDP per capita: now cover 1976 for all seven (joined files, OECD annual population before each quarterly start, flag Y, from 1975-Q1). Gated: econ_population_joined 36a710cf…5ba4, econ_gdp_per_capita_joined c47c563e…62bf.
+- Jobs per capita 50Y: CAN, USA, JPN, GBR, DEU full and ranked; FRA (2003) and ITA (1998) are late starters (jobs-limited).
+- Unemployment (c1_unemployment_rate_long.json, gated ccf0417e…56b1): UK, France, Italy from 1983 and Germany from 1991 are late starters. There is no earlier OECD monthly data.
+- Still short: jobs FRA 2003-Q1, ITA 1998-Q1; unemployment monthly GBR/FRA/ITA 1983, DEU 1991; BIS XM 1999 (by construction).
+- Germany territory: the jobs series shows no jump from Q4 1990 (37,302k) to Q1 1991 (37,183k), −0.3%, and 1976-Q1 is 32,397k, which is on a unified scale. So there is no per-capita start override.

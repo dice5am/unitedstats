@@ -1,0 +1,307 @@
+{
+ "round": 4,
+ "supersedes": "none; round 3 (golden_round3.json) stays for the live site",
+ "conventions": {
+  "50Y_rule": "each chart starts exactly 50 years before its own shared end",
+  "unemployment": "Aug 1976 (Jun-Aug avg) to Aug 2026",
+  "jobs_per_capita": "Mar 1976 (Jan-Mar avg) to Mar 2026; joined population (derived from 1975-Q1), quarter on mid-quarter month, linear interp",
+  "gdp_per_capita": "1976-Q1 to 2026-Q1, joined population",
+  "gdp": "1976-Q2 to 2026-Q2",
+  "jobs_per_capita_quarterly": "quarterly countries: 1976-Q1 to 2026-Q1, quarterly jobs / joined quarterly population; FRA (2003) and ITA (1998) start too late for 50Y: null",
+  "jobs_per_capita_DEU": "Germany has no monthly jobs data: jobs per capita = quarterly jobs (Q) / quarterly joined population for the same quarter (Q), 1991-Q1 to 2026-Q1. Not divided by a Jan-Mar monthly population average (that gives 9.3552 vs 9.3683).",
+  "windows_round4": {
+   "rule": "start = same month/quarter N years before the chart end; null if start precedes first data point or DEU before 1991-Q1; never zero",
+   "gdp_pct": "end 2026-Q2; starts 2025-Q2, 2021-Q2, 2016-Q2, 2006-Q2 (50Y in gdp_50Y_pct: 1976-Q2)",
+   "gdp_per_capita_pct": "end 2026-Q1; starts 2025-Q1, 2021-Q1, 2016-Q1, 2006-Q1 (50Y in gdp_per_capita_50Y_pct: 1976-Q1)",
+   "jobs_per_capita_pct": "monthly CAN/USA/JPN: 3-mo avg ending Mar of start year vs ending 2026-03; quarterly GBR/DEU/FRA/ITA: Q1 jobs / Q1 joined population, start YYYY-Q1 to 2026-Q1",
+   "jobs_pct": "shared ends: CAN/USA/JPN 2026-08, quarterly 2026-Q2; monthly = 3-mo avg ending same month N years earlier; quarterly = same quarter N years earlier"
+  }
+ },
+ "unemployment_long_pts_aug2026": {
+  "source": "oecd_unemployment_rate_m_15plus.json sha 3b47f4f6..2e15",
+  "note": "all end 2026-08; start = 3-mo avg ending same month; GBR ends 2026-06, unranked",
+  "CAN": {
+   "1Y": -0.53,
+   "5Y": -1.03,
+   "10Y": -0.53,
+   "20Y": 0.0,
+   "50Y": -0.7
+  },
+  "USA": {
+   "1Y": -0.1,
+   "5Y": -1.33,
+   "10Y": -0.73,
+   "20Y": -0.53,
+   "50Y": -3.6
+  },
+  "JPN": {
+   "1Y": -0.03,
+   "5Y": -0.37,
+   "10Y": -0.6,
+   "20Y": -1.67,
+   "50Y": 0.47
+  },
+  "DEU": {
+   "1Y": 0.27,
+   "5Y": 0.5,
+   "10Y": 0.07,
+   "20Y": -6.0,
+   "50Y": null
+  },
+  "FRA": {
+   "1Y": 0.53,
+   "5Y": 0.33,
+   "10Y": -1.63,
+   "20Y": -0.7,
+   "50Y": null
+  },
+  "ITA": {
+   "1Y": 0.23,
+   "5Y": -3.17,
+   "10Y": -5.63,
+   "20Y": -0.7,
+   "50Y": null
+  },
+  "GBR_own_end_2026-06": {
+   "1Y": 0.2,
+   "5Y": 0.2,
+   "10Y": 0.0,
+   "20Y": -0.57,
+   "50Y": null
+  }
+ },
+ "jobs_per_capita_pct": {
+  "CAN": {
+   "1Y": 0.6554,
+   "5Y": 3.7767,
+   "10Y": 1.9045,
+   "20Y": 0.9686,
+   "50Y": 22.6224
+  },
+  "USA": {
+   "1Y": -0.7203,
+   "5Y": 5.1354,
+   "10Y": 2.006,
+   "20Y": -1.2745,
+   "50Y": 17.883
+  },
+  "JPN": {
+   "50Y": 18.7557,
+   "1Y": 0.4803,
+   "5Y": 3.4468,
+   "10Y": 9.4426,
+   "20Y": 11.296
+  },
+  "DEU": {
+   "50Y": null,
+   "1Y": 0.0625,
+   "5Y": 3.8288,
+   "10Y": 1.2853,
+   "20Y": 12.2806
+  },
+  "GBR": {
+   "50Y": 11.9701,
+   "1Y": 0.9162,
+   "5Y": 2.3043,
+   "10Y": 2.264,
+   "20Y": 3.292
+  },
+  "FRA": {
+   "50Y": null,
+   "1Y": 0.174,
+   "5Y": 5.5034,
+   "10Y": 6.5368,
+   "20Y": 7.6759
+  },
+  "ITA": {
+   "50Y": null,
+   "1Y": 0.1732,
+   "5Y": 10.392,
+   "10Y": 9.3133,
+   "20Y": 5.6335
+  }
+ },
+ "gdp_per_capita_50Y_pct": {
+  "CAN": 82.64,
+  "DEU": null,
+  "FRA": 92.36,
+  "GBR": 123.44,
+  "ITA": 90.94,
+  "JPN": 135.59,
+  "USA": 143.5
+ },
+ "card_reference_figures": "/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md",
+ "gdp_50Y_pct": {
+  "CAN": 220.35,
+  "DEU": null,
+  "FRA": 143.12,
+  "GBR": 178.46,
+  "ITA": 99.08,
+  "JPN": 156.33,
+  "USA": 283.17
+ },
+ "inputs": {
+  "econ_population_joined.json": "36a710cfc718b1c4...5ba4",
+  "econ_gdp_per_capita_joined.json": "c47c563e97920cb0...62bf"
+ },
+ "germany_from_1991": {
+  "start": "1991-Q1",
+  "50Y": null,
+  "note": "Cavin decision: DEU starts 1991-Q1 on these four charts, unranked at 50Y",
+  "gdp_pct": {
+   "end": "2026-Q2",
+   "value": 51.2347
+  },
+  "gdp_per_capita_pct": {
+   "end": "2026-Q1",
+   "value": 44.2345
+  },
+  "jobs_pct": {
+   "end": "2026-Q2",
+   "value": 14.0347
+  },
+  "jobs_per_capita_pct": {
+   "end": "2026-Q1",
+   "value": 9.3683
+  }
+ },
+ "gdp_pct": {
+  "CAN": {
+   "1Y": 1.1279,
+   "5Y": 13.6031,
+   "10Y": 22.4465,
+   "20Y": 41.1191
+  },
+  "USA": {
+   "1Y": 2.1916,
+   "5Y": 13.6627,
+   "10Y": 28.0406,
+   "20Y": 48.8643
+  },
+  "JPN": {
+   "1Y": 0.7267,
+   "5Y": 4.331,
+   "10Y": 5.8794,
+   "20Y": 11.6555
+  },
+  "GBR": {
+   "1Y": 1.3726,
+   "5Y": 8.8694,
+   "10Y": 13.8086,
+   "20Y": 29.3844
+  },
+  "DEU": {
+   "1Y": 1.0172,
+   "5Y": 2.124,
+   "10Y": 7.8346,
+   "20Y": 22.6425
+  },
+  "FRA": {
+   "1Y": 0.5423,
+   "5Y": 8.8616,
+   "10Y": 12.8105,
+   "20Y": 21.7759
+  },
+  "ITA": {
+   "1Y": 1.0157,
+   "5Y": 9.9662,
+   "10Y": 12.1759,
+   "20Y": 6.6191
+  }
+ },
+ "gdp_per_capita_pct": {
+  "CAN": {
+   "1Y": 0.3097,
+   "5Y": 3.283,
+   "10Y": 4.5263,
+   "20Y": 9.3901
+  },
+  "USA": {
+   "1Y": 2.279,
+   "5Y": 11.4744,
+   "10Y": 20.703,
+   "20Y": 29.0013
+  },
+  "JPN": {
+   "1Y": 0.9281,
+   "5Y": 6.7611,
+   "10Y": 8.7061,
+   "20Y": 16.0957
+  },
+  "GBR": {
+   "1Y": 0.6065,
+   "5Y": 11.4058,
+   "10Y": 7.2974,
+   "20Y": 12.5855
+  },
+  "DEU": {
+   "1Y": 0.8367,
+   "5Y": 2.3689,
+   "10Y": 5.6083,
+   "20Y": 21.0962
+  },
+  "FRA": {
+   "1Y": 0.4784,
+   "5Y": 8.1608,
+   "10Y": 8.1953,
+   "20Y": 12.7614
+  },
+  "ITA": {
+   "1Y": 0.8301,
+   "5Y": 13.1794,
+   "10Y": 14.7247,
+   "20Y": 5.6161
+  }
+ },
+ "jobs_pct": {
+  "CAN": {
+   "1Y": 0.8125,
+   "5Y": 11.4664,
+   "10Y": 17.8797,
+   "20Y": 28.8368,
+   "50Y": 116.9044
+  },
+  "USA": {
+   "1Y": -0.541,
+   "5Y": 6.4213,
+   "10Y": 7.1787,
+   "20Y": 12.4676,
+   "50Y": 82.5498
+  },
+  "JPN": {
+   "1Y": 0.1514,
+   "5Y": 1.7209,
+   "10Y": 5.3846,
+   "20Y": 7.0065,
+   "50Y": 29.8493
+  },
+  "GBR": {
+   "1Y": 0.7394,
+   "5Y": 6.2448,
+   "10Y": 8.3522,
+   "20Y": 18.4258,
+   "50Y": 39.1057
+  },
+  "DEU": {
+   "1Y": -0.3534,
+   "5Y": 4.141,
+   "10Y": 3.0885,
+   "20Y": 14.2043,
+   "50Y": null
+  },
+  "FRA": {
+   "1Y": -0.1389,
+   "5Y": 6.4781,
+   "10Y": 10.6073,
+   "20Y": 17.2534,
+   "50Y": null
+  },
+  "ITA": {
+   "1Y": 0.9884,
+   "5Y": 8.4186,
+   "10Y": 6.6724,
+   "20Y": 6.6737,
+   "50Y": null
+  }
+ }
+}

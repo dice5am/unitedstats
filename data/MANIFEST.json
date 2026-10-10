@@ -20,10 +20,16 @@
         "live:jobs-pc"
       ]
     },
-    "c1_unemployment_rate.json": {
-      "sha256": "7c77ec1f71358c42a1f9633e03e2e2078e138224c1bcb78ee8b4e3ce91d4483a",
+    "c1_unemployment_rate_long.json": {
+      "sha256": "ccf0417e18e2398fa250591d489a8653d2345afa8b260037b157560bd78556b1",
       "cards": [
         "live:unemp"
+      ]
+    },
+    "econ_gdp_per_capita_joined.json": {
+      "sha256": "c47c563e97920cb04de0683acdf9f2e70ad0059b954c815d4ad9daf202d062bf",
+      "cards": [
+        "live:gdp-pc"
       ]
     },
     "econ_gdp_series.json": {
@@ -33,6 +39,13 @@
         "live:gdp-pc",
         "live:jobs-pc",
         "#1"
+      ]
+    },
+    "econ_population_joined.json": {
+      "sha256": "36a710cfc718b1c44a057377c5b2fbc73d13342de81f7ae4089da5753b495ba4",
+      "cards": [
+        "live:gdp-pc",
+        "live:jobs-pc"
       ]
     },
     "oecd_unemployment_rate_m_15plus.json": {

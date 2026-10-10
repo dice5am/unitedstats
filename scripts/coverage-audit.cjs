@@ -1,0 +1,12 @@
+const first=(s)=>{for(let i=0;i<s.values.length;i++)if(s.values[i]!==null&&s.values[i]!==undefined)return s.periods[i];return null};
+const need={M:"1976-06",Q:"1976-Q3"};const out=[];
+const rep=(name,fam,obj,freq)=>{for(const[c,s] of Object.entries(obj||{})){const f=first(s);out.push([name,fam,c,freq,f,f<=need[freq]?"OK":"SHORT"].join(" | "))}};
+const L=require(__dirname+"/../data/c1_labour_series.json");rep("c1_labour_series.json","jobs",L.monthly,"M");rep("c1_labour_series.json","jobs",L.quarterly,"Q");
+const U=require(__dirname+"/../data/c1_unemployment_rate_long.json");rep("c1_unemployment_rate_long.json","unemp",U.monthly,"M");
+const E=require(__dirname+"/../data/econ_gdp_series.json");rep("econ_gdp_series.json","gdp",E.gdp,"Q");const PJ=require(__dirname+"/../data/econ_population_joined.json"),CJ=require(__dirname+"/../data/econ_gdp_per_capita_joined.json");rep("econ_population_joined.json","population",PJ.population,"Q");rep("econ_gdp_per_capita_joined.json","gdp_per_capita",CJ.gdp_per_capita,"Q");
+const M=require(__dirname+"/../data/oecd_unemployment_rate_m_15plus.json");rep("oecd_unemployment_rate_m_15plus.json","unemp_m",M.series,"M");
+const B=require(__dirname+"/../data/bis_policy_rate_m.json");console.log(Object.keys(B), Object.keys(B.series||{}));rep("bis_policy_rate_m.json","policy",B.series,"M");
+console.log(out.join("\n"));
+console.log("--- nulls from 1976-06/1976-Q3 to each series' end (after first reading)");
+const gaps=(name,obj,freq)=>{for(const[c,s] of Object.entries(obj||{})){const f=first(s);let n=0,ex=[];s.periods.forEach((p,i)=>{if(p>=need[freq]&&p>=f&&(s.values[i]===null||s.values[i]===undefined)){n++;if(ex.length<3)ex.push(p)}});if(n)console.log(name,c,freq,n,ex.join(","))}};
+gaps("labour",L.monthly,"M");gaps("labour",L.quarterly,"Q");gaps("unemp",U.monthly,"M");gaps("gdp",E.gdp,"Q");gaps("pop",PJ.population,"Q");gaps("unemp_m",M.series,"M");gaps("bis",B.series,"M");

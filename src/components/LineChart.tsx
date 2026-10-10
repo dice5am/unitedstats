@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt } from "@/lib/series.mjs";
+import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
   code: string; name: string; freq: "monthly" | "quarterly"; points: Pt[]; breaks: { mi: number; label: string }[];
-  last: number | null; growth: number | null; janJumps: string[]; indexedFrom: string | null; excluded?: boolean;
+  last: number | null; growth: number | null; janJumps: string[]; indexedFrom: string | null; excluded?: boolean; late?: string | null; full?: boolean;
 };
 
 const MAIN = new Set(["CAN", "USA"]);
@@ -25,8 +25,12 @@ function textW(s: string, px: number, weight: number) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function LineChart({ lines: all, on, years, data, mode = "jobs", emptyMsg = null }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any; mode?: "jobs" | "unemp" | "index"; emptyMsg?: string | null }) {
-  const R = mode === "unemp"; // rate level in %, not indexed
+export default function LineChart({ lines: all, on, years, data, mode = "jobs", emptyMsg = null, onBandLegend }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any; mode?: "jobs" | "unemp" | "index" | "level"; emptyMsg?: string | null; onBandLegend?: (labels: string[]) => void }) {
+  const RU = mode === "unemp"; // unemployment: lower is better
+  const R = RU || mode === "level"; // a level in %, not indexed (unemployment, policy rate)
+  const IX = mode === "index" || mode === "jobs";
+  const [vh, setVh] = useState(0);
+  useEffect(() => { const f = () => setVh(window.innerWidth >= 1024 ? window.innerHeight : 0); f(); addEventListener("resize", f); return () => removeEventListener("resize", f); }, []);
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
@@ -55,13 +59,16 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const qL = (mi: number, short = false) => { const q = qOfMonth(mi); const yy = Math.floor(q / 4); return `Q${(q % 4) + 1} ${short ? "’" + String(yy).slice(2) : yy}`; };
   const mainOn = lines.some((l) => MAIN.has(l.code));
   const wide = w >= 768;
-  const h = wide ? 500 : 320;
+  // ≥1024: the chart fills the rest of the window, sized from the viewport height (not the content), min 480.
+  // <1024: fixed heights, so switching charts never changes the plot height.
+  const h = vh ? Math.max(480, vh - 545) : wide ? 500 : 320; // 545 = header, title, figures row, source and disclosure
   const lblPx = wide ? 13 : 12;
   // <768: names, falling back to 2-letter codes when the names won't fit (width or vertical spread)
   const minGap = Math.ceil(lblPx * 1.25) + 4; // label box height + >= 4px clear between labels
   const nameW = Math.max(36, ...lines.map((l) => textW(l.name, lblPx, MAIN.has(l.code) ? 700 : 500)));
   const useCodes = !wide && (nameW + 22 > (w || 390) * 0.26 || lines.length * minGap > h - 34 - 58 - 10);
-  const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}${R ? "%" : ""}` : useCodes ? SHORT_CODE[l.code] ?? l.code : l.name);
+  const from = (l: Line) => (IX && l.late && !(data.noLateMark || []).includes(l.code) ? ` · from ${l.late.slice(0, 4)}` : "");
+  const label = (l: Line) => (wide && l.last !== null ? `${l.name}${from(l)} ${l.last.toFixed(1)}${R ? "%" : ""}` : (useCodes ? SHORT_CODE[l.code] ?? l.code : l.name) + from(l));
   const gutter = Math.ceil(Math.max(36, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 500)))) + (wide ? 28 : 22);
   const pad = { l: wide ? 48 : 38, r: gutter, t: 34, b: 58 };
   const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b, bottom = pad.t + ih;
@@ -76,6 +83,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     return { y0: lo, y1: hi };
   }, [lines, R]);
 
+  const bandOut = useRef<string>("");
+  useEffect(() => { if (onBandLegend) onBandLegend(bandOut.current ? bandOut.current.split("|") : []); });
   if (!w) return <div ref={ref} className="chart skeleton" style={{ height: 320 }} />;
   if (emptyMsg) return (
     <div ref={ref} className="chart empty" style={{ height: h }} role="status">
@@ -95,6 +104,12 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   else { const yrs = years / (maxT - 1); const st = Math.max(1, Math.ceil(yrs)) * 12; for (let mi = m1; mi >= m0; mi -= st) xt.unshift(mi); }
   while (xt.length > maxT) xt.shift();
 
+  // no-data bands (excluded earlier years): visual only
+  const bands = noDataBands(data, lines.map((l) => l.code), years, mode).map((b) => {
+    const bx = x(b.to), tw = textW(b.label, 11, 400);
+    return { ...b, bx, inside: tw + 16 <= bx - pad.l };
+  });
+  bandOut.current = bands.filter((b) => !b.inside).map((b) => b.label).join("|"); // labels that don't fit go to the legend row
   // gaps: blank stretches inside visible monthly lines
   const gaps: { a: number; b: number; label: string }[] = [];
   for (const l of lines) {
@@ -105,7 +120,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
       if (p.value === null && s === null && prevOk) s = p.mi;
       if (p.value !== null && s !== null) {
         const miss = (data.monthly[l.code].missing as string[]).filter((m: string) => { const [yy, mm] = m.split("-").map(Number); const mi = yy * 12 + mm - 1; return mi >= s! && mi < p.mi; });
-        gaps.push({ a: s, b: p.mi - 1, label: `No OECD data · ${miss.map((m: string) => fmtM(Number(m.slice(0, 4)) * 12 + Number(m.slice(5)) - 1)).join(", ") || fmtM(s)}` });
+        const mm = miss.map((m: string) => fmtM(Number(m.slice(0, 4)) * 12 + Number(m.slice(5)) - 1));
+        gaps.push({ a: s, b: p.mi - 1, label: `No ${data.gapSource ?? "OECD"} data · ${mm.length > 2 ? `${mm[0]} – ${mm[mm.length - 1]}` : mm.join(", ") || fmtM(s)}` });
         s = null;
       }
     });
@@ -115,7 +131,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const showJumps = years <= 5;
 
   // end labels
-  const ends = lines.map((l) => {
+  // #7: national DE/FR/IT lines stop in Dec 1998; the euro-area line carries the end label
+  const ends = lines.filter((l) => !(data.noEndLabel || []).includes(l.code) || !lines.some((q) => q.code === "XM")).map((l) => {
     const lp = [...l.points].reverse().find((p) => p.value !== null);
     return lp ? { l, mi: lp.mi, v: lp.value as number, ty: y(lp.value as number) } : null;
   }).filter((e): e is NonNullable<typeof e> => !!e).sort((a, b) => a.ty - b.ty);
@@ -136,20 +153,29 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     const p = l.excluded ? null : ptAt(l, hover);
     const lvl = p ? rawLevel(data, l.code, p.period) : null;
     const prov = p && statusAt(data, l.code, p.period) === "P";
-    return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? `${qLabel(p.period)}${prov ? " · provisional" : ""}` : null };
+    const band = bands.find((b) => b.code === l.code && hover < b.to);
+    if (band) return { l, p: null, v: null, lvl: null, note: band.label, tag: null };
+    const pre = l.late && hover < l.points.find((q) => q.value !== null)!.mi ? `from ${l.late.includes("Q") ? qLabel(l.late) : fmtM(Number(l.late.slice(0, 4)) * 12 + Number(l.late.slice(5)) - 1)}` : null;
+    // early ender (e.g. UK monthly to Jun 2026): past its last reading, show its own last figure tagged "to <month>"
+    const lastP = [...l.points].reverse().find((q) => q.value !== null);
+    if (!l.excluded && l.freq === "monthly" && lastP && lastP.mi < m1 && hover > lastP.mi) { const oc = R ? ownChange(data, l.code, years) : null;
+      return { l, p: lastP, v: lastP.value, lvl: null, tag: `to ${fmtM(lastP.mi)}${oc ? ` · ${oc.change > 0.004 ? "+" : oc.change < -0.004 ? "−" : ""}${Math.abs(oc.change).toFixed(2)} pts over ${years}Y` : ""}` }; }
+    const est = p && p.value !== null && estAt(data, l.code, p.period);
+    const oe = p && p.value !== null && wholeEstimate(data, l.code);
+    return { l, p, v: p ? p.value : null, lvl, oe, note: [est ? "Estimated population" : null, oe ? "OECD estimate" : null].filter(Boolean).join(" · "), tag: pre ?? (l.freq === "monthly" && p && p.value !== null && statusAt(data, l.code, p.period) === "P" ? "provisional" : null) ?? (l.freq === "quarterly" && p ? `${qLabel(p.period)}${prov ? " · provisional" : ""}` : null) };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
   const cx = hover === null ? 0 : x(hover);
   const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
-  const tipH = 44 + rows.length * 24 + (jan ? 26 : 0) + brk.length * 22;
+  const tipH = 44 + rows.length * 24 + rows.filter((r) => "note" in r && r.note).length * 18 + (jan ? 26 : 0) + brk.length * 22;
   const hits = (a: number, b: number) => ptYs.filter((py) => py > a - 8 && py < b + 8).length;
   const topHits = hits(0, tipH), botHits = hits(h - tipH, h);
   const tipBottom = ptYs.some((py) => py < pad.t + ih / 2) ? !(botHits > topHits) : topHits > botHits;
   const tipW = wide ? 340 : 0;
   const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
-  const summary = `${R ? "Unemployment rate" : "Index"}, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
+  const summary = `${RU ? "Unemployment rate" : R ? "Policy rate" : "Index"}, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
   // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
   const valAt = (l: Line, mi: number): number | null => {
     if (l.freq === "monthly") { const p = l.points.find((q) => q.mi === mi); return p ? p.value : null; }
@@ -158,7 +184,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     if (!lo || !hi) return null;
     return lo.mi === hi.mi ? lo.value : lo.value! + ((hi.value! - lo.value!) * (mi - lo.mi)) / (hi.mi - lo.mi);
   };
-  const leaders = glowLeaders(lines.map((l) => ({ code: l.code, at: (mi: number) => { const v = valAt(l, mi); return v === null ? null : R ? -v : v; } })), m0, m1); // unemployment: lower is better -> glow on the LOWEST line
+  const leaders = glowLeaders(lines.map((l) => ({ code: l.code, at: (mi: number) => { const v = valAt(l, mi); return v === null ? null : RU ? -v : v; } })), m0, m1); // unemployment: lower is better -> glow on the LOWEST line
   const glowCodes = [...new Set(leaders.filter((c): c is string => !!c))];
   const span = x(m1) - x(m0) || 1, ramp = 6;
   const maskStops = (code: string) => {
@@ -219,7 +245,14 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           ))}
           <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
         </defs>
-        <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{R ? "Unemployment rate, %" : "Index · start = 100"}</text>
+        <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{RU ? "Unemployment rate, %" : R ? "Policy rate, %" : "Index · start = 100"}</text>
+        {bands.map((b) => (
+          <g key={`band${b.code}`} className="ndband" data-code={b.code} pointerEvents="none">
+            <defs><linearGradient id={`ndb-${b.code}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor="var(--ndband)" /><stop offset={Math.max(0, 1 - 8 / Math.max(8, b.bx - pad.l))} stopColor="var(--ndband)" /><stop offset="1" stopColor="var(--ndband)" stopOpacity="0" /></linearGradient></defs>
+            <rect x={pad.l} y={pad.t} width={Math.max(0, b.bx - pad.l)} height={ih} fill={`url(#ndb-${b.code})`} />
+            {b.inside && <text x={pad.l + 8} y={pad.t + 8 + 9} className="from ndlabel">{b.label}</text>}
+          </g>
+        ))}
         {covid && <g>
           <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
           <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
@@ -243,10 +276,15 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           const vis = !!on[l.code];
           const main = MAIN.has(l.code);
           const op = vis ? 1 : 0; void mainOn;
-          const d = monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })));
+          // Estimated population ("Y"): that stretch is dashed, turning solid at the switch quarter.
+          const est = l.points.map((p) => p.value !== null && estAt(data, l.code, p.period));
+          const anyEst = est.some(Boolean);
+          const d = monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value === null || est[i] ? null : y(p.value) })));
+          const dd = anyEst ? monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value !== null && (est[i] || (i > 0 && est[i - 1])) ? y(p.value) : null }))) : "";
           return (
             <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
               <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              {dd && <path key={`d${l.code}${years}${mode}`} d={dd} className="ln est fadein" data-code={l.code} fill="none" stroke={col(l.code)} strokeWidth={2} strokeDasharray="4 3" strokeLinecap="butt" />}
               {vis && showJumps && l.janJumps.map((jp) => {
                 const p = l.points.find((q) => q.period === jp);
                 // on the line where it exists; for a blank 3-mo avg, sit on the next drawn point
@@ -257,10 +295,12 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           );
         })}
 
-        {gaps.map((g) => {
+        {(() => { const placed: [number, number][] = []; return gaps.map((g) => {
           const a = x(g.a), b = x(g.b), mid = (a + b) / 2, py = bottom + 44;
           const tw = textW(g.label, 12, 500) + 20;
           const px = Math.min(Math.max(mid - tw / 2, pad.l), pad.l + iw - tw);
+          if (placed.some(([l, r]) => px < r + 6 && px + tw > l - 6)) return <path key={g.a} d={`M${a},${bottom - 2}v6M${a},${bottom + 4}H${b}M${b},${bottom - 2}v6`} className="bracket gapb" />;
+          placed.push([px, px + tw]);
           return (
             <g key={g.a} className="gap">
               <path d={`M${a},${bottom - 2}v6M${a},${bottom + 4}H${b}M${b},${bottom - 2}v6M${mid},${bottom + 4}V${py - 10}`} className="bracket gapb" />
@@ -268,7 +308,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
               <text x={px + tw / 2} y={py + 4} textAnchor="middle" className="ax">{g.label}</text>
             </g>
           );
-        })}
+        }); })()}
 
         {ends.map((e) => (
           <g key={e.l.code} className="fadein">
@@ -281,6 +321,18 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           </g>
         ))}
 
+        {/* late starters: 6px hollow start dot in the country colour + small grey "from YYYY" */}
+        {(() => { const boxes: [number, number, number, number][] = []; // placed "from" labels; a label that can't sit clear is dropped (the dot stays)
+          return lines.filter((l) => l.late && !(data.noLateMark || []).includes(l.code)).map((l) => ({ l, f: l.points.find((p) => p.value !== null)! })).sort((a, b) => a.f.mi - b.f.mi).map(({ l, f }) => {
+          const fx = x(f.mi), fy = y(f.value!);
+          const t = `from ${l.late!.slice(0, 4)}`, tw = textW(t, 11, 400), tx = Math.min(fx + 6, pad.l + iw - tw);
+          const ty = [fy - 8, fy + 16, fy - 21, fy + 29].find((cy) => cy - 10 > pad.t && cy < bottom - 2 && !boxes.some(([l0, t0, r0, b0]) => tx < r0 + 4 && tx + tw > l0 - 4 && cy - 10 < b0 && cy > t0));
+          if (ty !== undefined) boxes.push([tx, ty - 10, tx + tw, ty]);
+          return (<g key={`ls${l.code}`} className="late fadein" data-code={l.code}>
+            <circle cx={fx} cy={fy} r={3} fill="var(--card-solid)" stroke={col(l.code)} strokeWidth={1.5} />
+            {ty !== undefined && <text x={tx} y={ty} className="from">{t}</text>}
+          </g>);
+        }); })()}
         {lines.flatMap((l) => l.breaks.map((bk) => {
           if (!Number.isFinite(bk.mi) || bk.mi < m0 || bk.mi > m1) return null;
           const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - bk.mi) < Math.abs(best.mi - bk.mi)) ? q : best), null);
@@ -312,7 +364,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
 
       {hover !== null && (
         <div className={`tip ${tipBottom ? "bot" : "top"}`} style={wide ? { left: tipLeft, width: tipW } : undefined} role="status" onPointerDown={(e) => e.stopPropagation()}>
-          <div className="tiph"><span className="mo">{allQ ? qL(hover) : fmtM(hover)}</span>{wide && <span className="cols">{R ? "rate, 3-mo avg" : mode === "jobs" ? "index · employed" : "index, start = 100"}</span>}
+          <div className="tiph"><span className="mo">{allQ ? qL(hover) : fmtM(hover)}</span>{wide && <span className="cols">{RU ? "rate, 3-mo avg" : R ? "rate, end of month" : mode === "jobs" ? "index · employed" : "index, start = 100"}</span>}
             <button className="tipx" aria-label="Close" onClick={() => setHover(null)}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></div>
           {rows.map((r) => (
             <div key={r.l.code} className="tipr">
@@ -320,6 +372,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
               {r.tag && <em>{r.tag}</em>}
               <b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}${R ? "%" : ""}`}</b>
               {wide && mode === "jobs" && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
+              {"note" in r && r.note && <span className="tipnote">{r.note}</span>}
             </div>
           ))}
           {jan && <div className="tipn"><i className="dot amber" />US January jump: cause not confirmed</div>}

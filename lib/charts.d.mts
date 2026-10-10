@@ -9,5 +9,5 @@ export function comeback(econ: unknown, view?: "pc" | "gdp"): { view: string; en
 export function scorecard(rate: unknown): { base: string; end: string; rows: { code: string; start: number | null; end: number | null; change: number | null; est: boolean; own: { period: string; value: number | null; change: number | null; est: boolean } }[] };
 export type HeatCell = { v: number | null; n: number; of: number; why?: string; from?: string; to?: string };
 export const monLabel: (p: string) => string;
-export function heatStrip(um: unknown, years: number): { end: string; unit: "month" | "quarter" | "year"; cols: { key: string; label: string; months: string[] }[]; rows: { code: string; last: string; lastValue: number | null; vals: (number | null)[]; cells: HeatCell[] }[]; min: number; max: number };
+export function heatStrip(um: unknown, years: number): { end: string; unit: "month" | "quarter" | "year"; cols: { key: string; label: string; months: string[] }[]; rows: { code: string; first: string; last: string; lastValue: number | null; vals: (number | null)[]; cells: HeatCell[] }[]; min: number; max: number };
 export function heatStep(v: number, min: number, max: number): number;

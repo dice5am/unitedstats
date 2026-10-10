@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "test": "node scripts/golden-test.mjs",
-    "build": "node scripts/golden-test.mjs && next build",
+    "build": "node scripts/gen-sparks.mjs && node scripts/golden-test.mjs && next build",
     "start": "next start"
   },
   "dependencies": {
