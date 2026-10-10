@@ -33,7 +33,7 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
       legend={<>{MIX_BANDS.map(([nm], k) => <li key={nm}><i className={`mxk m${k}`} />{nm}</li>)}{c === "GBR" && <li>UK other renewables: n/a for 2020–2025 (not 0)</li>}{(c === "CAN" || c === "JPN") && <li>No “other renewables” published for {NAME[c]} (not 0)</li>}</>}
       source="Source: Ember, Yearly Electricity Data (CC BY 4.0) · share of generation by fuel · one-chart exception to the international-sources rule"
       calc={<>
-        <div className="grp"><h3>Measures</h3><dl><dt>Mix</dt><dd>Each fuel’s share of electricity generated, %. Already a share, so no per-capita toggle. Shares may total 99.98–100.02 from rounding.</dd></dl></div>
+        <div className="grp"><h3>Measures</h3><dl><dt>Mix</dt><dd>Each fuel’s share of electricity generated, %. Already a share, so no per-capita toggle. Shares sum to 100%; rounded figures may differ by 0.1–0.2.</dd></dl></div>
         <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">Ember yearly electricity data · 9 fuels (aggregates never added)</dd><dt>Bands</dt><dd>{MIX_BANDS.map(([nm, fs]) => `${nm} = ${fs.join(" + ")}`).join("; ")}.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Band</span><code>sum of its published fuels; n/a never counted as 0</code></div>
           <p className="ex">{NAME[c]}, {last.year}: <b>{last.bands.map((b) => `${b.name.split(",")[0]} ${b.value === null ? "n/a" : b.value.toFixed(1)}`).join(" · ")}</b></p></div></div>
@@ -57,9 +57,8 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
 }
 
 // #9 stats box: six band rows in the chart's stack order (top band first, as drawn), each with its band swatch, value and
-// the Ember source categories that make it up; then the rounding line. 390: docked inside the card under the plot.
+// the Ember source categories that make it up (no rounding line; that sits in How it's calculated). 390: docked inside the card under the plot.
 // >=768: floats beside the guide (right of it, flipped left past the middle) and is clamped inside the viewport.
-export const MIX_ROUNDING = "Shares may not add to 100% due to rounding.";
 const SRC_NAME = (f: string) => (f === "Other Renewables" ? "Other renewables" : f === "Other Fossil" ? "Other fossil" : f);
 function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: string; value: number | null }[] }; c: string; onClose: () => void; float?: { x: number; W: number } }) {
   const ref = useRef<HTMLDivElement>(null), [dy, setDy] = useState(0);
@@ -75,7 +74,6 @@ function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: st
     <div ref={ref} className={`tip statbox mixbox ${float ? "float" : "dock"}`} role="status" data-testid="mixbox" style={style} onPointerDown={(e) => e.stopPropagation()}>
       <div className="tiph"><span className="mo">{NAME[c]} · {h.year} · % of electricity</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
       {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b><span className="tipnote">{r.fs.join(", ")}</span></div>)}
-      <p className="tipn mxround">{MIX_ROUNDING}</p>
     </div>
   );
 }

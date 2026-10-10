@@ -539,5 +539,4 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .mixbox .mxrow{flex-wrap:wrap;align-items:center}
 .mixbox .mxrow .nm{white-space:normal;flex:1 1 0;min-width:0}
 .mixbox i.mxk{width:12px;height:12px;border-radius:3px;flex:none}
-.mixbox .mxround{margin:8px 0 0;color:var(--muted);font-size:12px}
 .mixbox.float{pointer-events:none}.mixbox.float .tipx{pointer-events:auto}
