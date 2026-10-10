@@ -16,7 +16,11 @@ type DS = any;
 const VIEWS: Record<Kind, [View, string][]> = { unemp: [["unemp", "Unemployment rate"]], jobs: [["jobs", "Jobs"], ["jpc", "Jobs per capita"]], econ: [["gdp", "GDP"], ["pc", "GDP per capita"]] };
 const URLV: Record<View, string> = { unemp: "unemp", jobs: "jobs", jpc: "pc", gdp: "gdp", pc: "pc" };
 const MODE: Record<View, Mode> = { unemp: "unemp", jobs: "jobs", jpc: "index", gdp: "index", pc: "index" };
-const HEAD: Record<View, string> = { unemp: "Unemployment rate", jobs: "Employment growth", jpc: "Jobs per capita", gdp: "GDP", pc: "GDP per capita" };
+// Design decision: "How it's calculated" is a disclosure, closed by default at every width.
+// false = the old always-open section.
+export const CALC_DISCLOSURE = true;
+
+const HEAD: Record<View, string> = { unemp: "Unemployment rate", jobs: "Jobs", jpc: "Jobs per capita", gdp: "GDP", pc: "GDP per capita" };
 const SUB: Record<View, string> = {
   unemp: "Unemployed as % of labour force, age 15+ · seasonally adjusted",
   jobs: "People employed, 15+ · seasonally adjusted · not adjusted for population",
@@ -197,6 +201,20 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
     </>);
   })();
 
+  const calcBody = (
+        <div className="card panel">
+          {calc}
+          <div className="grp"><h3>Rules</h3><ul className="rules">
+            <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
+            <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Quarterly countries: one reading per quarter, joined by a line</li>
+            <li><span className="ic"><svg width="5" height="15"><rect x="1.5" y="1.5" width="2" height="12" rx="1" fill="var(--text-2)" stroke="var(--card-solid)" strokeWidth="3" paintOrder="stroke" /></svg></span>{E ? "Series breaks marked by quarter" : "Series breaks marked by year"}</li>
+            {!E && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
+            {hasProv && <li><span className="ic">P</span>Latest quarters may be provisional</li>}
+            <li><span className="ic">—</span>No data at start: left out</li>
+          </ul></div>
+        </div>
+  );
+
   return (
     <section className="cardsec" ref={secRef} aria-labelledby={`h-${kind}`} id={`card-${kind}`}>
       <H id={`h-${kind}`} key={view} className="h1 fadein">{HEAD[view]}</H>
@@ -255,20 +273,30 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         : `Source: OECD · employment 15+${view === "jpc" ? " ÷ OECD total population" : ""}, SA · as of ${asOfStr}`}</p>
 
       <section className="calc" aria-labelledby={hid}>
+        {CALC_DISCLOSURE ? <CalcDisclosure hid={hid}>{calcBody}</CalcDisclosure> : <>
         <h2 id={hid}>How it’s calculated</h2>
         <p className="sub">Same inputs and maths as the chart above.</p>
-        <div className="card panel">
-          {calc}
-          <div className="grp"><h3>Rules</h3><ul className="rules">
-            <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
-            <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Quarterly countries: one reading per quarter, joined by a line</li>
-            <li><span className="ic"><svg width="5" height="15"><rect x="1.5" y="1.5" width="2" height="12" rx="1" fill="var(--text-2)" stroke="var(--card-solid)" strokeWidth="3" paintOrder="stroke" /></svg></span>{E ? "Series breaks marked by quarter" : "Series breaks marked by year"}</li>
-            {!E && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
-            {hasProv && <li><span className="ic">P</span>Latest quarters may be provisional</li>}
-            <li><span className="ic">—</span>No data at start: left out</li>
-          </ul></div>
-        </div>
+        {calcBody}</>}
       </section>
     </section>
   );
 }
+
+function CalcDisclosure({ hid, children }: { hid: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const pid = `${hid}-panel`;
+  return (
+    <div className={open ? "calcd open" : "calcd"}>
+      <h2 id={hid} className="calch">
+        <button type="button" aria-expanded={open} aria-controls={pid} onClick={() => setOpen((o) => !o)}>
+          <span>How it’s calculated</span><span className="chev" aria-hidden>▾</span>
+        </button>
+      </h2>
+      <div id={pid} role="region" aria-labelledby={hid} hidden={!open}>
+        <p className="sub">Same inputs and maths as the chart above.</p>
+        {children}
+      </div>
+    </div>
+  );
+}
+

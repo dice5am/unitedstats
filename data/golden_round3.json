@@ -17,5 +17,19 @@
   "CAN": 0.6554,
   "USA": -0.7203
  },
- "conventions": "3-month averages ending on window month; jobs thousands / OECD total population interpolated linearly between quarters anchored at mid-quarter month; 1Y window Mar 2025 to Mar 2026"
+ "conventions": "3-month averages ending on window month; jobs thousands / OECD total population interpolated linearly between quarters anchored at mid-quarter month; 1Y window Mar 2025 to Mar 2026",
+ "jobs_per_capita_pct": {
+  "CAN": {
+   "1y": 0.6554,
+   "5y": 3.7767,
+   "10y": 1.9045,
+   "20y": 0.9686
+  },
+  "USA": {
+   "1y": -0.7203,
+   "5y": 5.1354,
+   "10y": 2.006,
+   "20y": -1.2745
+  }
+ }
 }

@@ -70,6 +70,7 @@ for (const y of [1, 5, 10, 20]) {
 }
 check(bad === 0, `headline fastest/slowest: ${combos} combos, ${bad} wrong`);
 
+function JPd() { return jobsPerCapitaDataset(data, JSON.parse(readFileSync(new URL("../data/econ_gdp_series.json", import.meta.url)))); }
 // v11: Unemployment rate (OECD UNE_LF, 15+, SA) — recomputed independently from the raw file
 const uraw = readFileSync(new URL("../data/c1_unemployment_rate.json", import.meta.url));
 const un = JSON.parse(uraw);
@@ -85,6 +86,12 @@ for (const c of ["CAN", "USA"]) for (const [key, want] of Object.entries(G3.unem
   const app = end === "2026-08" ? buildLine(un, c, months / 12, "unemp").growth : lib; // the app's window ends Aug 2026; May uses the same maths
   check(Math.abs(app - want) < 0.01 && Math.abs(app - indep) < 1e-9 && Math.abs(lib - indep) < 1e-9, `unemployment ${c} ${key}: app ${app >= 0 ? "+" : ""}${app.toFixed(3)} pts vs OECD golden ${want >= 0 ? "+" : ""}${want.toFixed(2)} (3-mo avg)`);
 }
+{ const q = un.quarterly.USA; check(q && q.periods.includes("2025-Q4") && q.values[q.periods.indexOf("2025-Q4")] === null, "unemployment (re-issued file): US quarterly Q4 2025 is an explicit null"); }
+// only status "B" makes a break; every break has a real period/position (status may be an array parallel to periods)
+{ const want = []; for (const f of ["monthly", "quarterly"]) for (const [c, s2] of Object.entries(un[f])) (s2.status || []).forEach((st, i) => { if (st === "B") want.push(`${c}:${s2.periods[i]}`); });
+  const st = new Set(); for (const f of ["monthly", "quarterly"]) for (const s2 of Object.values(un[f])) for (const x of s2.status || []) st.add(String(x));
+  let bad = 0; for (const D of [un, data, JPd()]) for (const c of ALL) for (const y of [1, 5, 10, 20]) for (const b of buildLine(D, c, y, D === data ? "jobs" : D === un ? "unemp" : "index").breaks) if (!Number.isFinite(b.mi) || !/· (\d{4}(-\d{2})?|Q[1-4] \d{4})$/.test(b.label)) bad++;
+  check(bad === 0 && want.join() === "CAN:1975-12,CAN:1975-Q4", `breaks: only status B creates a marker (statuses in file: ${[...st].join("/")}; B at ${want.join(", ")}); all break positions finite for unemployment, jobs, jobs per capita`); }
 const uu = buildLine(un, "USA", 1, "unemp");
 check(rv("USA", "2025-10") === null && ["2025-10", "2025-11", "2025-12"].every((p) => uu.points.find((x) => x.period === p).value === null), "unemployment: US Oct 2025 null -> 3-mo avg blank Oct–Dec 2025 (gap, never filled)");
 { const want = Object.entries(un.breaks_annual).flatMap(([c, ys]) => ys.map((y) => `${c}:${y}`)).sort();
@@ -192,7 +199,7 @@ check(DEFAULT_ON.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA" && parseOn("").length 
   check(h.fastest && h.slowest && hr.fastest && hr.slowest, `default 1Y headline (all seven): jobs ${h.fastest.codes}/${h.slowest.codes}, unemployment ${hr.fastest.codes}/${hr.slowest.codes}`); }
 // v11: Jobs per capita = jobs ÷ OECD total population (Warehouse convention: quarterly population on its middle month,
 // straight-line interpolation between; monthly: 3-mo avg of jobs ÷ population at each window end). Recomputed independently.
-const JP = jobsPerCapitaDataset(data, econ);
+const JP = JPd();
 check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "2026-Q1", `jobs per capita: shared end ${commonEnds(JP).monthEnd} / ${commonEnds(JP).quarterEnd} (France population stops Q1 2026)`);
 { const popQ = (c, q) => rawQ(econ.population[c], q);
   const qAt = (yy, mm) => `${yy}-Q${Math.floor((mm - 1) / 3) + 1}`;
@@ -212,8 +219,8 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
       if (popQ(c, q0) === null) { if (!l.excluded) nb++; continue; }
       if (l.points[l.points.length - 1].period !== "2026-Q1" || Math.abs(l.points[0].value - 100) > 1e-9 || Math.abs(l.last - b / a * 100) > 1e-9) nb++; } }
   check(nb === 0, `jobs per capita: index starts at 100 and end = raw ratio (independent interpolation), ${n} country-windows, ${nb} wrong`);
-  for (const c of ["CAN", "USA"]) { const app = buildLine(JP, c, 1, "index").growth, want = G3.jobs_per_capita_1y_pct[c];
-    check(Math.abs(app - want) < 0.0005, `jobs per capita 1Y ${c}: app ${app >= 0 ? "+" : ""}${app.toFixed(4)}% vs Warehouse golden ${want >= 0 ? "+" : ""}${want.toFixed(4)}% (Mar 2025 → Mar 2026)`); }
+  for (const [c, byW] of Object.entries(G3.jobs_per_capita_pct)) for (const [wk, want] of Object.entries(byW)) { const y = parseInt(wk), l = buildLine(JP, c, y, "index");
+    check(Math.abs(l.growth - want) < 0.001 && l.points[l.points.length - 1].period === "2026-03", `jobs per capita ${y}Y ${c}: app ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(4)}% vs Warehouse golden ${want >= 0 ? "+" : ""}${want.toFixed(4)}% (to Mar 2026)`); }
   const j20 = buildLine(JP, "JPN", 20, "index");
   check(j20.excluded && !buildLine(JP, "JPN", 10, "index").excluded && !headlinePick(JP, ["JPN"], 20, "index").single, "jobs per capita: Japan (population from Q3 2007) excluded from 20Y only; Japan-only 20Y headline n/a");
   check(JP.monthly.CAN.periods[JP.monthly.CAN.periods.length - 1] === "2026-03" && Object.values(JP.quarterly).every((s) => s.end === "2026-Q1"), "jobs per capita: monthly lines stop at Mar 2026, quarterly at Q1 2026 (no extrapolation)"); }

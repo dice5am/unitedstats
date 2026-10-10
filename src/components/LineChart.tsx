@@ -274,19 +274,20 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           <g key={e.l.code} className="fadein">
             {/* leader lives in the label gutter only: starts at the plot's right edge at the line's own y (no stub across
                 the plot for lines that end early), one short horizontal, a single bend, then to the label */}
-            <path className="leader" d={`M${pad.l + iw + (x(e.mi) >= pad.l + iw - 0.5 ? 4 : 2)},${y(e.v)} H${pad.l + iw + 6} L${pad.l + iw + 11},${e.ty} H${pad.l + iw + 13}`} stroke={col(e.l.code)} strokeWidth={1} strokeOpacity={0.8} fill="none" strokeLinejoin="round" />
+            {(() => { const reach = x(e.mi) >= pad.l + iw - 0.5; return (
+            <path className={reach ? "leader" : "leader early"} d={`M${pad.l + iw + (reach ? 4 : 2)},${y(e.v)} H${pad.l + iw + 6} L${pad.l + iw + 11},${e.ty} H${pad.l + iw + 13}`} stroke={col(e.l.code)} strokeWidth={0.7} strokeOpacity={reach ? 0.6 : 0.4} fill="none" strokeLinejoin="round" />); })()}
             <circle cx={x(e.mi)} cy={y(e.v)} r={3} fill={col(e.l.code)} />
             <text x={pad.l + iw + 16} y={e.ty + 4} fill={col(e.l.code)} fontSize={lblPx} fontWeight={MAIN.has(e.l.code) ? 700 : 500} className="num">{label(e.l)}</text>
           </g>
         ))}
 
         {lines.flatMap((l) => l.breaks.map((bk) => {
-          if (bk.mi < m0 || bk.mi > m1) return null;
+          if (!Number.isFinite(bk.mi) || bk.mi < m0 || bk.mi > m1) return null;
           const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - bk.mi) < Math.abs(best.mi - bk.mi)) ? q : best), null);
-          if (!p || p.value === null) return null;
-          const bx = x(bk.mi), by = y(p.value);
+          if (!p || p.value === null || Math.abs(p.mi - bk.mi) > (l.freq === "quarterly" ? 2 : 1)) return null; // must sit on a drawn stretch
+          const bx = x(p.mi), by = y(p.value); // snap to the nearest drawn reading so the tick sits on the line
           return (
-            <g key={`${l.code}${bk.mi}`} className="brk" onPointerEnter={(e) => e.pointerType === "mouse" && setBrkTip({ x: bx, y: by, label: bk.label })}
+            <g key={`${l.code}${bk.mi}`} className="brk" data-code={l.code} data-mi={bk.mi} onPointerEnter={(e) => e.pointerType === "mouse" && setBrkTip({ x: bx, y: by, label: bk.label })}
               onPointerLeave={(e) => e.pointerType === "mouse" && setBrkTip(null)}
               onPointerDown={(e) => { e.stopPropagation(); setBrkTip((t) => (t && t.label === bk.label && t.x === bx ? null : { x: bx, y: by, label: bk.label })); }}>
               <rect x={bx - 1} y={by - 6} width={2} height={12} rx={1} className="brkt" />

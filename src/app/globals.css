@@ -101,7 +101,7 @@ h2{margin:0;font-size:var(--fs-5);font-weight:700;letter-spacing:-.02em}
 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}.dot.amber{background:var(--amber)}
 .tick{width:2px;height:12px;border-radius:1px;background:var(--text-2);display:inline-block;box-shadow:0 0 0 1.5px var(--card-solid)}
 .source{margin:8px 0 0;color:var(--muted);font-size:var(--fs-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.calc{margin-top:80px}
+.calc{margin-top:24px}
 .panel{margin-top:24px;padding:0}
 .grp{display:grid;grid-template-columns:160px 1fr;gap:16px;padding:24px;border-top:1px solid var(--grid)}
 .grp:first-child{border-top:0}
@@ -134,7 +134,7 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
  .vseg{display:flex}.vseg button{flex:1}
  .figs{gap:16px}.fig+.fig{padding-left:16px}
  .figv{font-size:min(var(--fs-fig),12.5vw)}.figv.pts{font-size:min(var(--fs-fig),10.5vw)}.fig{min-width:0}
- .calc{margin-top:64px}
+ .calc{margin-top:20px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.draw{stroke-dashoffset:0}}
 
@@ -184,3 +184,10 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
 h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spacing:-.035em}
 .cardsec{position:relative}
 .cardsec+.cardsec{margin-top:96px;padding-top:56px;border-top:1px solid var(--grid)}
+.calch{margin:0}
+.calch button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:12px 16px;border:1px solid var(--grid);border-radius:14px;cursor:pointer;font:inherit;font-size:var(--fs-4,17px);font-weight:600;color:var(--text)}
+.calch button:focus-visible{outline:2px solid var(--text-2);outline-offset:2px}
+.calcd .chev{color:var(--text-2);transition:transform 180ms ease}
+.calcd.open .chev{transform:rotate(180deg)}
+.calcd [role=region]{margin-top:16px}
+@media (prefers-reduced-motion:reduce){.calcd .chev{transition:none}}
