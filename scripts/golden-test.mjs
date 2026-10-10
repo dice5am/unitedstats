@@ -302,7 +302,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const prefOk = ids.every((x) => x.params.every((p) => /^[a-z]+_/.test(p)) && new Set(x.params.map((p) => p.split("_")[0])).size <= 1);
     const dataOk = ids.every((x) => x.data.every((f) => man.files[f]));
     const keyOk = ids.every((x) => x.id === x.key) && ["1", "2", "22"].every((n) => ids.some((x) => x.id === n));
-    const built = [...reg.matchAll(/^  "?(\w+)"?: \{ id: "\w+", built: true/gm)].map((m) => m[1]);
+    const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
     check(built.length === 7 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
@@ -524,6 +524,15 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(/kind === "jobs" \? \{\} : \{ janJumps: \[\]/.test(cc) && /hasJan = kind === "jobs"/.test(cc), `US January note: Jobs and Jobs per capita only (cleared on every other chart)`);
   const lc = readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");
   check(/allQ \? `\$\{qL\(m0\)\} to \$\{qL\(m1\)\}`/.test(lc), `screen-reader summary uses quarters on quarterly-only charts ("Q2 1976 to Q2 2026")`); }
+// headline source tag: names come from the registry (meta src) and must match the chart's full source line
+{ const meta = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8"), rd = (f) => readFileSync(new URL(`../src/components/${f}`, import.meta.url), "utf8");
+  const srcOf = (id) => { const m = meta.match(new RegExp(`^  "?${id}"?: \\{ id: "${id}", src: \\[([^\\]]*)\\]`, "m")); return m ? [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]) : null; };
+  const cc = rd("ChartCard.tsx"), line = (re) => (cc.match(re) || [""])[0];
+  const lines = { gdp: line(/Source: OECD quarterly national accounts/), unemp: line(/Source: OECD · unemployment rate/), jobs: line(/Source: OECD · employment 15\+/), "7": line(/Source: BIS central bank policy rates/),
+    "1": (rd("Comeback.tsx").match(/source=\{?["`]([^"`]+)/) || [])[1], "2": (rd("HeatStrip.tsx").match(/source="([^"]+)"/) || [])[1], "22": (rd("Scorecard.tsx").match(/source="([^"]+)"/) || [])[1] };
+  const bad = Object.entries(lines).filter(([id, l]) => { const s = srcOf(id); return !s || !s.length || !l || !s.every((n) => l.includes(n)); }).map(([id]) => id);
+  const hard = /srctag">\{?["'`](OECD|BIS)/.test(cc + rd("kit.tsx"));
+  check(!bad.length && !hard, `source tags: every built chart's tag names (${Object.keys(lines).map((id) => `${id}=${(srcOf(id) || []).join("+")}`).join(", ")}) appear in its full source line; none hard-coded${bad.length ? ` (BAD: ${bad})` : ""}`); }
 // display rule: % changes 1 dp with "%", pts 2 dp; labels follow the displayed rounding
 { const { DISPLAY_DP } = await import("../lib/series.mjs"); const H = (a, b, m) => headlineLabels({ fastest: { value: a }, slowest: { value: b } }, m);
   const ok = DISPLAY_DP.pct === 1 && DISPLAY_DP.pts === 2 && fmtHeadline(283.1749, "index") === "+283.2%" && fmtHeadline(99.08, "index") === "+99.1%" && fmtHeadline(-0.5321, "unemp") === "−0.53"

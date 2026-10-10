@@ -377,8 +377,8 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .notes li.ndleg{color:var(--text-2)}
 
 /* headline figures always fit their half (390 incl. three-digit 50Y values) */
-.figs>.fig{flex:1 1 0;container-type:inline-size;min-width:0}
-@media (max-width:767px){.figv,.figv.pts,.figv.sm{font-size:min(var(--fs-fig),17cqi)}.figc{flex-wrap:wrap;row-gap:4px}}
+.figs>.fig{flex:1 1 0;min-width:0}
+@media (max-width:767px){.figc{flex-wrap:wrap;row-gap:4px}}
 
 /* short windows (Design, revised): under 800px tall at >=1024 wide */
 @media (min-width:1024px) and (max-height:799px){
@@ -388,4 +388,14 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
  .hero .figv{font-size:30px}
  .hero .toprow{margin-top:12px}
  .hero .chartcard,.hero .plotcard{margin-top:12px}
+}
+
+/* headline source tag (next to the date): short source · ranking end */
+.srctag{margin-top:8px;font-size:12px;color:var(--text-2);letter-spacing:.01em}
+/* 390: headline STACK, each block full width, figure 40px (replaces scale-to-fit) */
+@media (max-width:767px){
+ .figs{flex-direction:column;gap:16px}
+ .figs>.fig{flex:none;width:100%;container-type:normal}
+ .fig+.fig{padding-left:0;border-left:0;padding-top:16px;border-top:1px solid var(--grid)}
+ .figv,.figv.pts,.figv.sm{font-size:40px}
 }

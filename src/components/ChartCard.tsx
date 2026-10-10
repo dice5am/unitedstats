@@ -5,7 +5,7 @@ import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
 import { writeParams, CalcDisclosure, useDocTitle } from "./kit";
-import { chartTitle } from "@/src/charts/meta";
+import { srcTag, chartTitle } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 
 // One self-contained chart card: measure toggle, timeframe, picker, headline, chart, legend, How it's calculated.
@@ -295,6 +295,8 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
               ));
             })()}
           </div>
+          <p className="srctag">{(() => { const ce = commonEnds(ds); const anyM = Object.keys(ds.monthly || {}).length > 0;
+            return srcTag(E ? "gdp" : PR ? "7" : R ? "unemp" : "jobs", `${ds.rankEnd ? fmtM(ds.rankEnd) : anyM ? fmtM(ce.monthEnd) : qLabel(ce.quarterEnd)}`); })()}</p>
           <p className="span">{wl.text.split(" · ").map((t, i) => <Fragment key={i}>{i ? " · " : ""}<span className="nw">{t}</span></Fragment>)}</p>
 
         </div>

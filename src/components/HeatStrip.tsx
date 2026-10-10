@@ -4,7 +4,7 @@
 import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES, SHORT_CODE } from "@/lib/series.mjs";
 import { heatStrip, heatStep, HEAT_STEPS, monLabel } from "@/lib/charts.mjs";
-import { chartTitle } from "@/src/charts/meta";
+import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -42,6 +42,7 @@ export default function HeatStrip({ um: un, initial }: { um: unknown; initial: M
   return (
     <CardFrame id="chart-2" eyebrow="Labour" title={chartTitle("2")}
       sub={<>Unemployment rate, %, 15+ · seasonally adjusted · {h.unit === "month" ? "monthly" : h.unit === "year" ? "yearly averages of months" : "quarterly averages of months"} · darker = higher</>}
+      tag={srcTag("2", monLabel(h.end))}
       controls={<div className="bar solo"><Seg label="Timeframe" value={st.uh_win} options={WIN.map((x) => [x, `${x}Y`])} onChange={(v) => { setCur(null); set("uh_win", v); }} /></div>}
       legend={<>
         <li className="hlegend" aria-label={`Scale from ${h.min.toFixed(1)}% to ${h.max.toFixed(1)}%`}><span>{h.min.toFixed(1)}%</span><span className="hbar">{steps.map((_, i) => <i key={i} className={`hs${i}`} />)}</span><span>{h.max.toFixed(1)}%</span></li>

@@ -72,8 +72,8 @@ export function Seg<V extends string>({ label, value, options, onChange, classNa
 }
 
 // id = "chart-<registry id>". Shared card anatomy (DESIGN-SYSTEM Round 4): eyebrow · H2 · subtitle · controls · headline · plot · legend · source · calc.
-export function CardFrame({ id, eyebrow, title, sub, controls, headline, legend, source, calc, children }: {
-  id: string; eyebrow: string; title: string; sub: ReactNode; controls?: ReactNode; headline?: ReactNode; legend?: ReactNode; source: string; calc: ReactNode; children: ReactNode;
+export function CardFrame({ id, eyebrow, title, sub, controls, headline, tag, legend, source, calc, children }: {
+  id: string; eyebrow: string; title: string; sub: ReactNode; controls?: ReactNode; headline?: ReactNode; tag?: string; legend?: ReactNode; source: string; calc: ReactNode; children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
   useDocTitle(ref, title);
@@ -84,7 +84,7 @@ export function CardFrame({ id, eyebrow, title, sub, controls, headline, legend,
       <p className="sub">{sub}</p>
       <div className="toprow">
         {controls && <div className="ctrls ctrls2">{controls}</div>}
-        {headline && <div className="figwrap">{headline}</div>}
+        {(headline || tag) && <div className="figwrap">{headline}{tag && <p className="srctag">{tag}</p>}</div>}
       </div>
       <div className="card chartcard plotcard">{children}</div>
       {legend && <ul className="notes">{legend}</ul>}

@@ -3,7 +3,7 @@
 import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES, monotonePath, qLabel } from "@/lib/series.mjs";
 import { comeback, qi } from "@/lib/charts.mjs";
-import { chartTitle } from "@/src/charts/meta";
+import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -60,6 +60,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
     <CardFrame id="chart-1" eyebrow="Economy" title={chartTitle("1", view)}
       sub={<>{view === "pc" ? "Real GDP per person" : "Real GDP, total"} · Q4 2019 = 100 · same scale in all panels · to {qLabel(c.end)}, the latest quarter all seven share</>}
       controls={<Seg className="vseg" label="Measure" value={view} options={[["gdp", "Total GDP"], ["pc", "Per person"]]} onChange={(v) => set("cr_view", v)} />}
+      tag={srcTag("1", qLabel(c.end))}
       headline={
         <div className="figs">
           <div className="fig"><div className="figl">First back to 100</div><div className="figc">{first.map((p) => <span key={p.code}><i style={{ background: `var(--${p.code})` }} />{NAME[p.code]}</span>)}</div>
