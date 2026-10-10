@@ -74,7 +74,7 @@ function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: st
   return (
     <div ref={ref} className={`tip statbox mixbox ${float ? "float" : "dock"}`} role="status" data-testid="mixbox" style={style} onPointerDown={(e) => e.stopPropagation()}>
       <div className="tiph"><span className="mo">{NAME[c]} · {h.year} · % of electricity</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
-      {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b>{r.sub && <span className="tipnote">{r.sub}</span>}</div>)}
+      {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b>{r.sub && <span className="tipnote">{r.sub.split(" · ").map((t, i) => <span key={t} className="mxsrc">{i ? " · " : ""}<span>{t}</span></span>)}</span>}</div>)}
     </div>
   );
 }

@@ -540,3 +540,5 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .mixbox .mxrow .nm{white-space:normal;flex:1 1 0;min-width:0}
 .mixbox i.mxk{width:12px;height:12px;border-radius:3px;flex:none}
 .mixbox.float{pointer-events:none}.mixbox.float .tipx{pointer-events:auto}
+/* #9 sub-line wraps only between sources, never inside "Bioenergy 14.1%" */
+.mixbox .mxsrc>span{white-space:nowrap}
