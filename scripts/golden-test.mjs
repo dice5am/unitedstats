@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -128,6 +128,61 @@ for (const [nm, ds, md] of [["jobs", data, "jobs"], ["rate", rate, "rate"]]) {
   check(h.slowest.codes[0] === "USA" && h.slowest.value < 0 && lb.slow === "Biggest drop", `rate 20Y CAN+US: US ${fmtHeadline(h.slowest.value, "rate")} pts labelled "${lb.slow}"`); }
 { const h = { single: null, fastest: { value: -0.04 }, slowest: { value: -0.3 } };
   check(headlineLabels(h, "rate").fast === "Fastest gain" && headlineLabels({ single: null, fastest: { value: -0.2 }, slowest: { value: -0.3 } }, "rate").fast === "Smallest drop", "rate: −0.04 shows 0.0 → Fastest gain; all fell → Smallest drop"); }
+// v6: Economy — GDP and GDP per capita (OECD QNA), recomputed independently from the raw file
+const eraw = readFileSync(new URL("../data/econ_gdp_series.json", import.meta.url));
+const econ = JSON.parse(eraw);
+const EV = { gdp: econDataset(econ, "gdp"), pc: econDataset(econ, "pc") };
+check(commonEnds(EV.gdp).quarterEnd === "2026-Q2", `gdp: shared end ${commonEnds(EV.gdp).quarterEnd}`);
+check(commonEnds(EV.pc).quarterEnd === "2026-Q1" && econ.gdp_per_capita.FRA.values[econ.gdp_per_capita.FRA.periods.indexOf("2026-Q2")] === null, `per capita: shared end ${commonEnds(EV.pc).quarterEnd} (France Q2 2026 null)`);
+const rawQ = (s, p) => { const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+const qBack = (p, n) => { const [yy, q] = p.split("-Q").map(Number); const t = yy * 4 + q - 1 - n; return `${Math.floor(t / 4)}-Q${t % 4 + 1}`; };
+for (const [k, src] of [["gdp", econ.gdp], ["pc", econ.gdp_per_capita]]) {
+  let nb = 0, n = 0; const end = commonEnds(EV[k]).quarterEnd;
+  for (const y of [1, 5, 10, 20]) for (const c of ALL) {
+    const l = buildLine(EV[k], c, y, "index"), st = qBack(end, 4 * y); n++;
+    const a = rawQ(src[c], st), b = rawQ(src[c], end);
+    if (l.points[0].period !== st || l.points[l.points.length - 1].period !== end) { nb++; continue; }
+    if (a === null) { if (!l.excluded || l.growth !== null) nb++; continue; }
+    if (Math.abs(l.points[0].value - 100) > 1e-12 || Math.abs(l.last - (b / a) * 100) > 1e-9 || Math.abs(l.growth - ((b / a) * 100 - 100)) > 1e-9) nb++;
+  }
+  check(nb === 0, `${k}: index starts at 100 and end = raw ratio × 100, ${n} country-windows, ${nb} wrong`);
+}
+{ let pb = 0, pn = 0;
+  for (const c of ALL) { const g = econ.gdp[c], pp = econ.population[c], pc = econ.gdp_per_capita[c];
+    pc.periods.forEach((p, i) => { const G = rawQ(g, p), P = rawQ(pp, p), v = pc.values[i]; pn++;
+      if (G === null || P === null) { if (v !== null) pb++; } else if (v === null || Math.abs(v - G / P) > 1e-9 * Math.abs(v)) pb++; }); }
+  check(pb === 0, `per capita = GDP ÷ population recomputed: ${pn} quarters, ${pb} wrong`); }
+check(["gdp", "pc"].every((k) => buildLine(EV[k], "ITA", 20, "index").breaks.some((b) => b.label === "Series break · Q1 2010")), "gdp + per capita: Italy Q1 2010 break carried");
+{ const j = buildLine(EV.pc, "JPN", 20, "index"), h = headlinePick(EV.pc, ["JPN"], 20, "index"), h2 = headlinePick(EV.pc, ["CAN", "JPN"], 20, "index");
+  check(j.excluded && j.growth === null && j.points.every((p) => p.value === null) && !buildLine(EV.pc, "JPN", 10, "index").excluded, "per capita: Japan (starts Q3 2007) excluded from 20Y only");
+  check(!h.single && !h.fastest && !h.slowest && h2.single && h2.single.codes.join() === "CAN", "per capita 20Y: Japan-only -> headline n/a; CAN+JPN -> Canada alone"); }
+for (const k of ["gdp", "pc"]) {
+  let n = 0, bad = 0;
+  for (const y of [1, 5, 10, 20]) {
+    const g = Object.fromEntries(ALL.map((c) => [c, buildLine(EV[k], c, y, "index").growth]));
+    for (let mask = 1; mask < 128; mask++) {
+      const sel = ALL.filter((_, i) => mask & (1 << i)); n++;
+      const h = headlinePick(EV[k], sel, y, "index"), lb = headlineLabels(h, "index");
+      const vs = sel.map((c) => g[c]).filter((v) => v !== null);
+      if (!vs.length) { if (h.single || h.fastest) bad++; continue; }
+      const f = h.single ?? h.fastest;
+      if (!f || Math.abs(f.value - Math.max(...vs)) > 1e-12 || f.codes.some((c) => g[c] === null)) { bad++; continue; }
+      if (h.slowest && Math.abs(h.slowest.value - Math.min(...vs)) > 1e-12) bad++;
+      if (vs.length === 1 && !h.single) bad++;
+      if (h.single ? lb.fast !== null : (lb.fast !== "Fastest growth" || lb.slow !== "Slowest growth")) bad++;
+      const sOk = (v) => { const r = roundShown(v, "index"), t = fmtHeadline(v, "index"); return r > 0 ? t.startsWith("+") : r < 0 ? t.startsWith("−") : !/^[+−]/.test(t); };
+      if (!sOk(f.value) || (h.slowest && !sOk(h.slowest.value))) bad++;
+    }
+  }
+  check(bad === 0, `${k}: headline fastest/slowest + labels, ${n} combos x windows, ${bad} wrong`);
+}
+{ let ov = 0, segs = 0;
+  for (const k of ["gdp", "pc"]) for (const y of [1, 5, 10, 20]) for (const c of ALL) { const l = buildLine(EV[k], c, y, "index"); let run = [];
+    const t = () => { for (const [p0, c1, c2, p3] of mseg(run)) { segs++; const lo = Math.min(p0.y, p3.y) - 1e-9, hi = Math.max(p0.y, p3.y) + 1e-9;
+      for (let q = 1; q < 50; q++) { const tt = q / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { ov++; break; } } } run = []; };
+    for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
+  check(ov === 0, `economy monotone: ${segs} segments, ${ov} overshoot`); }
+console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("rate sha256", createHash("sha256").update(rraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }

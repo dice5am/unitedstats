@@ -10,7 +10,7 @@ const QUICK: { label: string; codes: string[] }[] = [
   { label: "Canada only", codes: ["CAN"] },
 ];
 
-export default function Picker({ on, setOn }: { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void }) {
+export default function Picker({ on, setOn, na = {} }: { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na?: Record<string, string> }) {
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [focus, setFocus] = useState(0);
@@ -67,10 +67,10 @@ export default function Picker({ on, setOn }: { on: Record<string, boolean>; set
               const chk = !!on[c], locked = chk && sel.length === 1;
               return (
                 <div key={c} role="checkbox" aria-checked={chk} aria-disabled={locked || undefined} tabIndex={i === focus ? 0 : -1}
-                  className={`prow ${chk ? "on" : ""}`} onClick={() => { setFocus(i); toggle(c); }} onKeyDown={(e) => rowKey(e, i)}>
+                  className={`prow ${chk ? "on" : ""} ${na[c] ? "na" : ""}`} onClick={() => { setFocus(i); toggle(c); }} onKeyDown={(e) => rowKey(e, i)}>
                   <span className="box" aria-hidden>{chk && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
                   <i style={{ background: `var(--${c})` }} aria-hidden />
-                  <span>{NAME[c]}</span>
+                  <span>{NAME[c]}</span>{na[c] && <span className="nanote">{na[c]}</span>}
                 </div>
               );
             })}
