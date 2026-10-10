@@ -157,3 +157,15 @@ export type Init = { initial: MutableRefObject<string | null> };
 
 // anchor for StatBox `at` from a tapped row/button inside a positioned container (.sc)
 export const anchorOf = (b: HTMLElement) => { const box = b.closest(".sc") as HTMLElement; return { y: b.getBoundingClientRect().top - box.getBoundingClientRect().top, h: b.offsetHeight, H: box.offsetHeight }; };
+
+// Year picker for long year lists (more than fit as a segmented control at 390): ‹ year › with a native select in the middle.
+export function YearPick({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+  const i = options.indexOf(value);
+  return (
+    <div className="ypick" role="group" aria-label={label}>
+      <button type="button" aria-label={`Previous ${label.toLowerCase()}`} disabled={i <= 0} onClick={() => onChange(options[i - 1])}>‹</button>
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+      <button type="button" aria-label={`Next ${label.toLowerCase()}`} disabled={i >= options.length - 1} onClick={() => onChange(options[i + 1])}>›</button>
+    </div>
+  );
+}

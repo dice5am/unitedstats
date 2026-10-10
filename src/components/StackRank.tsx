@@ -4,7 +4,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, type Init, anchorOf } from "./kit";
+import { CardFrame, Seg, StatBox, YearPick, useParams, type Init, anchorOf } from "./kit";
 import { HeadFigs } from "./HeadFigs";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
@@ -24,7 +24,7 @@ export default function StackRank({ spec, initial }: { spec: StackSpec } & Init)
   const ticks = Array.from({ length: Math.round(hi / step) + 1 }, (_, i) => +(i * step).toFixed(2)), x = (v: number) => (v / hi) * 100;
   return (
     <CardFrame id={`chart-${spec.id}`} eyebrow={spec.eyebrow} title={chartTitle(spec.id)} sub={spec.sub(year)} tag={srcTag(spec.id, year)}
-      controls={<div className="bar solo"><Seg label="Year" value={year} options={spec.years.map((v) => [v, v])} onChange={(v) => { setSel(null); set(spec.param, v); }} /></div>}
+      controls={<div className="bar solo"><div className="yp-w"><Seg label="Year" value={year} options={spec.years.map((v) => [v, v])} onChange={(v) => { setSel(null); set(spec.param, v); }} /></div><div className="yp-n"><YearPick label="Year" value={year} options={spec.years} onChange={(v) => { setSel(null); set(spec.param, v); }} /></div></div>}
       headline={top && bot && <HeadFigs tag={srcTag(spec.id, year)} figs={[[top, spec.labels[0]], [bot, spec.labels[1]]].map(([q, l]) => { const z = q as StackRow; return { code: z.code, label: l as string, value: spec.fmt(z.total!), date: year }; })} />}
       legend={<>{spec.parts.map((p, i) => <li key={p}><i className={`stk s${i}`} />{p}</li>)}{na.length > 0 && <li>n/a: {na.map((q) => `${NAME[q.code]} (${q.latestYear} latest)`).join(", ")}</li>}</>}
       source={spec.source} calc={spec.calc(year, rows)}>

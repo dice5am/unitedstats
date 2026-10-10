@@ -305,7 +305,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 20 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 25 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -620,16 +620,53 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8"));
   const L = V.league(J("oecd_gdp_per_capita_ppp_current.json")), bad3 = [];
   for (const [c, y, v] of sec(3)) { const i = L.years.indexOf(y), m = /rank (\d) \(([\d,]+)\)/.exec(v); if (L.rank[c][i] !== +m[1] || Math.round(L.value[c][i]) !== +m[2].replace(/,/g, "")) bad3.push(`${c} ${y} ours ${L.rank[c][i]} ${Math.round(L.value[c][i])} vs ${v}`); }
-  const yrsRanked = L.years.every((y, i) => { const r = V.ORDER.map((c) => L.rank[c][i]); return r.every((x) => x !== null) && new Set(r).size === 7; });
-  check(sec(3).length === 7 && !bad3.length && L.years[0] === "1970" && yrsRanked, `#3 GDP per person rank ${L.years[L.years.length - 1]} = Warehouse for all 7 (${sec(3).map(([c, , v]) => `${c} ${v.split(" (")[0].replace("rank ", "")}`).join(", ")}); every year 1970+ has ranks 1–7${bad3.length ? " MISMATCH " + bad3.join("; ") : ""}`);
+  const yrsRanked = L.years.every((y, i) => { const pre = +y < 1991, r = V.ORDER.filter((c) => !(pre && c === "DEU")).map((c) => L.rank[c][i]); return r.every((x) => x !== null) && new Set(r).size === r.length && Math.max(...r) === r.length && (!pre || L.rank.DEU[i] === null); });
+  check(sec(3).length === 7 && !bad3.length && L.years[0] === "1970" && yrsRanked, `#3 GDP per person rank ${L.years[L.years.length - 1]} = Warehouse for all 7 (${sec(3).map(([c, , v]) => `${c} ${v.split(" (")[0].replace("rank ", "")}`).join(", ")}); every year 1970–1990 ranks the six without Germany 1–6, 1991+ ranks all seven 1–7${bad3.length ? " MISMATCH " + bad3.join("; ") : ""}`);
+{ const b = readFileSync("src/components/Bump.tsx", "utf8"), e = +L.years[L.years.length - 1];
+  const win = ["10", "20", "50"].map((w) => `${w}Y = ${e - +w}–${e}${L.years.includes(String(e - +w)) ? "" : " (MISSING START)"}`);
+  check(/lg_win: \["50", WINS\]/.test(b) && /WINS = \["10", "20", "50"\]/.test(b) && /"1970": "50", "1990": "20", "2005": "10"/.test(b) && /\+L\.years\[L\.years\.length - 1\] - \+st\.lg_win/.test(b) && !/"1970"\]/.test(b) && win.every((x) => !x.includes("MISSING")), `#3 timeframe 10Y/20Y/50Y (default 50Y) counted back from own last year: ${win.join(", ")}; old lg_from 1970→50Y, 1990→20Y, 2005→10Y`); }
+{ const sw = md.slice(md.indexOf("## #3 GDP per person ranking, standard windows")), bw = [];
+  const rows = [...sw.matchAll(/^- (10Y|20Y|50Y) start \((\d{4})\).*?: (1\. .+)$|^- (End|Germany entry point) \((\d{4})\): (.+)$/gm)].map((m) => [m[2] ?? m[5], m[3] ?? m[6], m[1] ?? m[4]]);
+  for (const [y, list, lab] of rows) { const i = L.years.indexOf(y); for (const [, r, c, v] of list.matchAll(/(\d)\. (\w{3}) \$([\d,]+)/g)) if (L.rank[c][i] !== +r || Math.round(L.value[c][i]) !== +v.replace(/,/g, "")) bw.push(`${lab} ${c} ours ${L.rank[c][i]} $${Math.round(L.value[c][i])} vs ${r} $${v}`); }
+  const e = +L.years[L.years.length - 1], wantY = ["10Y", "20Y", "50Y"].map((w) => String(e - parseInt(w)));
+  const ex = rows.find((r) => r[2] === "50Y"); check(rows.length === 5 && rows.slice(0, 3).every((r, k) => r[0] === wantY[k]) && rows.at(-1)[0] === String(e) && rows[3][0] === "1991" && !/DEU/.test(ex[1]) && L.rank.DEU[L.years.indexOf(ex[0])] === null && !bw.length, `#3 window start/end ranks = Warehouse 'standard windows' (10Y ${wantY[0]}, 20Y ${wantY[1]}, 50Y ${wantY[2]} without Germany, Germany entry 1991, end ${e}; 34 ranks + values)${bw.length ? " MISMATCH " + bw.join("; ") : ""}`); }
+{ const ec = readFileSync("src/charts/economy.tsx", "utf8"), sr = readFileSync("src/components/StackRank.tsx", "utf8");
+  check(/parts: \["Business", "Government, universities and other"\], fmt: f1,/.test(ec) && /const f1 = \(v: number\) => `\$\{v\.toFixed\(1\)\}%`/.test(ec) && sr.includes('className="yp-n"><YearPick'), "#15 displays 1 dp (e.g. 3.4%); golden compares full values; 390 year selector is the picker-style dropdown"); }
   const G = V.ownLatest(J("oecd_idd_gini_disposable.json"), 100), bad25 = [];
   for (const [c, y, v] of sec(25)) { const r = G.find((x) => x.code === c); if (r.end !== y || Math.abs(r.value / 100 - +v) > 0.0005 + 1e-9) bad25.push(`${c} ours ${r.end} ${(r.value / 100).toFixed(4)} vs ${y} ${v}`); }
   check(sec(25).length === 7 && !bad25.length, `#25 Gini own latest year = Warehouse for all 7 (${G.map((r) => `${r.code} ${r.end} ${r.value.toFixed(1)}`).join(", ")}; shown ×100)${bad25.length ? " MISMATCH " + bad25.join("; ") : ""}`);
+{ const rb = readFileSync("src/components/RankBar.tsx", "utf8"), ec = readFileSync("src/charts/economy.tsx", "utf8");
+  check(/className="rby"[^>]*>\{CODE2\[row\.code\]\} \{row\.end\}/.test(rb) && !/@media[^{]*\{[^}]*\.rby\{[^}]*display:none/.test(readFileSync("src/app/globals.css", "utf8")) && ec.includes('note: "Years differ by country"'), "#25 every dot label reads code + own year ('CA 2023', 'JP 2021') at all widths; stats box says years differ by country"); }
   const ge = J("oecd_msti_gerd_pct_gdp.json"), be = J("oecd_msti_berd_pct_gdp.json"), bad15 = [];
   for (const [c, y, v] of sec(15)) { const r = V.rdStack(ge, be, y).rows.find((x) => x.code === c), m = /GERD ([\d.]+), BERD ([\d.]+), rest ([\d.]+)/.exec(v);
     if (Math.abs(r.total - +m[1]) > 0.005 + 1e-9 || Math.abs(r.business - +m[2]) > 0.005 + 1e-9 || Math.abs(r.rest - +m[3]) > 0.0051) bad15.push(`${c} ${y} ours ${r.total?.toFixed(3)} ${r.business?.toFixed(3)} ${r.rest?.toFixed(3)} vs ${v}`); }
   const d23 = V.rdStack(ge, be, V.RD_DEFAULT).rows;
   check(sec(15).length === 7 && !bad15.length && V.RD_DEFAULT === "2023" && d23.every((r) => r.total !== null && r.rest !== null), `#15 R&D GERD/BERD/rest = Warehouse at each country's year for all 7; default year 2023 has all seven (never mixes years)${bad15.length ? " MISMATCH " + bad15.join("; ") : ""}`); }
+// Society wave (#4, #11, #23, #8, #16): expected values read FROM the Warehouse REFERENCE-FIGURES.md
+{ const V = await import("../lib/waves.mjs"), F = await import("../lib/finance.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+  const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8")), near = (a, b, t) => a !== null && Math.abs(a - b) <= t + 1e-9;
+  const g = F.slope(J("wb_SP.POP.65UP.TO.ZS.json"), 1990, "pts"), b4 = [];
+  for (const [c, per, v] of sec(4)) { const r = g.rows.find((x) => x.code === c), m = /([\d.]+)→([\d.]+) \(Δ ([\d.]+)\)/.exec(v); if (per !== `1990→${r.end}` || !near(r.startValue, +m[1], 0.05) || !near(r.endValue, +m[2], 0.05) || !near(r.change, +m[3], 0.051)) b4.push(`${c} ours ${r.change?.toFixed(2)} vs ${v}`); }
+  check(sec(4).length === 7 && !b4.length, `#4 share 65+ 1990→2025 = Warehouse for all 7 (${g.rows.map((r) => `${r.code} +${r.change.toFixed(1)}`).join(", ")})${b4.length ? " MISMATCH " + b4.join("; ") : ""}`);
+  const fe = V.ownLatest(J("wb_SP.DYN.TFRT.IN.json")), b11 = [];
+  for (const [c, y, v] of sec(11)) { const r = fe.find((x) => x.code === c); if (r.end !== y || !near(r.value, +v, 0.005)) b11.push(`${c} ours ${r.end} ${r.value} vs ${y} ${v}`); }
+  check(sec(11).length === 7 && !b11.length, `#11 fertility latest = Warehouse for all 7 (${fe.map((r) => `${r.code} ${r.value.toFixed(2)}`).join(", ")}); reference line 2.1${b11.length ? " MISMATCH " + b11.join("; ") : ""}`);
+  const mg = J("wb_SM.POP.TOTL.ZS.json"), at = (c, y) => { const s = mg.series[c]; const i = s.periods.indexOf(y); return i < 0 ? null : s.values[i]; }, b23 = [];
+  for (const [c, y, v, n] of sec(23)) { const b = /1990: ([\d.]+)/.exec(n); if (!near(at(c, y), +v, 0.05) || !near(at(c, "1990"), +b[1], 0.05)) b23.push(`${c} ours ${at(c, y)} / ${at(c, "1990")} vs ${v} / ${b[1]}`); }
+  check(sec(23).length === 7 && !b23.length, `#23 migrant share 2024 and 1990 = Warehouse for all 7; squares = round(share)${b23.length ? " MISMATCH " + b23.join("; ") : ""}`);
+  const hx = J("wb_SH.XPD.CHEX.GD.ZS.json"), le = J("oecd_life_expectancy_birth.json"), b8 = [];
+  for (const [c, y, v] of sec(8)) { const p = V.pairs(hx, le, y).find((x) => x.code === c), m = /([\d.]+)% GDP, ([\d.]+) yrs/.exec(v); if (!near(p.x, +m[1], 0.05) || !near(p.y, +m[2], 0.05)) b8.push(`${c} ${y} ours ${p.x} ${p.y} vs ${v}`); }
+  const d23 = V.pairs(hx, le, "2023").every((p) => p.x !== null && p.y !== null), d24 = V.pairs(hx, le, "2024").filter((p) => p.x === null).map((p) => p.code).join(",");
+  check(sec(8).length === 7 && !b8.length && d23 && d24 === "USA,JPN", `#8 health spending and life expectancy = Warehouse at each country's year for all 7; default 2023 complete; 2024 n/a for ${d24}${b8.length ? " MISMATCH " + b8.join("; ") : ""}`);
+  const ta = V.twoAges(J("oecd_eag_tertiary_attainment_25_64.json"), J("oecd_eag_tertiary_attainment_25_34.json")), b16 = [];
+  for (const [c, y, v] of sec(16)) { const r = ta.find((x) => x.code === c), m = /25-34 ([\d.]+) vs 25-64 ([\d.]+) \(gap ([\d.]+)\)/.exec(v); if (r.end !== y || !near(r.b, +m[1], 0.05) || !near(r.a, +m[2], 0.05) || !near(r.gap, +m[3], 0.051)) b16.push(`${c} ours ${r.gap?.toFixed(2)} vs ${v}`); }
+  check(sec(16).length === 7 && !b16.length, `#16 degree gap 25–34 vs 25–64 = Warehouse for all 7 (${ta.map((r) => `${r.code} ${r.gap.toFixed(1)}`).join(", ")})${b16.length ? " MISMATCH " + b16.join("; ") : ""}`); }
+// Source lines wrap on every chart and never truncate (only descriptions may); the COVID band has its own tap target at 390
+{ const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8"), rules = [...css.matchAll(/([^{}]*\.source[^{}]*)\{([^}]*)\}/g)];
+  const lc = readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");
+  check(rules.length > 0 && rules.every(([, , b]) => !/nowrap|ellipsis|line-clamp/.test(b)) && /white-space:normal/.test(rules[0][2]), `source lines: ${rules.length} CSS rules, none nowrap/ellipsis/clamp (wrap on every chart at every width)`);
+  check(/data-testid="covid-hit"/.test(lc) && /e\.stopPropagation\(\); setHover\(null\); setCovTip/.test(lc), `COVID band: own ≥24px tap target at 390, above the read-out layer; tap shows the label, not the stats box`); }
 // Labour fixes: #17 title/description; #24 headline dates use each country's own end
 { const F = await import("../lib/finance.mjs"); const meta = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8"), slope = readFileSync(new URL("../src/components/Slope.tsx", import.meta.url), "utf8");
   const ls = JSON.parse(readFileSync(new URL("../data/ilo_labour_share_gdp.json", import.meta.url), "utf8")), d = F.slope(ls, 2004, "pts");

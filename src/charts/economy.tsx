@@ -9,7 +9,7 @@ export const giniSpec: RankBarSpec = {
   id: "25", eyebrow: "Economy", kind: "dot", dp: 1, per: (p) => p, unitLabel: "Gini, disposable income (×100)",
   labels: { top: "Most unequal", bottom: "Least unequal" },
   rows: (f) => { const d = ownLatest(f, 100); return { latest: d.map((r) => r.end!).filter(Boolean).sort().pop()!, rows: d.map((r) => ({ code: r.code, value: r.value, end: r.end,
-    stat: [{ name: `Gini · ${r.end ?? "n/a"}`, value: r.value === null ? "n/a" : r.value.toFixed(1) }, { name: "As published (0–1)", value: r.value === null ? "n/a" : (r.value / 100).toFixed(3) }] })) }; },
+    stat: [{ name: `Gini · ${r.end ?? "n/a"}`, value: r.value === null ? "n/a" : r.value.toFixed(1), note: "Years differ by country" }, { name: "As published (0–1)", value: r.value === null ? "n/a" : (r.value / 100).toFixed(3) }] })) }; },
   sub: () => <>Gini coefficient of disposable household income, 0 = everyone equal, 100 = one household has everything · each country’s latest year, dated</>,
   source: "Source: OECD Income Distribution Database · Gini coefficient, disposable income, post taxes and transfers (2012 method)",
   legend: <li>Year printed by each dot: the latest year that country published</li>,
@@ -21,9 +21,9 @@ export const giniSpec: RankBarSpec = {
   </>,
 };
 
-const f2 = (v: number) => `${v.toFixed(2)}%`;
+const f1 = (v: number) => `${v.toFixed(1)}%`;
 export const rdSpec = (gerd: unknown, berd: unknown): StackSpec => ({
-  id: "15", eyebrow: "Economy", param: "rd_year", years: RD_YEARS, def: RD_DEFAULT, parts: ["Business", "Government, universities and other"], fmt: f2,
+  id: "15", eyebrow: "Economy", param: "rd_year", years: RD_YEARS, def: RD_DEFAULT, parts: ["Business", "Government, universities and other"], fmt: f1,
   rows: (year) => rdStack(gerd, berd, year).rows.map((r) => ({ code: r.code, parts: [r.business, r.rest], total: r.rest === null ? null : r.total, latestYear: r.latestYear, note: r.flag && /D/.test(r.flag) ? "definition differs (OECD flag D)" : undefined })),
   labels: ["Highest", "Lowest"],
   sub: (y) => <>Gross domestic spending on R&D, % of GDP, split into business and everything else · {y} · ranked by total</>,

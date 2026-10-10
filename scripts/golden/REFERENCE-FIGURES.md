@@ -311,3 +311,13 @@ Conversion (Web and golden test must use exactly this): yearly population = mean
 - DEU: 1990 15.789 t/person; 2024 7.780 t/person; change -50.72%
 - FRA: 1990 9.428 t/person; 2024 5.396 t/person; change -42.76%
 - ITA: 1990 9.154 t/person; 2024 6.151 t/person; change -32.81%
+
+## #3 GDP per person ranking, standard windows (added 2026-10-10)
+
+File `oecd_gdp_per_capita_ppp_current.json` (current PPP US$ per person). Each window counts back from #3's last year, 2025. Rank 1 = highest.
+
+- 10Y start (2015): 1. USA $56,797, 2. DEU $48,884, 3. CAN $44,668, 4. GBR $42,793, 5. JPN $41,737, 6. FRA $41,050, 7. ITA $37,322
+- 20Y start (2005): 1. USA $44,052, 2. CAN $36,329, 3. DEU $32,764, 4. GBR $32,694, 5. JPN $32,465, 6. FRA $30,536, 7. ITA $30,138
+- 50Y start (1975), Germany excluded (Cavin rule: DEU starts 1991 on GDP per person): 1. USA $7,801, 2. CAN $7,261, 3. FRA $5,840, 4. ITA $5,685, 5. GBR $5,509, 6. JPN $5,459
+- Germany entry point (1991): 1. USA $24,290, 2. JPN $21,650, 3. DEU $21,011, 4. CAN $20,220, 5. ITA $19,590, 6. FRA $18,227, 7. GBR $16,787
+- End (2025): 1. USA $89,985, 2. DEU $76,396, 3. CAN $66,783, 4. GBR $64,707, 5. FRA $63,974, 6. ITA $62,967, 7. JPN $55,488

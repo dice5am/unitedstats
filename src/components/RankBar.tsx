@@ -7,6 +7,8 @@ import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, StatBox } from "./kit";
 import { HeadFigs, rankLabels, sgn } from "./HeadFigs";
 
+const CODE2: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
+
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 export type BarRow = { code: string; value: number | null; end: string | null; spark?: (number | null)[]; stat: { name: string; value: string }[] };
 export type RankBarSpec = {
@@ -54,7 +56,7 @@ export default function RankBar({ file, spec }: { file: unknown; spec: RankBarSp
                 <span className="sct">
                   {ticks.map((t) => <span key={t} className={`dbg${t === 0 ? " z" : ""}`} style={{ left: `${x(t)}%` }} aria-hidden />)}
                   {spec.kind === "ratio" && <span className="rbref" style={{ left: `${x(1)}%` }} aria-hidden />}
-                  {row.value !== null && spec.kind === "dot" ? <><span className="rbd" style={{ left: `${x(row.value)}%`, background: `var(--${row.code})` }} /><span className="rby" style={{ left: `${x(row.value)}%` }}>{row.end}</span></> : row.value !== null ? <span className="scb" style={{ left: `${Math.min(x(0), x(row.value))}%`, width: `${Math.abs(x(row.value) - x(0))}%`, background: `var(--${row.code})` }} /> : <span className="na">n/a</span>}
+                  {row.value !== null && spec.kind === "dot" ? <><span className="rbd" style={{ left: `${x(row.value)}%`, background: `var(--${row.code})` }} /><span className="rby" data-testid="dot-label" style={{ left: `${x(row.value)}%` }}>{CODE2[row.code]} {row.end}</span></> : row.value !== null ? <span className="scb" style={{ left: `${Math.min(x(0), x(row.value))}%`, width: `${Math.abs(x(row.value) - x(0))}%`, background: `var(--${row.code})` }} /> : <span className="na">n/a</span>}
                 </span>
                 <span className="scv">{row.value === null ? "n/a" : fmt(row.value)}{mixed && spec.kind !== "dot" && row.end && row.end !== common && <em>{spec.per(row.end)}</em>}</span>
                 {row.spark && <span className="rbsp" style={{ color: `var(--${row.code})` }}><Spark v={row.spark} lo={slo} hi={shi} /></span>}

@@ -122,7 +122,7 @@ export default function TabPage({ tab }: { tab: TabId }) {
               <section className="cardsec wip" aria-labelledby="wip-h">
                 <p className="eyebrow">{TABS.find((t) => t.id === tab)!.label}</p>
                 <h1 id="wip-h" className="h1">{chartTitle(chart)}</h1>
-                <p className="sub" data-own="1" title={CHART_META[chart].desc} onClick={(e) => e.currentTarget.classList.toggle("open")}>{CHART_META[chart].desc}</p>
+                <p className="sub" data-own="1" title={(CHART_META[chart] as { desc: string }).desc} onClick={(e) => e.currentTarget.classList.toggle("open")}>{(CHART_META[chart] as { desc: string }).desc}</p>
                 <div className="card wipcard"><p>In progress</p></div>
               </section>
             ))}

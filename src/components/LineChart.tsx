@@ -35,6 +35,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   useEffect(() => { const f = () => setVh(window.innerWidth >= 1024 ? window.innerHeight : 0); f(); addEventListener("resize", f); return () => removeEventListener("resize", f); }, []);
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
+  const [covTip, setCovTip] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
   const [brkTip, setBrkTip] = useState<{ x: number; y: number; label: string } | null>(null);
   useEffect(() => {
@@ -234,7 +235,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
       }}>
       <svg width={w} height={h} role="img" aria-label={summary}
         onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}
-        onPointerDown={(e) => { setBrkTip(null); pick(e.clientX); }}
+        onPointerDown={(e) => { setBrkTip(null); setCovTip(false); pick(e.clientX); }}
 >
         <defs>
           {glowCodes.map((c) => (
@@ -366,7 +367,12 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           <line x1={cx} x2={cx} y1={pad.t} y2={bottom} className="cross" />
           {rows.map((r) => r.p && r.v !== null && <circle key={r.l.code} cx={x(r.p.mi)} cy={y(r.v)} r={4.5} fill={col(r.l.code)} stroke="var(--card-solid)" strokeWidth={2} />)}
         </g>}
-      </svg>
+      {/* 390: the COVID band has its own tap target (≥24px wide, on top of the read-out layer): a tap shows its label, never the stats box */}
+        {!wide && covid && (() => { const cx = (x(covid.a) + x(covid.b)) / 2, bw = Math.max(24, x(covid.b) - x(covid.a)); return <g className="covhit">
+          <rect x={cx - bw / 2} y={pad.t} width={bw} height={ih} fill="transparent" style={{ pointerEvents: "all", cursor: "pointer" }} data-testid="covid-hit" onPointerDown={(e) => { e.stopPropagation(); setHover(null); setCovTip((t) => !t); }} />
+          {covTip && <g className="covpill" pointerEvents="none"><rect x={Math.min(Math.max(pad.l, cx - 92), w - pad.r - 184)} y={pad.t + 6} width={184} height={24} rx={12} /><text x={Math.min(Math.max(pad.l, cx - 92), w - pad.r - 184) + 92} y={pad.t + 22} textAnchor="middle">COVID-19 · Mar 2020 – Jun 2021</text></g>}
+        </g>; })()}
+        </svg>
 
       {hover !== null && (
         <div className={`tip ${tipBottom ? "bot" : "top"}`} style={wide ? { left: tipLeft, width: tipW } : undefined} role="status" onPointerDown={(e) => e.stopPropagation()}>

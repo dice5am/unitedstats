@@ -1,5 +1,6 @@
 export const ORDER: string[];
 export function latestOf(s: any): { period: string | null; value: number | null };
+export const DEU_FROM: number;
 export function league(file: any, from?: number): { years: string[]; rank: Record<string, (number | null)[]>; value: Record<string, (number | null)[]>; status: (c: string, y: string) => string | null };
 export function ownLatest(file: any, scale?: number): { code: string; end: string | null; value: number | null }[];
 export const RD_YEARS: string[]; export const RD_DEFAULT: string;

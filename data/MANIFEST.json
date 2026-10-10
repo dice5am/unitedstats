@@ -45,7 +45,8 @@
       "sha256": "36a710cfc718b1c44a057377c5b2fbc73d13342de81f7ae4089da5753b495ba4",
       "cards": [
         "live:gdp-pc",
-        "live:jobs-pc"
+        "live:jobs-pc",
+        "#14"
       ]
     },
     "oecd_unemployment_rate_m_15plus.json": {
@@ -150,6 +151,48 @@
         "#15"
       ],
       "sha256": "9b599727dfbc7a515a2f399291f50f38634156d5cec875a5596676335466adc8"
+    },
+    "wb_SP.POP.65UP.TO.ZS.json": {
+      "cards": [
+        "#4"
+      ],
+      "sha256": "d36159da3fc41977af38b7063039cdc13a4276ebb84eb0d16972f1916405e472"
+    },
+    "wb_SP.DYN.TFRT.IN.json": {
+      "cards": [
+        "#11"
+      ],
+      "sha256": "9cea095b9a081131df7827e0b8f991a2b5d388789df0152c6f2fd58fceba74ef"
+    },
+    "wb_SM.POP.TOTL.ZS.json": {
+      "cards": [
+        "#23"
+      ],
+      "sha256": "ae63b8592a4bed7d7f899a614f45d025ab9676ba44f39de1a98a76e8d2f4bc51"
+    },
+    "wb_SH.XPD.CHEX.GD.ZS.json": {
+      "cards": [
+        "#8"
+      ],
+      "sha256": "3a7bf7cb76b67c9a5805a16d6e05aacb09eb6bc4faf8f02042367399b313269b"
+    },
+    "oecd_life_expectancy_birth.json": {
+      "cards": [
+        "#8"
+      ],
+      "sha256": "f26aeacf1d178ba61af56e2597c66373237a2c7cea4e21ec08d6e907df5a319a"
+    },
+    "oecd_eag_tertiary_attainment_25_34.json": {
+      "cards": [
+        "#16"
+      ],
+      "sha256": "f5d3fdbbe3704dc6799f2eea2fd4faecfc6c4a29a32ae7bf65f9ee0c952ed829"
+    },
+    "oecd_eag_tertiary_attainment_25_64.json": {
+      "cards": [
+        "#16"
+      ],
+      "sha256": "cafc8c7b47744051a597a2641745239f100323ab6500d846fd8627d7cf1ed359"
     }
   }
 }

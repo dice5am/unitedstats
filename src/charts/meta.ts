@@ -1,7 +1,7 @@
 // Central chart registry metadata. The id is the stable link key (?chart=<id>), never the title.
 // Titles are plain and follow the selected view. One factual description line per chart.
-export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24" | "3" | "25" | "15";
-export type ChartId = BuiltId | "4" | "11" | "23" | "8" | "16" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
+export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24" | "3" | "25" | "15" | "4" | "11" | "23" | "8" | "16";
+export type ChartId = BuiltId | "5" | "9" | "14";
 export type TabId = "economy" | "labour" | "finance" | "society" | "environment";
 export type ChartMeta = { id: ChartId; brief: string | null; tab: TabId; titles: Record<string, string>; desc: string; params: string[]; data: string[]; built?: boolean; src?: string[] };
 // src: short source names for the headline tag ("BIS · Aug 2026"); must match the names in the chart's full source line.
@@ -12,7 +12,7 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "2": { id: "2", src: ["OECD"], built: true, brief: "#2", tab: "labour", titles: { _: "Unemployment rate by month" }, desc: "Unemployed as % of the labour force, monthly", params: ["uh_win"], data: ["oecd_unemployment_rate_m_15plus.json"] },
   jobs: { id: "jobs", src: ["OECD"], built: true, brief: null, tab: "labour", titles: { jobs: "Jobs", jpc: "Jobs per capita" }, desc: "People employed, ages 15+, indexed to 100 at the window start", params: ["j_view", "j_win", "j_on"], data: ["c1_labour_series.json", "econ_gdp_series.json"] },
   "22": { id: "22", src: ["OECD"], built: true, brief: "#22", tab: "labour", titles: { _: "Employment rate change since 2019" }, desc: "Employment rate, ages 15–64, change since Q4 2019 in percentage points", params: [], data: ["c1_employment_rate.json"] },
-  "3": { id: "3", src: ["OECD"], built: true, brief: "#3", tab: "economy", titles: { _: "GDP per capita ranking" }, desc: "GDP per person at current PPPs, rank 1–7 each year", params: ["lg_from"], data: ["oecd_gdp_per_capita_ppp_current.json"] },
+  "3": { id: "3", src: ["OECD"], built: true, brief: "#3", tab: "economy", titles: { _: "GDP per capita ranking" }, desc: "GDP per person at current PPPs, rank 1–7 each year", params: ["lg_win"], data: ["oecd_gdp_per_capita_ppp_current.json"] },
   "25": { id: "25", src: ["OECD"], built: true, brief: "#25", tab: "economy", titles: { _: "Income inequality (Gini)" }, desc: "Gini coefficient of disposable income, latest year per country", params: [], data: ["oecd_idd_gini_disposable.json"] },
   "15": { id: "15", src: ["OECD"], built: true, brief: "#15", tab: "economy", titles: { _: "R&D spending, % of GDP" }, desc: "Gross domestic spending on R&D, business and other, % of GDP", params: ["rd_year"], data: ["oecd_msti_gerd_pct_gdp.json", "oecd_msti_berd_pct_gdp.json"] },
   "17": { id: "17", src: ["OECD"], built: true, brief: "#17", tab: "labour", titles: { _: "Youth unemployment vs overall rate" }, desc: "Youth unemployment rate (age 15–24) ÷ overall rate", params: [], data: ["oecd_unemployment_rate_m_15_24.json", "oecd_unemployment_rate_m_15plus.json"] },
@@ -26,11 +26,11 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "20": { id: "20", src: ["BIS"], built: true, brief: "#20", tab: "finance", titles: { _: "Household debt since 2007" }, desc: "Credit to households, % of GDP", params: ["hd_win"], data: ["bis_household_credit_pct_gdp.json"] },
   "19": { id: "19", src: ["OECD"], built: true, brief: "#19", tab: "finance", titles: { _: "Current account balance, % of GDP" }, desc: "Current account balance, % of GDP, quarterly", params: ["ca_win"], data: ["oecd_bop_current_account_pct_gdp_q.json"] },
   "21": { id: "21", src: ["World Bank"], built: true, brief: "#21", tab: "finance", titles: { _: "Trade, % of GDP" }, desc: "Exports and imports of goods and services, % of GDP", params: ["tr_year"], data: ["wb_NE.EXP.GNFS.ZS.json", "wb_NE.IMP.GNFS.ZS.json"] },
-  "4": { id: "4", brief: "#4", tab: "society", titles: { _: "Population aged 65+" }, desc: "People aged 65 and over, % of population", params: [], data: [] },
-  "11": { id: "11", brief: "#11", tab: "society", titles: { _: "Fertility rate" }, desc: "Births per woman", params: [], data: [] },
-  "23": { id: "23", brief: "#23", tab: "society", titles: { _: "Foreign-born population share" }, desc: "International migrant stock, % of population", params: [], data: [] },
-  "8": { id: "8", brief: "#8", tab: "society", titles: { _: "Health spending vs life expectancy" }, desc: "Health spending, % of GDP, against life expectancy at birth", params: [], data: [] },
-  "16": { id: "16", brief: "#16", tab: "society", titles: { _: "Share with a university degree, by age" }, desc: "Tertiary attainment, ages 25–34 and 25–64, %", params: [], data: [] },
+  "4": { id: "4", src: ["World Bank"], built: true, brief: "#4", tab: "society", titles: { _: "Population aged 65+" }, desc: "People aged 65 and over, % of population", params: ["gr_start"], data: ["wb_SP.POP.65UP.TO.ZS.json"] },
+  "11": { id: "11", src: ["World Bank"], built: true, brief: "#11", tab: "society", titles: { _: "Fertility rate" }, desc: "Births per woman", params: ["fe_from"], data: ["wb_SP.DYN.TFRT.IN.json"] },
+  "23": { id: "23", src: ["World Bank"], built: true, brief: "#23", tab: "society", titles: { _: "Foreign-born population share" }, desc: "International migrant stock, % of population", params: ["mg_year"], data: ["wb_SM.POP.TOTL.ZS.json"] },
+  "8": { id: "8", src: ["World Bank", "OECD"], built: true, brief: "#8", tab: "society", titles: { _: "Health spending vs life expectancy" }, desc: "Health spending, % of GDP, against life expectancy at birth", params: ["hl_year"], data: ["wb_SH.XPD.CHEX.GD.ZS.json", "oecd_life_expectancy_birth.json"] },
+  "16": { id: "16", src: ["OECD"], built: true, brief: "#16", tab: "society", titles: { _: "Share with a university degree, by age" }, desc: "Tertiary attainment, ages 25–34 and 25–64, %", params: [], data: ["oecd_eag_tertiary_attainment_25_64.json", "oecd_eag_tertiary_attainment_25_34.json"] },
   "5": { id: "5", brief: "#5", tab: "environment", titles: { _: "GDP per capita vs CO2 per capita" }, desc: "GDP per person at PPP against CO2 per person", params: [], data: [] },
   "9": { id: "9", brief: "#9", tab: "environment", titles: { _: "Electricity generation by source" }, desc: "Share of electricity from coal, oil and gas, nuclear and other", params: [], data: [] },
   "14": { id: "14", brief: "#14", tab: "environment", titles: { _: "Greenhouse gas emissions since 1990" }, desc: "Total greenhouse gas emissions, change since 1990", params: [], data: [] },

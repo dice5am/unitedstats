@@ -46,6 +46,22 @@ export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentT
   "15": {
     load: async () => { const [{ default: g }, { default: b }, E, { default: S }] = await Promise.all([import("@/data/oecd_msti_gerd_pct_gdp.json"), import("@/data/oecd_msti_berd_pct_gdp.json"), import("./economy"), import("@/src/components/StackRank")]);
       const spec = E.rdSpec(g, b); return { default: ({ initial }: Init) => <S spec={spec} initial={initial} /> }; } },
+  // ---- Society wave ----
+  "4": {
+    load: async () => { const [{ default: f }, S, { default: C }] = await Promise.all([import("@/data/wb_SP.POP.65UP.TO.ZS.json"), import("./society"), import("@/src/components/Slope")]);
+      return { default: ({ initial }: Init) => <C file={f} spec={S.greySpec} initial={initial} /> }; } },
+  "11": {
+    load: async () => { const [{ default: f }, S, { default: C }] = await Promise.all([import("@/data/wb_SP.DYN.TFRT.IN.json"), import("./society"), import("@/src/components/YearMultiples")]);
+      return { default: ({ initial }: Init) => <C file={f} spec={S.fertSpec} initial={initial} /> }; } },
+  "23": {
+    load: async () => { const [{ default: f }, S, { default: C }] = await Promise.all([import("@/data/wb_SM.POP.TOTL.ZS.json"), import("./society"), import("@/src/components/Waffle")]);
+      return { default: ({ initial }: Init) => <C file={f} spec={S.migSpec} initial={initial} /> }; } },
+  "8": {
+    load: async () => { const [{ default: hx }, { default: le }, S, { default: C }] = await Promise.all([import("@/data/wb_SH.XPD.CHEX.GD.ZS.json"), import("@/data/oecd_life_expectancy_birth.json"), import("./society"), import("@/src/components/Scatter")]);
+      const spec = S.healthSpec(hx, le); return { default: ({ initial }: Init) => <C spec={spec} initial={initial} /> }; } },
+  "16": {
+    load: async () => { const [{ default: older }, { default: younger }, S, { default: D }] = await Promise.all([import("@/data/oecd_eag_tertiary_attainment_25_64.json"), import("@/data/oecd_eag_tertiary_attainment_25_34.json"), import("./society"), import("@/src/components/Dumbbell")]);
+      return { default: () => <D file={{ older, younger }} spec={S.degreeSpec} /> }; } },
   "17": {
     load: async () => { const [{ default: y }, { default: a }, L, { default: R }] = await Promise.all([import("@/data/oecd_unemployment_rate_m_15_24.json"), import("@/data/oecd_unemployment_rate_m_15plus.json"), import("./labour"), import("@/src/components/RankBar")]);
       const spec = L.youthSpec(y); return { default: () => <R file={a} spec={spec} /> }; } },
