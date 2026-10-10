@@ -30,6 +30,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs" }
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
+  const [brkTip, setBrkTip] = useState<{ x: number; y: number; label: string } | null>(null);
   useEffect(() => {
     const el = ref.current; if (!el) return;
     setW(el.clientWidth);
@@ -37,7 +38,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs" }
     ro.observe(el); return () => ro.disconnect();
   }, []);
   useEffect(() => {
-    const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setHover(null); };
+    const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setHover(null); setBrkTip(null); } };
     document.addEventListener("pointerdown", close); return () => document.removeEventListener("pointerdown", close);
   }, []);
   const open = hover !== null;
@@ -187,7 +188,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs" }
       }}>
       <svg width={w} height={h} role="img" aria-label={summary}
         onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}
-        onPointerDown={(e) => pick(e.clientX)}
+        onPointerDown={(e) => { setBrkTip(null); pick(e.clientX); }}
 >
         <defs>
           {glowCodes.map((c) => (
@@ -234,11 +235,6 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs" }
             <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
               <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={main ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
               {l.freq === "quarterly" && l.points.map((p) => p.value !== null && <circle key={p.period} cx={x(p.mi)} cy={y(p.value)} r={years >= 20 ? 2 : 3} fill={col(l.code)} />)}
-              {vis && l.breaks.map((bk) => {
-                const mi = bk.mi, b = bk.label; if (mi < m0 || mi > m1) return null;
-                const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - mi) < Math.abs(best.mi - mi)) ? q : best), null);
-                return p && p.value !== null ? <line key={b} x1={x(mi)} x2={x(mi)} y1={y(p.value) - 6} y2={y(p.value) + 6} stroke={col(l.code)} strokeWidth={1.5} /> : null;
-              })}
               {vis && showJumps && l.janJumps.map((jp) => {
                 const p = l.points.find((q) => q.period === jp);
                 // on the line where it exists; for a blank 3-mo avg, sit on the next drawn point
@@ -270,6 +266,22 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs" }
           </g>
         ))}
 
+        {lines.flatMap((l) => l.breaks.map((bk) => {
+          if (bk.mi < m0 || bk.mi > m1) return null;
+          const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - bk.mi) < Math.abs(best.mi - bk.mi)) ? q : best), null);
+          if (!p || p.value === null) return null;
+          const bx = x(bk.mi), by = y(p.value);
+          return (
+            <g key={`${l.code}${bk.mi}`} className="brk" onPointerEnter={(e) => e.pointerType === "mouse" && setBrkTip({ x: bx, y: by, label: bk.label })}
+              onPointerLeave={(e) => e.pointerType === "mouse" && setBrkTip(null)}
+              onPointerDown={(e) => { e.stopPropagation(); setBrkTip((t) => (t && t.label === bk.label && t.x === bx ? null : { x: bx, y: by, label: bk.label })); }}>
+              <rect x={bx - 1} y={by - 6} width={2} height={12} rx={1} className="brkt" />
+              <rect x={bx - 12} y={by - 12} width={24} height={24} fill="transparent" aria-label={bk.label}><title>{bk.label}</title></rect>
+            </g>
+          );
+        }))}
+        {brkTip && (() => { const tw = textW(brkTip.label, 12, 600) + 20, tx = Math.min(Math.max(brkTip.x - tw / 2, 0), w - tw), ty = brkTip.y - 40 < 0 ? brkTip.y + 16 : brkTip.y - 40; return (
+          <g className="brklbl" pointerEvents="none"><rect x={tx} y={ty} width={tw} height={24} rx={12} /><text x={tx + tw / 2} y={ty + 16} textAnchor="middle">{brkTip.label}</text></g>); })()}
         {hover !== null && <g>
           <line x1={cx} x2={cx} y1={pad.t} y2={bottom} className="cross" />
           {rows.map((r) => r.p && r.v !== null && <circle key={r.l.code} cx={x(r.p.mi)} cy={y(r.v)} r={4.5} fill={col(r.l.code)} stroke="var(--card-solid)" strokeWidth={2} />)}

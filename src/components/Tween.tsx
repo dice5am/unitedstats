@@ -8,7 +8,10 @@ export default function Tween({ value, format }: { value: number; format: (v: nu
     const a = from.current, t0 = performance.now(); let raf = 0;
     const ease = (t: number) => 1 - Math.pow(1 - t, 4);
     const step = (now: number) => { const t = Math.min(1, (now - t0) / 400); setV(a + (value - a) * ease(t)); if (t < 1) raf = requestAnimationFrame(step); else from.current = value; };
-    raf = requestAnimationFrame(step); return () => { cancelAnimationFrame(raf); from.current = value; };
+    raf = requestAnimationFrame(step);
+    // rAF can be throttled (background tab): always land on the exact value
+    const done = setTimeout(() => { cancelAnimationFrame(raf); setV(value); from.current = value; }, 450);
+    return () => { cancelAnimationFrame(raf); clearTimeout(done); from.current = value; };
   }, [value]);
   return <>{format(v)}</>;
 }

@@ -99,7 +99,7 @@ h2{margin:0;font-size:var(--fs-5);font-weight:700;letter-spacing:-.02em}
 .notes{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 20px;color:var(--muted);font-size:var(--fs-1)}
 .notes li{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}.dot.amber{background:var(--amber)}
-.tick{width:1.5px;height:10px;background:var(--muted);display:inline-block}
+.tick{width:2px;height:12px;border-radius:1px;background:var(--text-2);display:inline-block}
 .source{margin:8px 0 0;color:var(--muted);font-size:var(--fs-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .calc{margin-top:80px}
 .panel{margin-top:24px;padding:0}
@@ -169,3 +169,8 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
  .seg{flex:1}.seg button{min-width:0;padding:0 6px}
  .pbtn{padding:0 12px;gap:8px}
 }
+.brkt{fill:var(--text-2)}
+.brk{cursor:pointer}
+.brklbl rect{fill:var(--card-solid);stroke:var(--card-border)}
+.brklbl text{fill:var(--text);font-size:12px;font-weight:600}
+.chart svg > :not(.brk){pointer-events:none}

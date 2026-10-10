@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { buildLine, commonEnds, headline, headlinePick, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -105,6 +105,29 @@ for (const y of [1, 5, 10, 20]) for (const c of ALL) { const l = buildLine(rate,
     for (let k = 1; k < 50; k++) { const tt = k / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { rover++; break; } } } run = []; };
   for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
 check(rover === 0, "rate monotone: no overshoot");
+// v5: headline labels consistent with the sign of the ROUNDED shown figures, every combo x window x view
+for (const [nm, ds, md] of [["jobs", data, "jobs"], ["rate", rate, "rate"]]) {
+  let n = 0, badL = 0, negMin = 0, posMin = 0, negMax = 0;
+  for (const y of [1, 5, 10, 20]) for (let mask = 1; mask < 128; mask++) {
+    const sel = ALL.filter((_, i) => mask & (1 << i)); const h = headlinePick(ds, sel, y, md); n++;
+    const lb = headlineLabels(h, md);
+    if (h.single) { if (lb.fast !== null || lb.slow !== null) badL++; continue; }
+    const mx = roundShown(h.fastest.value, md), mn = roundShown(h.slowest.value, md);
+    const sOk = (v, s) => (v > 0 ? s.startsWith("+") : v < 0 ? s.startsWith("−") : !/^[+−]/.test(s));
+    if (!sOk(mx, fmtHeadline(h.fastest.value, md)) || !sOk(mn, fmtHeadline(h.slowest.value, md))) badL++;
+    if (md === "rate") {
+      if (mn < 0) negMin++; else posMin++; if (mx < 0) negMax++;
+      if (lb.slow !== (mn < 0 ? "Biggest drop" : "Smallest gain")) badL++;
+      if (lb.fast !== (mx < 0 ? "Smallest drop" : "Fastest gain")) badL++;
+      if (lb.slow === "Smallest gain" && mn < 0) badL++;
+    } else if (lb.fast !== "Fastest growth" || lb.slow !== "Slowest growth") badL++;
+  }
+  check(badL === 0, `${nm} headline labels match sign of rounded figures: ${n} combos x windows, ${badL} wrong` + (md === "rate" ? ` (Biggest drop ${negMin}, Smallest gain ${posMin}, Smallest drop ${negMax})` : ""));
+}
+{ const h = headlinePick(rate, ["CAN", "USA"], 20, "rate"); const lb = headlineLabels(h, "rate");
+  check(h.slowest.codes[0] === "USA" && h.slowest.value < 0 && lb.slow === "Biggest drop", `rate 20Y CAN+US: US ${fmtHeadline(h.slowest.value, "rate")} pts labelled "${lb.slow}"`); }
+{ const h = { single: null, fastest: { value: -0.04 }, slowest: { value: -0.3 } };
+  check(headlineLabels(h, "rate").fast === "Fastest gain" && headlineLabels({ single: null, fastest: { value: -0.2 }, slowest: { value: -0.3 } }, "rate").fast === "Smallest drop", "rate: −0.04 shows 0.0 → Fastest gain; all fell → Smallest drop"); }
 console.log("rate sha256", createHash("sha256").update(rraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }

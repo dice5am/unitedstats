@@ -17,3 +17,7 @@ export function headlinePick(data: unknown, codes: string[], years: number): { s
 export function glowLeaders(series: { code: string; at: (mi: number) => number | null }[], m0: number, m1: number): (string | null)[];
 export function buildLine(data: unknown, code: string, years: number, mode?: "jobs" | "rate"): unknown;
 export function headlinePick(data: unknown, codes: string[], years: number, mode?: "jobs" | "rate"): { single: Pick; fastest: Pick; slowest: Pick };
+export function headlineDp(mode?: "jobs" | "rate"): number;
+export function roundShown(v: number, mode?: "jobs" | "rate"): number;
+export function fmtHeadline(v: number, mode?: "jobs" | "rate"): string;
+export function headlineLabels(h: unknown, mode?: "jobs" | "rate"): { fast: string | null; slow: string | null };

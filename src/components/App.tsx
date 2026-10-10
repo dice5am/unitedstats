@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
-import { COUNTRIES, WINDOWS, buildLine, headlinePick, windowInfo, workedExample } from "@/lib/series.mjs";
+import { COUNTRIES, WINDOWS, buildLine, headlinePick, headlineLabels, fmtHeadline, windowInfo, workedExample } from "@/lib/series.mjs";
 import LineChart, { type Line } from "./LineChart";
 import ThemeToggle from "./ThemeToggle";
 import Tween from "./Tween";
@@ -84,13 +84,12 @@ export default function App({ data, rate, tab }: { data: any; rate: any; tab: Ta
               const nm = (c: string) => COUNTRIES.find((x) => x.code === c)!.short;
               const per = (ps: string[]) => ps.map((p) => p.includes("Q") ? p.split("-").reverse().join(" ") : fmtM(p)).join(" / ");
               const cards = h.single ? [{ label: h.single.codes.map(nm).join(" · "), k: null as string | null, p: h.single }]
-                : [{ label: R ? (h.fastest!.value >= 0 ? "Fastest gain" : "Smallest drop") : "Fastest growth", k: "f", p: h.fastest! },
-                   { label: R ? (h.slowest!.value < 0 ? "Biggest drop" : "Smallest gain") : "Slowest growth", k: "s", p: h.slowest! }];
+                : (() => { const lb = headlineLabels(h, view); return [{ label: lb.fast!, k: "f", p: h.fastest! }, { label: lb.slow!, k: "s", p: h.slowest! }]; })();
               return cards.map((c, i) => (
-                <div key={c.k ?? "one"} className="fig">
+                <div key={`${view}-${c.k ?? "one"}-${c.label}`} className="fig">
                   <div className="figl">{c.k ? c.label : null}</div>
                   <div className="figc" key={c.p.codes.join()}>{c.p.codes.map((cc) => <span key={cc}><i style={{ background: `var(--${cc})` }} />{nm(cc)}</span>)}</div>
-                  <div className="figv"><Tween value={c.p.value} format={(x) => `${sign(x)}${Math.abs(x).toFixed(R ? 1 : 2)}`} /><span>{R ? "pts" : "%"}</span></div>
+                  <div className="figv"><Tween value={c.p.value} format={(x) => fmtHeadline(x, view)} /><span>{R ? "pts" : "%"}</span></div>
                   <div className="figp">{per(c.p.periods)}</div>
                 </div>
               ));
@@ -114,7 +113,7 @@ export default function App({ data, rate, tab }: { data: any; rate: any; tab: Ta
           </section>
           <ul className="notes">
             <li><i className="dot amber" />US January jump: cause not confirmed</li>
-            <li><i className="tick" />Series break, by year</li>
+            <li><i className="tick" />{view === "rate" ? "Series break, by quarter" : "Series break, by year"}</li>
           </ul>
           <p className="source">Source: OECD · {view === "rate" ? "employment rate 15–64" : "employment 15+"}, SA · as of {view === "rate" ? rateAsOf : dataAsOf}</p>
 
@@ -167,7 +166,7 @@ export default function App({ data, rate, tab }: { data: any; rate: any; tab: Ta
               <div className="grp"><h3>Rules</h3><ul className="rules">
                 <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
                 <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" /><circle cx="8" cy="3" r="2" fill="currentColor" /></svg></span>Quarterly: line + dot per quarter</li>
-                <li><span className="ic"><svg width="4" height="12"><path d="M2 0v12" stroke="currentColor" strokeWidth="1.5" /></svg></span>Series breaks marked by year</li>
+                <li><span className="ic"><svg width="2" height="12"><rect width="2" height="12" rx="1" fill="var(--text-2)" /></svg></span>Series breaks marked by year</li>
                 <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>
               </ul></div>
             </div>
