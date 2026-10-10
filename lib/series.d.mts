@@ -26,3 +26,8 @@ export function econDataset(econ: unknown, kind: "gdp" | "pc"): unknown;
 export function qLabel(p: string): string;
 export function statusAt(data: unknown, code: string, period: string): string | null;
 export function quarterExample(data: unknown, code: string, years: number): { start: string; end: string; vStart: number; vEnd: number; index: number; growth: number } | null;
+export function monthLabel(p: string): string;
+export function windowLabel(data: unknown, codes: string[], years: number, mode?: Mode): { freq: "quarterly" | "monthly" | "mixed"; start: string; end: string; range: string; text: string };
+export const DEFAULT_ON: string[];
+export const SHORT_CODE: Record<string, string>;
+export function parseOn(str: string | null): string[];

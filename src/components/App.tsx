@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
-import { COUNTRIES, WINDOWS, buildLine, headlinePick, headlineLabels, fmtHeadline, windowInfo, workedExample, econDataset, quarterExample, qLabel, commonEnds } from "@/lib/series.mjs";
+import { Fragment, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { COUNTRIES, WINDOWS, buildLine, headlinePick, headlineLabels, fmtHeadline, windowInfo, workedExample, econDataset, quarterExample, qLabel, commonEnds, windowLabel, DEFAULT_ON, parseOn } from "@/lib/series.mjs";
 import LineChart, { type Line } from "./LineChart";
 import ThemeToggle from "./ThemeToggle";
 import Tween from "./Tween";
@@ -36,7 +36,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const ds: any = view === "rate" ? rate : view === "gdp" ? eds!.gdp : view === "pc" ? eds!.pc : data;
   const mode = view === "rate" ? "rate" : view === "jobs" ? "jobs" : "index";
   const [years, setYears] = useState(1);
-  const [on, setOn] = useState<Record<string, boolean>>({ CAN: true, USA: true });
+  const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(DEFAULT_ON.map((c) => [c, true])));
   // URL state (?view, ?win, ?on): read once before paint (no hydration mismatch: server renders defaults),
   // invalid values fall back to defaults; then mirror changes with replaceState.
   const urlRead = useRef<0 | 1 | 2>(0);
@@ -44,8 +44,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
     const q = new URLSearchParams(location.search);
     const qv = q.get("view"), v = VIEWS[tab].some(([k]) => k === qv) ? (qv as View) : VIEWS[tab][0][0];
     const qw = Number(q.get("win")), w = WINDOWS.includes(qw) ? qw : 1;
-    const codes0 = (q.get("on") || "").split(",").map((c) => c.trim().toUpperCase()).filter((c) => COUNTRIES.some((x) => x.code === c));
-    const codes = codes0.length ? codes0 : ["CAN", "USA"];
+    const codes = parseOn(q.get("on"));
     setView(v); setYears(w); setOn(Object.fromEntries(codes.map((c) => [c, true])));
     writeUrl(v, w, codes); // canonicalise invalid params right away
     urlRead.current = 1;
@@ -66,13 +65,13 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const econAsOf = econ ? asOf(econ.data_as_of.snapshot_id) : "";
   const qEnd = E ? qLabel(commonEnds(ds).quarterEnd) : "";
   const qx = E ? quarterExample(ds, "CAN", years) : null;
-  const qSpan = E ? (() => { const l = lines[0]; return `${qLabel(l.points[0].period)} – ${qLabel(l.points[l.points.length - 1].period)}`; })() : "";
+  const wl = windowLabel(ds, COUNTRIES.map((c) => c.code).filter((c) => on[c]), years, mode);
+  const qSpan = wl.range;
   // legend items only when the matching marker is actually drawn (same conditions as LineChart)
   const shown = lines.filter((l) => on[l.code] && !l.excluded);
   const allPts = lines.flatMap((l) => l.points), m0 = Math.min(...allPts.map((p) => p.mi)), m1 = Math.max(...allPts.map((p) => p.mi));
   const hasBreak = shown.some((l) => l.points.some((p) => p.value !== null) && l.breaks.some((b) => b.mi >= m0 && b.mi <= m1));
   const hasJan = years <= 5 && shown.some((l) => l.janJumps.length > 0);
-  const hasQ = shown.some((l) => l.freq === "quarterly" && l.points.some((p) => p.value !== null));
   const naNote = Object.fromEntries(lines.filter((l) => l.excluded).map((l) => [l.code, `n/a for ${years}Y`]));
   const emptyMsg = (() => { const sel = lines.filter((l) => on[l.code]); return sel.length && sel.every((l) => l.excluded) ? `No OECD data for ${sel.map((l) => COUNTRIES.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
   const rateAsOf = asOf(rate.data_as_of.addendum_id);
@@ -139,7 +138,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
               ));
             })()}
           </div>
-          <p className="span">{E ? `${qSpan} · quarterly` : `${span} · 3-month average`}</p>
+          <p className="span">{wl.text.split(" · ").map((t, i) => <Fragment key={i}>{i ? " · " : ""}<span className="nw">{t}</span></Fragment>)}</p>
 
           <div className="bar">
             <div className="seg" role="radiogroup" aria-label="Timeframe" ref={segRef} onKeyDown={segKey}>
@@ -157,7 +156,6 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
           </section>
           <ul className="notes">
             {hasJan && <li><i className="dot amber" />US January jump: cause not confirmed</li>}
-            {E && hasQ && <li><i className="qdot" />One dot per quarter</li>}
             {hasBreak && <li><i className="tick" />{view === "jobs" ? "Series break, by year" : "Series break, by quarter"}</li>}
           </ul>
           <p className="source">{E ? `Source: OECD quarterly national accounts · ${view === "pc" ? "real GDP and population" : "real GDP"}, SA · as of ${econAsOf}` : `Source: OECD · ${view === "rate" ? "employment rate 15–64" : "employment 15+"}, SA · as of ${view === "rate" ? rateAsOf : dataAsOf}`}</p>
@@ -204,7 +202,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
                 <dt>Snapshot</dt><dd>{rateAsOf}</dd>
               </dl></div>
               <div className="grp"><h3>Window</h3><dl>
-                <dt>Start – end</dt><dd className="strong">{span}</dd>
+                <dt>Start – end</dt><dd className="strong">{wl.range}{wl.freq === "quarterly" ? " · quarterly" : ""}</dd>
                 <dt>Length</dt><dd>{years} year{years > 1 ? "s" : ""} · moves with the switch</dd>
               </dl></div>
               <div className="grp"><h3>Formulas</h3><div className="fx">
@@ -224,7 +222,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
                 <dt>Snapshot</dt><dd>{dataAsOf}</dd>
               </dl></div>
               <div className="grp"><h3>Window</h3><dl>
-                <dt>Start – end</dt><dd className="strong">{span}</dd>
+                <dt>Start – end</dt><dd className="strong">{wl.range}{wl.freq === "quarterly" ? " · quarterly" : ""}</dd>
                 <dt>Length</dt><dd>{years} year{years > 1 ? "s" : ""} · moves with the switch</dd>
               </dl></div>
               <div className="grp"><h3>Formulas</h3><div className="fx">
@@ -236,7 +234,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
               </>)}
               <div className="grp"><h3>Rules</h3><ul className="rules">
                 <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
-                <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" /><circle cx="8" cy="3" r="2" fill="currentColor" /></svg></span>Quarterly: line + dot per quarter</li>
+                <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Quarterly countries: one reading per quarter, joined by a line</li>
                 <li><span className="ic"><svg width="5" height="15"><rect x="1.5" y="1.5" width="2" height="12" rx="1" fill="var(--text-2)" stroke="var(--card-solid)" strokeWidth="3" paintOrder="stroke" /></svg></span>{view === "jobs" ? "Series breaks marked by year" : "Series breaks marked by quarter"}</li>
                 {!E && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
                 {hasProv && <li><span className="ic">P</span>Latest quarters may be provisional</li>}

@@ -53,7 +53,7 @@ h2{margin:0;font-size:var(--fs-5);font-weight:700;letter-spacing:-.02em}
 .figp{margin-top:6px;font-size:var(--fs-1);color:var(--muted)}
 .figv{font-size:var(--fs-fig);font-weight:700;letter-spacing:-.045em;line-height:1;margin-top:8px;color:var(--text);white-space:nowrap}
 .figv span{font-size:var(--fs-4);letter-spacing:0;margin-left:4px;color:var(--text-2)}
-.span{margin:16px 0 0;color:var(--muted);font-size:var(--fs-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.span{margin:16px 0 0;color:var(--muted);font-size:var(--fs-1);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bar{position:sticky;top:16px;z-index:5;margin-top:32px;display:flex;align-items:center;gap:8px;padding:8px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);box-shadow:var(--shadow)}
 .div{width:1px;align-self:stretch;margin:6px 4px;background:var(--glass-border)}
 .seg,.vseg{position:relative;display:flex;flex:none}
@@ -174,10 +174,10 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
 .chart svg > :not(.brk){pointer-events:none}
 .emptyt{fill:var(--text-2);font-size:13px;font-weight:600}
 .figv.na{color:var(--muted)}
-.qdot{width:6px;height:6px;border-radius:50%;border:1.5px solid var(--muted);display:inline-block}
 .prow.na>span:last-child{color:var(--muted)}
 .prow .nanote{margin-left:auto;font-size:var(--fs-1);color:var(--muted);font-weight:500}
 .prow.na>i{opacity:.45}
 .xc p{margin:0 0 8px;color:var(--text)}.xc p:last-child{margin:0}
 .chart.empty{display:grid;place-items:center}
 .emptycard{padding:12px 20px;border-radius:999px;background:var(--glass-hl);border:1px solid var(--card-border);color:var(--text-2);font-weight:600;text-align:center;max-width:calc(100% - 32px)}
+.span .nw{white-space:nowrap}

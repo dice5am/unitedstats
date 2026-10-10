@@ -6,8 +6,6 @@ const ORDER = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
 const NAME: Record<string, string> = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
 const QUICK: { label: string; codes: string[] }[] = [
   { label: "All G7", codes: ORDER },
-  { label: "Canada + US", codes: ["CAN", "USA"] },
-  { label: "Canada only", codes: ["CAN"] },
 ];
 
 export default function Picker({ on, setOn, na = {} }: { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na?: Record<string, string> }) {

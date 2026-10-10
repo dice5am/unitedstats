@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -182,6 +182,18 @@ for (const k of ["gdp", "pc"]) {
       for (let q = 1; q < 50; q++) { const tt = q / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { ov++; break; } } } run = []; };
     for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
   check(ov === 0, `economy monotone: ${segs} segments, ${ov} overshoot`); }
+// v10: window label follows the frequencies of the countries actually drawn
+{ const a = windowLabel(rate, ["ITA"], 20, "rate"), b = windowLabel(rate, ["CAN", "ITA"], 20, "rate"), c = windowLabel(data, ["CAN", "USA"], 1, "jobs"), d = windowLabel(data, ["GBR", "DEU"], 5, "jobs"), e = windowLabel(EV.pc, ["CAN", "USA"], 20, "index");
+  check(a.text === "Q3 2006 – Q2 2026 · quarterly", `window: rate 20Y Italy only -> "${a.text}"`);
+  check(b.freq === "mixed" && b.text === "Aug 2006 – Aug 2026 · 3-month average (monthly) · Q3 2006 – Q2 2026 (quarterly)", `window: rate 20Y Canada + Italy (mixed) -> "${b.text}"`);
+  check(c.freq === "monthly" && c.text === "Aug 2025 – Aug 2026 · 3-month average", `window: jobs 1Y CAN+US (monthly) -> "${c.text}"`);
+  check(d.freq === "quarterly" && /^Q\d \d{4} – Q2 2026 · quarterly$/.test(d.text), `window: jobs 5Y UK+Germany (quarterly) -> "${d.text}"`);
+  check(e.text === "Q1 2006 – Q1 2026 · quarterly", `window: per capita 20Y unchanged -> "${e.text}"`); }
+// v10: default selection = all seven; invalid/empty ?on falls back to all seven
+check(DEFAULT_ON.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA" && parseOn("").length === 7 && parseOn(null).length === 7 && parseOn("XYZ,,foo").length === 7
+  && parseOn("jpn").join() === "JPN" && parseOn("ita,CAN").join() === "CAN,ITA", "default: all seven G7; invalid/empty on -> all seven; valid codes kept in fixed order");
+{ const h = headlinePick(data, DEFAULT_ON, 1), hr = headlinePick(rate, DEFAULT_ON, 1, "rate");
+  check(h.fastest && h.slowest && hr.fastest && hr.slowest, `default 1Y headline (all seven): jobs ${h.fastest.codes}/${h.slowest.codes}, rate ${hr.fastest.codes}/${hr.slowest.codes}`); }
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
 console.log("rate sha256", createHash("sha256").update(rraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));

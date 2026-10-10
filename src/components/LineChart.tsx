@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt } from "@/lib/series.mjs";
+import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
@@ -57,7 +57,11 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const wide = w >= 768;
   const h = wide ? 500 : 320;
   const lblPx = wide ? 13 : 12;
-  const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}${R ? "%" : ""}` : l.name);
+  // <768: names, falling back to 2-letter codes when the names won't fit (width or vertical spread)
+  const minGap = Math.ceil(lblPx * 1.25) + 4; // label box height + >= 4px clear between labels
+  const nameW = Math.max(36, ...lines.map((l) => textW(l.name, lblPx, MAIN.has(l.code) ? 700 : 500)));
+  const useCodes = !wide && (nameW + 22 > (w || 390) * 0.26 || lines.length * minGap > h - 34 - 58 - 10);
+  const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}${R ? "%" : ""}` : useCodes ? SHORT_CODE[l.code] ?? l.code : l.name);
   const gutter = Math.ceil(Math.max(36, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 500)))) + (wide ? 28 : 22);
   const pad = { l: wide ? 48 : 38, r: gutter, t: 34, b: 58 };
   const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b, bottom = pad.t + ih;
@@ -111,7 +115,6 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const showJumps = years <= 5;
 
   // end labels
-  const minGap = wide ? 20 : 16;
   const ends = lines.map((l) => {
     const lp = [...l.points].reverse().find((p) => p.value !== null);
     return lp ? { l, mi: lp.mi, v: lp.value as number, ty: y(lp.value as number) } : null;
@@ -133,7 +136,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     const p = l.excluded ? null : ptAt(l, hover);
     const lvl = p ? rawLevel(data, l.code, p.period) : null;
     const prov = p && statusAt(data, l.code, p.period) === "P";
-    return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? `${allQ ? "" : qLabel(p.period)}${prov ? (allQ ? "" : " · ") + "provisional" : ""}` || null : null };
+    return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? `${qLabel(p.period)}${prov ? " · provisional" : ""}` : null };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (R ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
@@ -243,8 +246,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           const d = monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })));
           return (
             <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
-              <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={main ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
-              {l.freq === "quarterly" && l.points.map((p) => p.value !== null && <circle key={p.period} cx={x(p.mi)} cy={y(p.value)} r={years >= 20 ? 2 : 3} fill={col(l.code)} />)}
+              <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
               {vis && showJumps && l.janJumps.map((jp) => {
                 const p = l.points.find((q) => q.period === jp);
                 // on the line where it exists; for a blank 3-mo avg, sit on the next drawn point
@@ -270,7 +272,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
 
         {ends.map((e) => (
           <g key={e.l.code} className="fadein">
-            <path d={`M${x(e.mi) + 4},${y(e.v)} C${pad.l + iw + 6},${y(e.v)} ${pad.l + iw + 4},${e.ty} ${pad.l + iw + 12},${e.ty}`} stroke={col(e.l.code)} strokeWidth={0.7} strokeOpacity={0.6} fill="none" />
+            <path d={`M${x(e.mi) + 4},${y(e.v)} C${pad.l + iw + 6},${y(e.v)} ${pad.l + iw + 4},${e.ty} ${pad.l + iw + 12},${e.ty}`} stroke={col(e.l.code)} strokeWidth={1} strokeOpacity={0.8} fill="none" />
             <circle cx={x(e.mi)} cy={y(e.v)} r={3} fill={col(e.l.code)} />
             <text x={pad.l + iw + 16} y={e.ty + 4} fill={col(e.l.code)} fontSize={lblPx} fontWeight={MAIN.has(e.l.code) ? 700 : 500} className="num">{label(e.l)}</text>
           </g>
