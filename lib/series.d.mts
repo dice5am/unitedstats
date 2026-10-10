@@ -1,4 +1,4 @@
-export type Mode = "jobs" | "rate" | "index";
+export type Mode = "jobs" | "unemp" | "index";
 export const COUNTRIES: { code: string; name: string; short: string }[];
 export const WINDOWS: number[];
 export const JAN_JUMPS: Record<string, string[]>;
@@ -21,7 +21,7 @@ export function headlinePick(data: unknown, codes: string[], years: number, mode
 export function headlineDp(mode?: Mode): number;
 export function roundShown(v: number, mode?: Mode): number;
 export function fmtHeadline(v: number, mode?: Mode): string;
-export function headlineLabels(h: unknown, mode?: Mode): { fast: string | null; slow: string | null };
+export function headlineLabels(h: unknown, mode?: Mode): { fast: string | null; slow: string | null; lowerBetter?: boolean };
 export function econDataset(econ: unknown, kind: "gdp" | "pc"): unknown;
 export function qLabel(p: string): string;
 export function statusAt(data: unknown, code: string, period: string): string | null;
@@ -31,3 +31,6 @@ export function windowLabel(data: unknown, codes: string[], years: number, mode?
 export const DEFAULT_ON: string[];
 export const SHORT_CODE: Record<string, string>;
 export function parseOn(str: string | null): string[];
+export function avgChange(data: unknown, code: string, a: string, b: string): number | null;
+export function popAtMonth(pop: unknown, mi: number): number | null;
+export function jobsPerCapitaDataset(jobs: unknown, econ: unknown): unknown;

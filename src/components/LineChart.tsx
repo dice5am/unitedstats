@@ -25,8 +25,8 @@ function textW(s: string, px: number, weight: number) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function LineChart({ lines: all, on, years, data, mode = "jobs", emptyMsg = null }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any; mode?: "jobs" | "rate" | "index"; emptyMsg?: string | null }) {
-  const R = mode === "rate";
+export default function LineChart({ lines: all, on, years, data, mode = "jobs", emptyMsg = null }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any; mode?: "jobs" | "unemp" | "index"; emptyMsg?: string | null }) {
+  const R = mode === "unemp"; // rate level in %, not indexed
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
@@ -139,7 +139,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? `${qLabel(p.period)}${prov ? " · provisional" : ""}` : null };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
-  const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (R ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
+  const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
   const cx = hover === null ? 0 : x(hover);
   const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
   const tipH = 44 + rows.length * 24 + (jan ? 26 : 0) + brk.length * 22;
@@ -149,7 +149,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const tipW = wide ? 340 : 0;
   const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
-  const summary = `${R ? "Employment rate" : "Index"}, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
+  const summary = `${R ? "Unemployment rate" : "Index"}, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
   // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
   const valAt = (l: Line, mi: number): number | null => {
     if (l.freq === "monthly") { const p = l.points.find((q) => q.mi === mi); return p ? p.value : null; }
@@ -158,7 +158,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     if (!lo || !hi) return null;
     return lo.mi === hi.mi ? lo.value : lo.value! + ((hi.value! - lo.value!) * (mi - lo.mi)) / (hi.mi - lo.mi);
   };
-  const leaders = glowLeaders(lines.map((l) => ({ code: l.code, at: (mi: number) => valAt(l, mi) })), m0, m1);
+  const leaders = glowLeaders(lines.map((l) => ({ code: l.code, at: (mi: number) => { const v = valAt(l, mi); return v === null ? null : R ? -v : v; } })), m0, m1); // unemployment: lower is better -> glow on the LOWEST line
   const glowCodes = [...new Set(leaders.filter((c): c is string => !!c))];
   const span = x(m1) - x(m0) || 1, ramp = 6;
   const maskStops = (code: string) => {
@@ -192,7 +192,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
 
   return (
     <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0}
-      onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} aria-label="Employment chart; use arrow keys to step months"
+      onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} aria-label="Chart; use arrow keys to step months"
       onKeyDown={(e) => {
         if (e.key === "Escape") return setHover(null);
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -219,7 +219,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           ))}
           <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
         </defs>
-        <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{R ? "Employment rate, % (ages 15–64)" : "Index · start = 100"}</text>
+        <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{R ? "Unemployment rate, %" : "Index · start = 100"}</text>
         {covid && <g>
           <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
           <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
@@ -272,7 +272,9 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
 
         {ends.map((e) => (
           <g key={e.l.code} className="fadein">
-            <path d={`M${x(e.mi) + 4},${y(e.v)} C${pad.l + iw + 6},${y(e.v)} ${pad.l + iw + 4},${e.ty} ${pad.l + iw + 12},${e.ty}`} stroke={col(e.l.code)} strokeWidth={1} strokeOpacity={0.8} fill="none" />
+            {/* leader lives in the label gutter only: starts at the plot's right edge at the line's own y (no stub across
+                the plot for lines that end early), one short horizontal, a single bend, then to the label */}
+            <path className="leader" d={`M${pad.l + iw + (x(e.mi) >= pad.l + iw - 0.5 ? 4 : 2)},${y(e.v)} H${pad.l + iw + 6} L${pad.l + iw + 11},${e.ty} H${pad.l + iw + 13}`} stroke={col(e.l.code)} strokeWidth={1} strokeOpacity={0.8} fill="none" strokeLinejoin="round" />
             <circle cx={x(e.mi)} cy={y(e.v)} r={3} fill={col(e.l.code)} />
             <text x={pad.l + iw + 16} y={e.ty + 4} fill={col(e.l.code)} fontSize={lblPx} fontWeight={MAIN.has(e.l.code) ? 700 : 500} className="num">{label(e.l)}</text>
           </g>

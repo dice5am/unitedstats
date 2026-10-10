@@ -133,7 +133,7 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
  .sub{white-space:normal;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
  .vseg{display:flex}.vseg button{flex:1}
  .figs{gap:16px}.fig+.fig{padding-left:16px}
- .figv{font-size:min(var(--fs-fig),12.5vw)}
+ .figv{font-size:min(var(--fs-fig),12.5vw)}.figv.pts{font-size:min(var(--fs-fig),10.5vw)}.fig{min-width:0}
  .calc{margin-top:64px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.draw{stroke-dashoffset:0}}
@@ -181,3 +181,6 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
 .chart.empty{display:grid;place-items:center}
 .emptycard{padding:12px 20px;border-radius:999px;background:var(--glass-hl);border:1px solid var(--card-border);color:var(--text-2);font-weight:600;text-align:center;max-width:calc(100% - 32px)}
 .span .nw{white-space:nowrap}
+h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spacing:-.035em}
+.cardsec{position:relative}
+.cardsec+.cardsec{margin-top:96px;padding-top:56px;border-top:1px solid var(--grid)}

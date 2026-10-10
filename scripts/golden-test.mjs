@@ -1,7 +1,7 @@
 // Fails the build if the app's default 1-year view disagrees with data/c1_golden.json.
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { avgChange, glowLeaders, mIdx, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -70,64 +70,60 @@ for (const y of [1, 5, 10, 20]) {
 }
 check(bad === 0, `headline fastest/slowest: ${combos} combos, ${bad} wrong`);
 
-// v2.2: employment rate (15-64) — recomputed independently from the raw rate file
-const rraw = readFileSync(new URL("../data/c1_employment_rate.json", import.meta.url));
-const rate = JSON.parse(rraw);
-const rv = (code, p) => { const s = rate.monthly[code]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+// v11: Unemployment rate (OECD UNE_LF, 15+, SA) — recomputed independently from the raw file
+const uraw = readFileSync(new URL("../data/c1_unemployment_rate.json", import.meta.url));
+const un = JSON.parse(uraw);
+const G3 = JSON.parse(readFileSync(new URL("../data/golden_round3.json", import.meta.url)));
+const rv = (code, p) => { const s = un.monthly[code]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
 const prevM = (p, k) => { const [yy, mm] = p.split("-").map(Number); const t = yy * 12 + mm - 1 - k; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; };
 const a3 = (code, p) => { const v = [0, 1, 2].map((k) => rv(code, prevM(p, k))); return v.some((x) => x === null) ? null : (v[0] + v[1] + v[2]) / 3; };
-let rbad = 0;
-for (const y of [1, 5, 10, 20]) for (const c of ["CAN", "USA", "JPN"]) {
-  const st = prevM("2026-08", y * 12), want = a3(c, "2026-08") - a3(c, st);
-  const l = buildLine(rate, c, y, "rate");
-  if (Math.abs(l.growth - want) > 1e-9 || l.points[0].period !== st) { rbad++; console.error("rate", c, y, l.growth, want); }
+check(commonEnds(un).monthEnd === "2026-08" && commonEnds(un).quarterEnd === "2026-Q2", "unemployment: shared end Aug 2026 / Q2 2026");
+// OECD golden values (pts) are 3-month-average changes: e.g. CAN 12m to Aug 2026 single-month = −0.70, 3-mo avg = −0.533 (golden −0.53)
+for (const c of ["CAN", "USA"]) for (const [key, want] of Object.entries(G3.unemployment_rate_pts[c])) {
+  const m = /^(\d+)(m|y)_to_(\d{4}-\d{2})$/.exec(key); const months = m[2] === "y" ? +m[1] * 12 : +m[1], end = m[3];
+  const indep = a3(c, end) - a3(c, prevM(end, months)), lib = avgChange(un, c, prevM(end, months), end);
+  const app = end === "2026-08" ? buildLine(un, c, months / 12, "unemp").growth : lib; // the app's window ends Aug 2026; May uses the same maths
+  check(Math.abs(app - want) < 0.01 && Math.abs(app - indep) < 1e-9 && Math.abs(lib - indep) < 1e-9, `unemployment ${c} ${key}: app ${app >= 0 ? "+" : ""}${app.toFixed(3)} pts vs OECD golden ${want >= 0 ? "+" : ""}${want.toFixed(2)} (3-mo avg)`);
 }
-check(rbad === 0, "rate change (pts) = avg3(Aug 2026) − avg3(start) for CAN/USA/JPN, all windows");
-const ru = buildLine(rate, "USA", 1, "rate");
-check(["2025-10","2025-11","2025-12"].every((p) => ru.points.find((x) => x.period === p).value === null), "rate: US avg null Oct-Dec 2025");
-const it = buildLine(rate, "ITA", 20, "rate");
-check(it.breaks.some((b) => b.label.includes("Q4 2008")), "rate: Italy Q4 2008 break carried");
-check(commonEnds(rate).monthEnd === "2026-08" && commonEnds(rate).quarterEnd === "2026-Q2", "rate: shared end Aug 2026 / Q2 2026");
-let rcb = 0;
-for (const y of [1, 5, 10, 20]) {
-  const g = Object.fromEntries(ALL.map((c) => [c, buildLine(rate, c, y, "rate").growth]));
-  for (let mask = 1; mask < 128; mask++) {
-    const sel = ALL.filter((_, i) => mask & (1 << i)); const h = headlinePick(rate, sel, y, "rate");
-    const vs = sel.map((c) => g[c]); const f = h.single ?? h.fastest;
-    if (!f || Math.abs(f.value - Math.max(...vs)) > 1e-12) rcb++;
-    if (h.slowest && Math.abs(h.slowest.value - Math.min(...vs)) > 1e-12) rcb++;
-  }
-}
-check(rcb === 0, "rate headline fastest/slowest: 508 combos");
-let rover = 0;
-for (const y of [1, 5, 10, 20]) for (const c of ALL) { const l = buildLine(rate, c, y, "rate"); let run = [];
-  const t = () => { for (const [p0, c1, c2, p3] of monotoneSegments(run)) { const lo = Math.min(p0.y, p3.y) - 1e-9, hi = Math.max(p0.y, p3.y) + 1e-9;
-    for (let k = 1; k < 50; k++) { const tt = k / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { rover++; break; } } } run = []; };
-  for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
-check(rover === 0, "rate monotone: no overshoot");
-// v5: headline labels consistent with the sign of the ROUNDED shown figures, every combo x window x view
-for (const [nm, ds, md] of [["jobs", data, "jobs"], ["rate", rate, "rate"]]) {
-  let n = 0, badL = 0, negMin = 0, posMin = 0, negMax = 0;
+const uu = buildLine(un, "USA", 1, "unemp");
+check(rv("USA", "2025-10") === null && ["2025-10", "2025-11", "2025-12"].every((p) => uu.points.find((x) => x.period === p).value === null), "unemployment: US Oct 2025 null -> 3-mo avg blank Oct–Dec 2025 (gap, never filled)");
+{ const want = Object.entries(un.breaks_annual).flatMap(([c, ys]) => ys.map((y) => `${c}:${y}`)).sort();
+  const got = Object.keys(un.breaks_annual).flatMap((c) => buildLine(un, c, 20, "unemp").breaks.filter((b) => /· \d{4}$/.test(b.label)).map((b) => `${c}:${b.label.slice(-4)}`)).sort();
+  const in20 = ALL.flatMap((c) => { const l = buildLine(un, c, 20, "unemp"); return l.breaks.filter((b) => b.mi >= l.points[0].mi && b.mi <= l.points[l.points.length - 1].mi).map((b) => `${c}:${b.label.slice(-4)}`); }).sort();
+  check(JSON.stringify(got) === JSON.stringify(want) && in20.join() === "DEU:2009,DEU:2010,DEU:2019,FRA:2013,FRA:2020,ITA:2020", `unemployment: breaks_annual carried (${want.length}); inside 20Y window: ${in20.join(" ")}`); }
+{ let n = 0, bad = 0, cnt = { "Biggest fall": 0, "Smallest rise": 0, "Biggest rise": 0, "Smallest fall": 0 };
+  for (const y of [1, 5, 10, 20]) { const g = Object.fromEntries(ALL.map((c) => [c, buildLine(un, c, y, "unemp").growth]));
+    for (let mask = 1; mask < 128; mask++) { const sel = ALL.filter((_, i) => mask & (1 << i)); n++;
+      const h = headlinePick(un, sel, y, "unemp"), lb = headlineLabels(h, "unemp"), vs = sel.map((c) => g[c]);
+      const f = h.single ?? h.fastest; if (!f || Math.abs(f.value - Math.max(...vs)) > 1e-12) { bad++; continue; }
+      if (h.single) { if (lb.fast !== null) bad++; continue; }
+      if (Math.abs(h.slowest.value - Math.min(...vs)) > 1e-12) bad++;
+      const mx = roundShown(h.fastest.value, "unemp"), mn = roundShown(h.slowest.value, "unemp");
+      if (lb.slow !== (mn < 0 ? "Biggest fall" : "Smallest rise") || lb.fast !== (mx > 0 ? "Biggest rise" : "Smallest fall") || !lb.lowerBetter) bad++;
+      const sOk = (v, t) => (v > 0 ? t.startsWith("+") : v < 0 ? t.startsWith("−") : !/^[+−]/.test(t));
+      if (!sOk(mx, fmtHeadline(h.fastest.value, "unemp")) || !sOk(mn, fmtHeadline(h.slowest.value, "unemp"))) bad++;
+      cnt[lb.slow]++; cnt[lb.fast]++; } }
+  check(bad === 0, `unemployment headline + labels (lower is better): ${n} combos x windows, ${bad} wrong (${Object.entries(cnt).map(([a2, b2]) => `${a2} ${b2}`).join(", ")})`); }
+check(headlineLabels({ single: null, fastest: { value: 0.4 }, slowest: { value: 0.1 } }, "unemp").slow === "Smallest rise" && headlineLabels({ single: null, fastest: { value: -0.1 }, slowest: { value: -0.5 } }, "unemp").fast === "Smallest fall", "unemployment edge cases: all rose -> Smallest rise; all fell -> Smallest fall");
+{ const lead = glowLeaders(["CAN", "JPN"].map((c) => { const l = buildLine(un, c, 1, "unemp"); return { code: c, at: (mi) => { const p = l.points.find((q) => q.mi === mi); return p && p.value !== null ? -p.value : null; } }; }), mIdx("2025-08"), mIdx("2026-08"));
+  check(lead.every((c) => c === "JPN"), "unemployment glow: lowest line leads (Japan below Canada all year)"); }
+{ let ov = 0, segs = 0;
+  for (const y of [1, 5, 10, 20]) for (const c of ALL) { const l = buildLine(un, c, y, "unemp"); let run = [];
+    const t = () => { for (const [p0, c1, c2, p3] of mseg(run)) { segs++; const lo = Math.min(p0.y, p3.y) - 1e-9, hi = Math.max(p0.y, p3.y) + 1e-9;
+      for (let q = 1; q < 50; q++) { const tt = q / 50, u = 1 - tt; const yy = u*u*u*p0.y + 3*u*u*tt*c1.y + 3*u*tt*tt*c2.y + tt*tt*tt*p3.y; if (yy < lo || yy > hi) { ov++; break; } } } run = []; };
+    for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
+  check(ov === 0, `unemployment monotone: ${segs} segments, ${ov} overshoot`); }
+// v5: headline labels consistent with the sign of the ROUNDED shown figures (jobs)
+{ let n = 0, badL = 0;
   for (const y of [1, 5, 10, 20]) for (let mask = 1; mask < 128; mask++) {
-    const sel = ALL.filter((_, i) => mask & (1 << i)); const h = headlinePick(ds, sel, y, md); n++;
-    const lb = headlineLabels(h, md);
+    const sel = ALL.filter((_, i) => mask & (1 << i)); const h = headlinePick(data, sel, y, "jobs"); n++;
+    const lb = headlineLabels(h, "jobs");
     if (h.single) { if (lb.fast !== null || lb.slow !== null) badL++; continue; }
-    const mx = roundShown(h.fastest.value, md), mn = roundShown(h.slowest.value, md);
-    const sOk = (v, s) => (v > 0 ? s.startsWith("+") : v < 0 ? s.startsWith("−") : !/^[+−]/.test(s));
-    if (!sOk(mx, fmtHeadline(h.fastest.value, md)) || !sOk(mn, fmtHeadline(h.slowest.value, md))) badL++;
-    if (md === "rate") {
-      if (mn < 0) negMin++; else posMin++; if (mx < 0) negMax++;
-      if (lb.slow !== (mn < 0 ? "Biggest drop" : "Smallest gain")) badL++;
-      if (lb.fast !== (mx < 0 ? "Smallest drop" : "Fastest gain")) badL++;
-      if (lb.slow === "Smallest gain" && mn < 0) badL++;
-    } else if (lb.fast !== "Fastest growth" || lb.slow !== "Slowest growth") badL++;
+    const sOk = (v, t) => (v > 0 ? t.startsWith("+") : v < 0 ? t.startsWith("−") : !/^[+−]/.test(t));
+    if (!sOk(roundShown(h.fastest.value, "jobs"), fmtHeadline(h.fastest.value, "jobs")) || !sOk(roundShown(h.slowest.value, "jobs"), fmtHeadline(h.slowest.value, "jobs"))) badL++;
+    if (lb.fast !== "Fastest growth" || lb.slow !== "Slowest growth") badL++;
   }
-  check(badL === 0, `${nm} headline labels match sign of rounded figures: ${n} combos x windows, ${badL} wrong` + (md === "rate" ? ` (Biggest drop ${negMin}, Smallest gain ${posMin}, Smallest drop ${negMax})` : ""));
-}
-{ const h = headlinePick(rate, ["CAN", "USA"], 20, "rate"); const lb = headlineLabels(h, "rate");
-  check(h.slowest.codes[0] === "USA" && h.slowest.value < 0 && lb.slow === "Biggest drop", `rate 20Y CAN+US: US ${fmtHeadline(h.slowest.value, "rate")} pts labelled "${lb.slow}"`); }
-{ const h = { single: null, fastest: { value: -0.04 }, slowest: { value: -0.3 } };
-  check(headlineLabels(h, "rate").fast === "Fastest gain" && headlineLabels({ single: null, fastest: { value: -0.2 }, slowest: { value: -0.3 } }, "rate").fast === "Smallest drop", "rate: −0.04 shows 0.0 → Fastest gain; all fell → Smallest drop"); }
+  check(badL === 0, `jobs headline labels match sign of rounded figures: ${n} combos x windows, ${badL} wrong`); }
 // v6: Economy — GDP and GDP per capita (OECD QNA), recomputed independently from the raw file
 const eraw = readFileSync(new URL("../data/econ_gdp_series.json", import.meta.url));
 const econ = JSON.parse(eraw);
@@ -183,18 +179,45 @@ for (const k of ["gdp", "pc"]) {
     for (const p of l.points) { if (p.value === null) t(); else run.push({ x: p.mi, y: p.value }); } t(); }
   check(ov === 0, `economy monotone: ${segs} segments, ${ov} overshoot`); }
 // v10: window label follows the frequencies of the countries actually drawn
-{ const a = windowLabel(rate, ["ITA"], 20, "rate"), b = windowLabel(rate, ["CAN", "ITA"], 20, "rate"), c = windowLabel(data, ["CAN", "USA"], 1, "jobs"), d = windowLabel(data, ["GBR", "DEU"], 5, "jobs"), e = windowLabel(EV.pc, ["CAN", "USA"], 20, "index");
-  check(a.text === "Q3 2006 – Q2 2026 · quarterly", `window: rate 20Y Italy only -> "${a.text}"`);
-  check(b.freq === "mixed" && b.text === "Aug 2006 – Aug 2026 · 3-month average (monthly) · Q3 2006 – Q2 2026 (quarterly)", `window: rate 20Y Canada + Italy (mixed) -> "${b.text}"`);
+{ const a = windowLabel(un, ["ITA"], 20, "unemp"), b = windowLabel(un, ["CAN", "ITA"], 20, "unemp"), c = windowLabel(data, ["CAN", "USA"], 1, "jobs"), d = windowLabel(data, ["GBR", "DEU"], 5, "jobs"), e = windowLabel(EV.pc, ["CAN", "USA"], 20, "index");
+  check(a.text === "Q3 2006 – Q2 2026 · quarterly", `window: unemployment 20Y Italy only -> "${a.text}"`);
+  check(b.freq === "mixed" && b.text === "Aug 2006 – Aug 2026 · 3-month average (monthly) · Q3 2006 – Q2 2026 (quarterly)", `window: unemployment 20Y Canada + Italy (mixed) -> "${b.text}"`);
   check(c.freq === "monthly" && c.text === "Aug 2025 – Aug 2026 · 3-month average", `window: jobs 1Y CAN+US (monthly) -> "${c.text}"`);
   check(d.freq === "quarterly" && /^Q\d \d{4} – Q2 2026 · quarterly$/.test(d.text), `window: jobs 5Y UK+Germany (quarterly) -> "${d.text}"`);
   check(e.text === "Q1 2006 – Q1 2026 · quarterly", `window: per capita 20Y unchanged -> "${e.text}"`); }
 // v10: default selection = all seven; invalid/empty ?on falls back to all seven
 check(DEFAULT_ON.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA" && parseOn("").length === 7 && parseOn(null).length === 7 && parseOn("XYZ,,foo").length === 7
   && parseOn("jpn").join() === "JPN" && parseOn("ita,CAN").join() === "CAN,ITA", "default: all seven G7; invalid/empty on -> all seven; valid codes kept in fixed order");
-{ const h = headlinePick(data, DEFAULT_ON, 1), hr = headlinePick(rate, DEFAULT_ON, 1, "rate");
-  check(h.fastest && h.slowest && hr.fastest && hr.slowest, `default 1Y headline (all seven): jobs ${h.fastest.codes}/${h.slowest.codes}, rate ${hr.fastest.codes}/${hr.slowest.codes}`); }
+{ const h = headlinePick(data, DEFAULT_ON, 1), hr = headlinePick(un, DEFAULT_ON, 1, "unemp");
+  check(h.fastest && h.slowest && hr.fastest && hr.slowest, `default 1Y headline (all seven): jobs ${h.fastest.codes}/${h.slowest.codes}, unemployment ${hr.fastest.codes}/${hr.slowest.codes}`); }
+// v11: Jobs per capita = jobs ÷ OECD total population (Warehouse convention: quarterly population on its middle month,
+// straight-line interpolation between; monthly: 3-mo avg of jobs ÷ population at each window end). Recomputed independently.
+const JP = jobsPerCapitaDataset(data, econ);
+check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "2026-Q1", `jobs per capita: shared end ${commonEnds(JP).monthEnd} / ${commonEnds(JP).quarterEnd} (France population stops Q1 2026)`);
+{ const popQ = (c, q) => rawQ(econ.population[c], q);
+  const qAt = (yy, mm) => `${yy}-Q${Math.floor((mm - 1) / 3) + 1}`;
+  const popM = (c, p) => { // independent: population on mid-quarter months (Feb/May/Aug/Nov), linear in between
+    const [yy, mm] = p.split("-").map(Number); const t = yy * 12 + mm - 1; const mids = [];
+    for (let d = -6; d <= 6; d++) { const u = t + d, uy = Math.floor(u / 12), um = u % 12 + 1; if ([2, 5, 8, 11].includes(um)) mids.push({ t: u, v: popQ(c, qAt(uy, um)) }); }
+    const lo = mids.filter((x) => x.t <= t).pop(), hi = mids.find((x) => x.t >= t);
+    if (!lo || !hi || lo.v === null || hi.v === null) return null; return lo.t === hi.t ? lo.v : lo.v + (hi.v - lo.v) * (t - lo.t) / (hi.t - lo.t); };
+  const jm = (c, p) => { const s = data.monthly[c]; const i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
+  const pcAvg = (c, p) => { const v = [0, 1, 2].map((k) => { const q = prevM(p, k), j = jm(c, q), pp = popM(c, q); return j === null || pp === null ? null : j / pp; }); return v.some((x) => x === null) ? null : (v[0] + v[1] + v[2]) / 3; };
+  let nb = 0, n = 0;
+  for (const y of [1, 5, 10, 20]) for (const c of ALL) { n++; const l = buildLine(JP, c, y, "index");
+    if (data.monthly[c]) { const st = prevM("2026-03", y * 12), a = pcAvg(c, st), b = pcAvg(c, "2026-03");
+      if (a === null) { if (!l.excluded) nb++; continue; }
+      if (l.points[0].period !== st || Math.abs(l.points[0].value - 100) > 1e-9 || Math.abs(l.growth - (b / a * 100 - 100)) > 1e-9) nb++; }
+    else { const q0 = l.points[0].period, a = rawQ(data.quarterly[c], q0) / popQ(c, q0), b = rawQ(data.quarterly[c], "2026-Q1") / popQ(c, "2026-Q1");
+      if (popQ(c, q0) === null) { if (!l.excluded) nb++; continue; }
+      if (l.points[l.points.length - 1].period !== "2026-Q1" || Math.abs(l.points[0].value - 100) > 1e-9 || Math.abs(l.last - b / a * 100) > 1e-9) nb++; } }
+  check(nb === 0, `jobs per capita: index starts at 100 and end = raw ratio (independent interpolation), ${n} country-windows, ${nb} wrong`);
+  for (const c of ["CAN", "USA"]) { const app = buildLine(JP, c, 1, "index").growth, want = G3.jobs_per_capita_1y_pct[c];
+    check(Math.abs(app - want) < 0.0005, `jobs per capita 1Y ${c}: app ${app >= 0 ? "+" : ""}${app.toFixed(4)}% vs Warehouse golden ${want >= 0 ? "+" : ""}${want.toFixed(4)}% (Mar 2025 → Mar 2026)`); }
+  const j20 = buildLine(JP, "JPN", 20, "index");
+  check(j20.excluded && !buildLine(JP, "JPN", 10, "index").excluded && !headlinePick(JP, ["JPN"], 20, "index").single, "jobs per capita: Japan (population from Q3 2007) excluded from 20Y only; Japan-only 20Y headline n/a");
+  check(JP.monthly.CAN.periods[JP.monthly.CAN.periods.length - 1] === "2026-03" && Object.values(JP.quarterly).every((s) => s.end === "2026-Q1"), "jobs per capita: monthly lines stop at Mar 2026, quarterly at Q1 2026 (no extrapolation)"); }
 console.log("econ sha256", createHash("sha256").update(eraw).digest("hex"));
-console.log("rate sha256", createHash("sha256").update(rraw).digest("hex"));
+console.log("unemployment sha256", createHash("sha256").update(uraw).digest("hex"));
 console.log("data sha256", createHash("sha256").update(raw).digest("hex"));
 if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
