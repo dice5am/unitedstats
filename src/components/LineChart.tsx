@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { mStr, qOfMonth, monotonePath, rawLevel, glowLeaders } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
-  code: string; name: string; freq: "monthly" | "quarterly"; points: Pt[]; breaks: number[];
+  code: string; name: string; freq: "monthly" | "quarterly"; points: Pt[]; breaks: { mi: number; label: string }[];
   last: number | null; growth: number | null; janJumps: string[]; indexedFrom: string | null;
 };
 
@@ -25,12 +25,11 @@ function textW(s: string, px: number, weight: number) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function LineChart({ lines: all, on, years, data }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any }) {
+export default function LineChart({ lines: all, on, years, data, mode = "jobs" }: { lines: Line[]; on: Record<string, boolean>; years: number; data: any; mode?: "jobs" | "rate" }) {
+  const R = mode === "rate";
   const ref = useRef<HTMLDivElement>(null);
-  const tipRef = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
-  const [tipSize, setTipSize] = useState({ w: 200, h: 100 });
   useEffect(() => {
     const el = ref.current; if (!el) return;
     setW(el.clientWidth);
@@ -41,32 +40,39 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
     const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setHover(null); };
     document.addEventListener("pointerdown", close); return () => document.removeEventListener("pointerdown", close);
   }, []);
-  useLayoutEffect(() => { if (tipRef.current) setTipSize({ w: tipRef.current.offsetWidth, h: tipRef.current.offsetHeight }); }, [hover, on, years]);
+  const open = hover !== null;
+  useEffect(() => {
+    if (!open) return;
+    const y0 = window.scrollY;
+    const onScroll = () => { if (Math.abs(window.scrollY - y0) > 8) setHover(null); };
+    window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll);
+  }, [open]);
 
   const lines = all.filter((l) => on[l.code]);
   const mainOn = lines.some((l) => MAIN.has(l.code));
   const wide = w >= 768;
   const h = wide ? 500 : 320;
   const lblPx = wide ? 13 : 12;
-  const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}` : l.name);
+  const label = (l: Line) => (wide && l.last !== null ? `${l.name} ${l.last.toFixed(1)}${R ? "%" : ""}` : l.name);
   const gutter = Math.ceil(Math.max(36, ...lines.map((l) => textW(label(l), lblPx, MAIN.has(l.code) ? 700 : 500)))) + (wide ? 28 : 22);
-  const pad = { l: wide ? 48 : 38, r: gutter, t: 20, b: 58 };
+  const pad = { l: wide ? 48 : 38, r: gutter, t: 34, b: 58 };
   const iw = Math.max(10, w - pad.l - pad.r), ih = h - pad.t - pad.b, bottom = pad.t + ih;
 
   const pts = all.flatMap((l) => l.points);
   const m0 = Math.min(...pts.map((p) => p.mi)), m1 = Math.max(...pts.map((p) => p.mi));
   const { y0, y1 } = useMemo(() => {
     const vs = lines.flatMap((l) => l.points.map((p) => p.value)).filter((v): v is number => v !== null);
-    let lo = Math.min(100, ...vs), hi = Math.max(100, ...vs);
+    let lo = R ? Math.min(...vs) : Math.min(100, ...vs), hi = R ? Math.max(...vs) : Math.max(100, ...vs);
     const span = Math.max(hi - lo, 0.5); lo -= span * 0.1; hi += span * 0.08;
     return { y0: lo, y1: hi };
-  }, [lines]);
+  }, [lines, R]);
 
   if (!w) return <div ref={ref} className="chart skeleton" style={{ height: 320 }} />;
 
   const x = (mi: number) => pad.l + ((mi - m0) / (m1 - m0 || 1)) * iw;
   const y = (v: number) => pad.t + (1 - (v - y0) / (y1 - y0)) * ih;
   const ticks = niceTicks(y0, y1, wide ? 5 : 4);
+  const dec0 = 0; void dec0;
   const dec = ticks.length > 1 && ticks[1] - ticks[0] < 1 ? 1 : 0;
   // x ticks: max 4 at <768
   const maxT = wide ? 6 : 4;
@@ -119,10 +125,15 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
     return { l, p, v: p ? p.value : null, lvl, tag: l.freq === "quarterly" && p ? qLabel(p.period) : null };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
-  const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => b === Math.floor(hover / 12)).map((b) => `${l.name}: series break ${b}`)) : [];
+  const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (R ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
   const cx = hover === null ? 0 : x(hover);
-  const tipLeft = cx + 16 + tipSize.w > w ? cx - 16 - tipSize.w : cx + 16;
-  const tipTop = Math.max(pad.t, Math.min(pad.t + 8, bottom - tipSize.h));
+  const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
+  const tipH = 44 + rows.length * 24 + (jan ? 26 : 0) + brk.length * 22;
+  const hits = (a: number, b: number) => ptYs.filter((py) => py > a - 8 && py < b + 8).length;
+  const topHits = hits(0, tipH), botHits = hits(h - tipH, h);
+  const tipBottom = ptYs.some((py) => py < pad.t + ih / 2) ? !(botHits > topHits) : topHits > botHits;
+  const tipW = wide ? 340 : 0;
+  const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
   const summary = `Employment index, ${fmtM(m0)}–${fmtM(m1)}: ` + lines.map((l) => `${l.name} ${l.last === null ? "n/a" : l.last.toFixed(1)}`).join(", ");
   // Glow follows the leader: highest selected line at each month (hysteresis in glowLeaders).
@@ -166,7 +177,8 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
   };
 
   return (
-    <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0} aria-label="Employment chart; use arrow keys to step months"
+    <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0}
+      onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} aria-label="Employment chart; use arrow keys to step months"
       onKeyDown={(e) => {
         if (e.key === "Escape") return setHover(null);
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -176,7 +188,7 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
       <svg width={w} height={h} role="img" aria-label={summary}
         onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}
         onPointerDown={(e) => pick(e.clientX)}
-        onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
+>
         <defs>
           {glowCodes.map((c) => (
             <g key={c}>
@@ -193,36 +205,37 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
           ))}
           <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
         </defs>
+        <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{R ? "Employment rate, % (ages 15–64)" : "Index · start = 100"}</text>
         {covid && <g>
           <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
           <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
         </g>}
         {ticks.map((v) => (
           <g key={v}>
-            <line x1={pad.l} x2={pad.l + iw} y1={y(v)} y2={y(v)} className={Math.abs(v - 100) < 1e-9 ? "base" : "grid"} />
-            <text x={pad.l - 10} y={y(v) + 4} textAnchor="end" className="ax">{v.toFixed(dec)}</text>
+            <line x1={pad.l} x2={pad.l + iw} y1={y(v)} y2={y(v)} className={!R && Math.abs(v - 100) < 1e-9 ? "base" : "grid"} />
+            <text x={pad.l - 10} y={y(v) + 4} textAnchor="end" className="ax">{R ? v.toFixed(1) : v.toFixed(dec)}</text>
           </g>
         ))}
-        {!ticks.some((v) => Math.abs(v - 100) < 1e-9) && <line x1={pad.l} x2={pad.l + iw} y1={y(100)} y2={y(100)} className="base" />}
+        {!R && !ticks.some((v) => Math.abs(v - 100) < 1e-9) && <line x1={pad.l} x2={pad.l + iw} y1={y(100)} y2={y(100)} className="base" />}
         {xt.filter((mi) => !gaps.some((g) => Math.abs(x(mi) - (x(g.a) + x(g.b)) / 2) < (wide ? 36 : 26))).map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? fmtM(mi, !wide) : Math.floor(mi / 12)}</text>)}
 
         {glowCodes.map((c) => { const l = lines.find((q) => q.code === c)!; return (
-          <g key={`gl${c}${years}`} mask={`url(#mk-${c})`} className="fadein">
-            <path d={areaPath(l)} fill={`url(#ar-${c})`} />
+          <g key={`gl${c}${years}${mode}`} mask={`url(#mk-${c})`} className="fadein">
+            {lines.length === 1 && <path d={areaPath(l)} fill={`url(#ar-${c})`} />}
             <path d={glowPath(l)} fill="none" stroke={col(c)} strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" />
           </g>); })}
 
         {all.map((l) => {
           const vis = !!on[l.code];
           const main = MAIN.has(l.code);
-          const op = !vis ? 0 : main || !mainOn ? 1 : 0.7;
+          const op = vis ? 1 : 0; void mainOn;
           const d = monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })));
           return (
             <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
-              <path key={`${l.code}${years}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={main ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
+              <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={main ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
               {l.freq === "quarterly" && l.points.map((p) => p.value !== null && <circle key={p.period} cx={x(p.mi)} cy={y(p.value)} r={years >= 20 ? 2 : 3} fill={col(l.code)} />)}
-              {vis && l.breaks.map((b) => {
-                const mi = b * 12 + 6; if (mi < m0 || mi > m1) return null;
+              {vis && l.breaks.map((bk) => {
+                const mi = bk.mi, b = bk.label; if (mi < m0 || mi > m1) return null;
                 const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - mi) < Math.abs(best.mi - mi)) ? q : best), null);
                 return p && p.value !== null ? <line key={b} x1={x(mi)} x2={x(mi)} y1={y(p.value) - 6} y2={y(p.value) + 6} stroke={col(l.code)} strokeWidth={1.5} /> : null;
               })}
@@ -263,20 +276,16 @@ export default function LineChart({ lines: all, on, years, data }: { lines: Line
         </g>}
       </svg>
 
-      {!wide && (
-        <div className="dockslot" style={{ height: 30 + lines.length * 22 + (jan ? 22 : 0) }}>
-          {hover === null && <span className="dockhint">Tap or drag the chart to read values</span>}
-        </div>
-      )}
       {hover !== null && (
-        <div ref={tipRef} className={`tip ${wide ? "" : "dock"}`} style={wide ? { left: tipLeft, top: tipTop } : undefined} role="status">
-          <div className="tiph"><span>{fmtM(hover)}</span>{wide && <span className="cols">index · employed</span>}</div>
+        <div className={`tip ${tipBottom ? "bot" : "top"}`} style={wide ? { left: tipLeft, width: tipW } : undefined} role="status" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="tiph"><span className="mo">{fmtM(hover)}</span>{wide && <span className="cols">{R ? "rate, 3-mo avg" : "index · employed"}</span>}
+            <button className="tipx" aria-label="Close" onClick={() => setHover(null)}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></div>
           {rows.map((r) => (
             <div key={r.l.code} className="tipr">
               <i style={{ background: col(r.l.code) }} /><span className="nm">{r.l.name}</span>
               {r.tag && <em>{r.tag}</em>}
-              <b>{r.v === null ? "n/a" : r.v.toFixed(1)}</b>
-              {wide && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
+              <b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}${R ? "%" : ""}`}</b>
+              {wide && !R && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
             </div>
           ))}
           {jan && <div className="tipn"><i className="dot amber" />US January jump: cause not confirmed</div>}

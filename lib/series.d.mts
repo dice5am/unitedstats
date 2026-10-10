@@ -15,3 +15,5 @@ export function monotonePath(points: { x: number; y: number | null }[]): string;
 export type Pick = { codes: string[]; value: number; periods: string[] } | null;
 export function headlinePick(data: unknown, codes: string[], years: number): { single: Pick; fastest: Pick; slowest: Pick };
 export function glowLeaders(series: { code: string; at: (mi: number) => number | null }[], m0: number, m1: number): (string | null)[];
+export function buildLine(data: unknown, code: string, years: number, mode?: "jobs" | "rate"): unknown;
+export function headlinePick(data: unknown, codes: string[], years: number, mode?: "jobs" | "rate"): { single: Pick; fastest: Pick; slowest: Pick };
