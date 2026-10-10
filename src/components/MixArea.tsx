@@ -1,12 +1,12 @@
 "use client";
 // Stacked mix (#9, Ember; Round 4c): one country at a time (single-select), six bands bottom to top darkest to lightest on the
 // neutral one-colour scale: coal; gas; other fossil; nuclear; hydro; wind, solar, bioenergy and other renewables. 1px card gap
-// between bands, 100% scale. Band = sum of its available fuels (n/a never 0). Stats box lists all nine fuels for the year.
-import { useMemo, useRef, useState } from "react";
+// between bands, 100% scale. Band = sum of its available fuels (n/a never 0). Stats box: six band rows with their Ember sources.
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { mix, MIX_BANDS } from "@/lib/waves.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
-import { CardFrame, YearPick, StatBox, useParams, useWidth, type Init } from "./kit";
+import { CardFrame, YearPick, useParams, useWidth, type Init } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const ORDER = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
@@ -16,7 +16,6 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
   const c = st.em_c, m = useMemo(() => mix(ember, c), [ember, c]);
   const [ref, w] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
-  const [tapY, setTapY] = useState<number | null>(null); // touch: y of the tapped point inside the plot
   const svg = useRef<SVGSVGElement>(null);
   const narrow = w > 0 && w < 560, H = narrow ? 300 : 400, pl = 44, pr = narrow ? 8 : 190, pt = 14, pb = 24, n = m.length;
   const x = (i: number) => pl + (i / (n - 1)) * (w - pl - pr), y = (v: number) => pt + (1 - v / 100) * (H - pt - pb);
@@ -42,16 +41,41 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>A fuel not published is left out of its band, never 0</li></ul></div>
       </>}>
       <div className="mixa" ref={ref} onPointerDown={() => setHover(null)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
-        {h && <StatBox title={`${NAME[c]} · ${h.year} · % of electricity`} onClose={() => setHover(null)} {...(narrow ? { at: { y: (tapY ?? H / 2) - 12, h: 24, H }, ax: { x: x(hover!), W: w, w: Math.min(260, Math.max(x(hover!), w - x(hover!)) - 30) } } : { ax: { x: x(hover!), W: w, w: Math.min(260, w - 24) } })} bottom={false} rows={h.fuels.map((f) => ({ code: c, name: f.name, value: f.value === null ? "n/a" : `${f.value.toFixed(1)}%` }))} />}
+        {h && !narrow && <MixBox key="f" h={h} c={c} onClose={() => setHover(null)} float={{ x: x(hover!), W: w }} />}
         {w > 0 && <svg ref={svg} width={w} height={H} role="img" style={{ touchAction: "pan-y" }} aria-label={`${NAME[c]} electricity mix ${last.year}: ${last.bands.map((b) => `${b.name} ${b.value === null ? "n/a" : b.value.toFixed(1) + "%"}`).join(", ")}`}
-          onPointerDown={(e) => { e.stopPropagation(); setTapY(e.pointerType === "mouse" ? null : e.clientY - svg.current!.getBoundingClientRect().top); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}>
+          onPointerDown={(e) => { e.stopPropagation(); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}>
           {areas.map((d, k) => <path key={k} d={d} className={`mx m${k}`} />)}
           {[0, 25, 50, 75, 100].map((t) => <g key={t}><line x1={pl} x2={w - pr} y1={y(t)} y2={y(t)} className="gl" /><text x={pl - 6} y={y(t) + 4} className="ax" textAnchor="end">{t}%</text></g>)}
           {[0, n - 1, ...m.map((r, i) => (+r.year % 5 === 0 && i > 1 && i < n - 2 ? i : -1)).filter((i) => i > 0)].map((i) => <text key={i} x={x(i)} y={H - 6} className="ax" textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}>{m[i].year}</text>)}
           {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={pt} y2={H - pb} className="bxh" />}
           {!narrow && (() => { const ys: number[] = []; return mids.filter((q) => q.v >= 0.5).map((q) => { let yy = q.mid; for (const p of ys) if (Math.abs(yy - p) < 14) yy = p - 14; ys.push(yy); return <text key={q.k} x={w - pr + 8} y={yy + 4} className="mxl">{MIX_BANDS[q.k][0].replace(", bioenergy and other renewables", ", bio, other")} {q.v.toFixed(1)}%</text>; }); })()}
         </svg>}
+        {h && narrow && <MixBox key="d" h={h} c={c} onClose={() => setHover(null)} />}
       </div>
     </CardFrame>
+  );
+}
+
+// #9 stats box: six band rows in the chart's stack order (top band first, as drawn), each with its band swatch, value and
+// the Ember source categories that make it up; then the rounding line. 390: docked inside the card under the plot.
+// >=768: floats beside the guide (right of it, flipped left past the middle) and is clamped inside the viewport.
+export const MIX_ROUNDING = "Shares may not add to 100% due to rounding.";
+const SRC_NAME = (f: string) => (f === "Other Renewables" ? "Other renewables" : f === "Other Fossil" ? "Other fossil" : f);
+function MixBox({ h, c, onClose, float }: { h: { year: string; bands: { name: string; value: number | null }[] }; c: string; onClose: () => void; float?: { x: number; W: number } }) {
+  const ref = useRef<HTMLDivElement>(null), [dy, setDy] = useState(0);
+  useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
+  // clamp inside the viewport: measured once per position (untransformed top), so it can never loop
+  useLayoutEffect(() => { if (!float || !ref.current) return; const el = ref.current; el.style.transform = "none"; const r = el.getBoundingClientRect(), pad = 8;
+    const want = r.height > innerHeight - 2 * pad ? pad - r.top : r.bottom > innerHeight - pad ? innerHeight - pad - r.bottom : r.top < pad ? pad - r.top : 0;
+    el.style.transform = `translateY(${Math.round(want)}px)`; setDy(Math.round(want)); }, [float?.x, float?.W, h.year]); // eslint-disable-line react-hooks/exhaustive-deps
+  const bw = float ? Math.min(280, float.W - 24) : undefined;
+  const style = float ? { position: "absolute" as const, top: 8, width: bw, transform: `translateY(${dy}px)`, ...(float.x < float.W / 2 ? { left: Math.min(float.x + 24, float.W - bw!), right: "auto" } : { right: Math.min(float.W - float.x + 24, float.W - bw!), left: "auto" }) } : undefined;
+  const rows = MIX_BANDS.map(([name, fs], k) => ({ k, name: name as string, fs: (fs as string[]).map(SRC_NAME), v: h.bands[k].value })).reverse();
+  return (
+    <div ref={ref} className={`tip statbox mixbox ${float ? "float" : "dock"}`} role="status" data-testid="mixbox" style={style} onPointerDown={(e) => e.stopPropagation()}>
+      <div className="tiph"><span className="mo">{NAME[c]} · {h.year} · % of electricity</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
+      {rows.map((r) => <div key={r.k} className="tipr mxrow" data-band={r.k}><i className={`mxk m${r.k}`} /><span className="nm">{r.name}</span><b>{r.v === null ? "n/a" : `${r.v.toFixed(1)}%`}</b><span className="tipnote">{r.fs.join(", ")}</span></div>)}
+      <p className="tipn mxround">{MIX_ROUNDING}</p>
+    </div>
   );
 }

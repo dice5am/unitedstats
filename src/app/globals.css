@@ -534,3 +534,10 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 #chart-5 .sub{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;display:block !important;-webkit-line-clamp:unset !important}
 /* #9 at desktop (incl. short windows): the six-band description shows in full, wrapping to two lines if needed */
 #chart-9 .sub{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;display:block !important;-webkit-line-clamp:unset !important}
+/* #9 stats box: 390 docked in the card under the plot; wider floats beside the guide, clamped to the viewport */
+.mixbox.dock{position:static;margin-top:12px;left:auto;right:auto;animation:none}
+.mixbox .mxrow{flex-wrap:wrap;align-items:center}
+.mixbox .mxrow .nm{white-space:normal;flex:1 1 0;min-width:0}
+.mixbox i.mxk{width:12px;height:12px;border-radius:3px;flex:none}
+.mixbox .mxround{margin:8px 0 0;color:var(--muted);font-size:12px}
+.mixbox.float{pointer-events:none}.mixbox.float .tipx{pointer-events:auto}
