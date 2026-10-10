@@ -305,7 +305,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 25 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 28 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -662,6 +662,29 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const ta = V.twoAges(J("oecd_eag_tertiary_attainment_25_64.json"), J("oecd_eag_tertiary_attainment_25_34.json")), b16 = [];
   for (const [c, y, v] of sec(16)) { const r = ta.find((x) => x.code === c), m = /25-34 ([\d.]+) vs 25-64 ([\d.]+) \(gap ([\d.]+)\)/.exec(v); if (r.end !== y || !near(r.b, +m[1], 0.05) || !near(r.a, +m[2], 0.05) || !near(r.gap, +m[3], 0.051)) b16.push(`${c} ours ${r.gap?.toFixed(2)} vs ${v}`); }
   check(sec(16).length === 7 && !b16.length, `#16 degree gap 25–34 vs 25–64 = Warehouse for all 7 (${ta.map((r) => `${r.code} ${r.gap.toFixed(1)}`).join(", ")})${b16.length ? " MISMATCH " + b16.join("; ") : ""}`); }
+// Environment wave (#5, #14, #9): expected values read FROM the Warehouse REFERENCE-FIGURES.md (and the Ember gate for #9)
+{ const V = await import("../lib/waves.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+  const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8"));
+  const T = V.trails(J("wb_NY.GDP.PCAP.PP.KD.json"), J("wb_EN.GHG.CO2.PC.CE.AR5.json")), b5 = [];
+  for (const [c, per, v] of sec(5)) { const t = T.find((x) => x.code === c), m = /GDP pc (-?[\d.]+)%, CO2 pc (-?[\d.]+)%/.exec(v); if (per !== `${t.from}→${t.to}` || Math.round(t.dx) !== +m[1] || Math.round(t.dy) !== +m[2]) b5.push(`${c} ours ${t.dx.toFixed(1)} ${t.dy.toFixed(1)} vs ${v}`); }
+  check(sec(5).length === 7 && !b5.length, `#5 GDP per person and CO2 per person change 1990→2024 = Warehouse (whole %) for all 7${b5.length ? " MISMATCH " + b5.join("; ") : ""}`);
+  const ghg = J("oecd_ghg_total.json"), pop = J("econ_population_joined.json"), tot = V.emissions(ghg, pop, "total"), pp = V.emissions(ghg, pop, "pp"), b14 = [];
+  for (const [c, per, v] of sec(14)) { const r = tot.find((x) => x.code === c); if (per !== `1990→${r.end}` || Math.abs(r.change - +v) > 0.05 + 1e-9) b14.push(`${c} ours ${r.end} ${r.change.toFixed(2)} vs ${per} ${v}`); }
+  check(sec(14).length === 7 && !b14.length && tot.find((r) => r.code === "USA").end === "2022", `#14 total GHG change since 1990 = Warehouse for all 7 (US to 2022: early ender, not ranked)${b14.length ? " MISMATCH " + b14.join("; ") : ""}`);
+  const ppRef = [...md.slice(md.indexOf("## #14 Greenhouse gas emissions per person")).matchAll(/- (\w{3}): 1990 ([\d.]+) t\/person; (\d{4}) ([\d.]+) t\/person; change (-?[\d.]+)%/g)], bpp = [];
+  for (const [, c, a, y, b, ch] of ppRef) { const r = pp.find((x) => x.code === c); if (Math.abs(r.pts[0].value - +a) > 0.0005 + 1e-9 || r.end !== y || Math.abs(r.pts[r.pts.length - 1].value - +b) > 0.0005 + 1e-9 || Math.abs(r.change - +ch) > 0.005 + 1e-9) bpp.push(`${c} ours ${r.pts[0].value.toFixed(3)} ${r.end} ${r.change.toFixed(3)} vs ${a} ${y} ${ch}`); }
+  check(ppRef.length === 7 && !bpp.length, `#14 per person (t CO2e, yearly pop = mean of 4 quarters, Y quarters count) = Warehouse for all 7 (${pp.map((r) => `${r.code} ${r.change.toFixed(2)}%`).join(", ")})${bpp.length ? " MISMATCH " + bpp.join("; ") : ""}`);
+  const estY = Object.fromEntries(pp.map((r) => [r.code, r.pts.filter((q) => q.est).map((q) => q.year)])), dashed = (c) => { const p = pp.find((r) => r.code === c).pts; return p.some((q, i) => i && q.est && p[i - 1].est); };
+  const flagYears = (c) => { const s = pop.population[c], out = new Set(); s.periods.forEach((p, i) => { const st = Array.isArray(s.status) ? s.status[i] : s.status?.[p]; if (st === "Y" && +p.slice(0, 4) >= 1990) out.add(p.slice(0, 4)); }); return [...out].filter((y) => ghg.series[c].periods.includes(y)); };
+  const okEst = V.ORDER.every((c) => JSON.stringify(estY[c]) === JSON.stringify(flagYears(c))) && estY.DEU.join() === "1990" && !dashed("DEU") && dashed("GBR") && dashed("ITA") && dashed("JPN") && !dashed("CAN") && !dashed("FRA") && !dashed("USA");
+  check(okEst, `#14 per person estimated-population years follow the joined file's Y flags (DEU ${estY.DEU.join()}; GBR ${estY.GBR[0]}–${estY.GBR.at(-1)}; ITA ${estY.ITA[0]}–${estY.ITA.at(-1)}; JPN ${estY.JPN[0]}–${estY.JPN.at(-1)}); dashed: UK, Italy, Japan; Germany single tagged point, no dash; CA/FR/US solid`);
+  const em = J("ember_electricity_mix_share.json"); let worst = 0, aggOk = true, ukNa = true;
+  for (const c of V.ORDER) for (const r of V.mix(em, c)) { const t = r.bands.reduce((a, b) => a + (b.value ?? 0), 0), f = r.fuels.reduce((a, b) => a + (b.value ?? 0), 0); worst = Math.max(worst, Math.abs(t - 100)); if (Math.abs(t - f) > 1e-9) aggOk = false;
+    if (c === "GBR" && +r.year >= 2020 && r.fuels.find((x) => x.name === "Other Renewables").value !== null) ukNa = false; }
+  const noOR = ["CAN", "JPN"].every((c) => !em.series[c]["Other Renewables"]);
+  check(worst <= 0.1 && aggOk && ukNa && noOR && V.MIX_BANDS.length === 6, `#9 Ember: six bands = sum of the 9 fuels only (aggregates never added), every country-year totals 100 ± ${worst.toFixed(2)}; UK other renewables 2020–25 n/a (not 0); Canada/Japan have no other-renewables band`);
+  const r9 = sec(9); check(r9.length === 7 && /wb_EG\.ELC/.test(md.slice(md.indexOf("## Card 9"), md.indexOf("## Card 14"))), `#9 EXPECTED difference: REFERENCE-FIGURES Card 9 is computed from World Bank shares (e.g. ${r9[0][0]} ${r9[0][1]}: ${r9[0][2].split(" |")[0]}); the chart uses the gated Ember file (one-chart exception), so it is checked against the Ember gate instead`); }
 // Source lines wrap on every chart and never truncate (only descriptions may); the COVID band has its own tap target at 390
 { const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8"), rules = [...css.matchAll(/([^{}]*\.source[^{}]*)\{([^}]*)\}/g)];
   const lc = readFileSync(new URL("../src/components/LineChart.tsx", import.meta.url), "utf8");

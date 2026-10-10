@@ -193,6 +193,30 @@
         "#16"
       ],
       "sha256": "cafc8c7b47744051a597a2641745239f100323ab6500d846fd8627d7cf1ed359"
+    },
+    "wb_NY.GDP.PCAP.PP.KD.json": {
+      "cards": [
+        "#5"
+      ],
+      "sha256": "2d125b7e7ff057cfba621834f5fbb48eb2d636359ff071f59e47fe02d50a12d2"
+    },
+    "wb_EN.GHG.CO2.PC.CE.AR5.json": {
+      "cards": [
+        "#5"
+      ],
+      "sha256": "9553a0b0e974b503388d5575ebcf82ba17941de6ca0c937bfadad74ed75af131"
+    },
+    "oecd_ghg_total.json": {
+      "cards": [
+        "#14"
+      ],
+      "sha256": "f07f61eb4a9905b40cb94d5cbebcb842f9fba07faac32d467735f77c04c4a3cd"
+    },
+    "ember_electricity_mix_share.json": {
+      "cards": [
+        "#9"
+      ],
+      "sha256": "7859146f7212f4bf3d1f95f029f8bbfb4f3391767b4965a75f357b4767731659"
     }
   }
 }

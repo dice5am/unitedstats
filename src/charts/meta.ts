@@ -1,7 +1,7 @@
 // Central chart registry metadata. The id is the stable link key (?chart=<id>), never the title.
 // Titles are plain and follow the selected view. One factual description line per chart.
-export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24" | "3" | "25" | "15" | "4" | "11" | "23" | "8" | "16";
-export type ChartId = BuiltId | "5" | "9" | "14";
+export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24" | "3" | "25" | "15" | "4" | "11" | "23" | "8" | "16" | "5" | "14" | "9";
+export type ChartId = BuiltId | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
 export type TabId = "economy" | "labour" | "finance" | "society" | "environment";
 export type ChartMeta = { id: ChartId; brief: string | null; tab: TabId; titles: Record<string, string>; desc: string; params: string[]; data: string[]; built?: boolean; src?: string[] };
 // src: short source names for the headline tag ("BIS · Aug 2026"); must match the names in the chart's full source line.
@@ -31,9 +31,9 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "23": { id: "23", src: ["World Bank"], built: true, brief: "#23", tab: "society", titles: { _: "Foreign-born population share" }, desc: "International migrant stock, % of population", params: ["mg_year"], data: ["wb_SM.POP.TOTL.ZS.json"] },
   "8": { id: "8", src: ["World Bank", "OECD"], built: true, brief: "#8", tab: "society", titles: { _: "Health spending vs life expectancy" }, desc: "Health spending, % of GDP, against life expectancy at birth", params: ["hl_year"], data: ["wb_SH.XPD.CHEX.GD.ZS.json", "oecd_life_expectancy_birth.json"] },
   "16": { id: "16", src: ["OECD"], built: true, brief: "#16", tab: "society", titles: { _: "Share with a university degree, by age" }, desc: "Tertiary attainment, ages 25–34 and 25–64, %", params: [], data: ["oecd_eag_tertiary_attainment_25_64.json", "oecd_eag_tertiary_attainment_25_34.json"] },
-  "5": { id: "5", brief: "#5", tab: "environment", titles: { _: "GDP per capita vs CO2 per capita" }, desc: "GDP per person at PPP against CO2 per person", params: [], data: [] },
-  "9": { id: "9", brief: "#9", tab: "environment", titles: { _: "Electricity generation by source" }, desc: "Share of electricity from coal, oil and gas, nuclear and other", params: [], data: [] },
-  "14": { id: "14", brief: "#14", tab: "environment", titles: { _: "Greenhouse gas emissions since 1990" }, desc: "Total greenhouse gas emissions, change since 1990", params: [], data: [] },
+  "5": { id: "5", src: ["World Bank"], built: true, brief: "#5", tab: "environment", titles: { _: "GDP per capita vs CO2 per capita" }, desc: "GDP per person at PPP against CO2 per person", params: [], data: ["wb_NY.GDP.PCAP.PP.KD.json", "wb_EN.GHG.CO2.PC.CE.AR5.json"] },
+  "9": { id: "9", src: ["Ember"], built: true, brief: "#9", tab: "environment", titles: { _: "Electricity generation by source" }, desc: "Share of electricity from coal, oil and gas, nuclear and other", params: ["em_c"], data: ["ember_electricity_mix_share.json"] },
+  "14": { id: "14", src: ["OECD"], built: true, brief: "#14", tab: "environment", titles: { total: "Greenhouse gas emissions since 1990", pp: "Greenhouse gas emissions per person since 1990" }, desc: "Greenhouse gas emissions, total or per person, change since 1990", params: ["gh_view"], data: ["oecd_ghg_total.json", "econ_population_joined.json"] },
 };
 export const chartTitle = (id: ChartId, view?: string) => { const t = CHART_META[id].titles; return (view && t[view]) || Object.values(t)[0]; };
 

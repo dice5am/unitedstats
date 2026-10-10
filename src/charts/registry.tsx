@@ -62,6 +62,16 @@ export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentT
   "16": {
     load: async () => { const [{ default: older }, { default: younger }, S, { default: D }] = await Promise.all([import("@/data/oecd_eag_tertiary_attainment_25_64.json"), import("@/data/oecd_eag_tertiary_attainment_25_34.json"), import("./society"), import("@/src/components/Dumbbell")]);
       return { default: () => <D file={{ older, younger }} spec={S.degreeSpec} /> }; } },
+  // ---- Environment wave ----
+  "5": {
+    load: async () => { const [{ default: g }, { default: c }, E, { default: C }] = await Promise.all([import("@/data/wb_NY.GDP.PCAP.PP.KD.json"), import("@/data/wb_EN.GHG.CO2.PC.CE.AR5.json"), import("./environment"), import("@/src/components/Scatter")]);
+      const spec = E.richerSpec(g, c); return { default: ({ initial }: Init) => <C spec={spec} initial={initial} /> }; } },
+  "14": {
+    load: async () => { const [{ default: g }, { default: p }, { default: T }] = await Promise.all([import("@/data/oecd_ghg_total.json"), import("@/data/econ_population_joined.json"), import("@/src/components/TileMap")]);
+      return { default: ({ initial }: Init) => <T ghg={g} pop={p} initial={initial} /> }; } },
+  "9": {
+    load: async () => { const [{ default: e }, { default: M }] = await Promise.all([import("@/data/ember_electricity_mix_share.json"), import("@/src/components/MixArea")]);
+      return { default: ({ initial }: Init) => <M ember={e} initial={initial} /> }; } },
   "17": {
     load: async () => { const [{ default: y }, { default: a }, L, { default: R }] = await Promise.all([import("@/data/oecd_unemployment_rate_m_15_24.json"), import("@/data/oecd_unemployment_rate_m_15plus.json"), import("./labour"), import("@/src/components/RankBar")]);
       const spec = L.youthSpec(y); return { default: () => <R file={a} spec={spec} /> }; } },
