@@ -6,20 +6,22 @@ import { useMemo, useState, type ReactNode } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { dumbbell } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
-import { CardFrame, StatBox, TagIn } from "./kit";
+import { CardFrame, StatBox, TagIn, anchorOf } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 export type DumbbellSpec = {
   id: ChartId; eyebrow: string; start: string; change: "pts" | "pct"; per: (p: string) => string;
   sub: (latest: string) => ReactNode; source: string; unitLabel: string; valueFmt: (v: number) => string; tickFmt: (v: number) => string;
-  labels: { up: string; down: string; upSmall: string; downSmall: string }; calc: (d: ReturnType<typeof dumbbell>) => ReactNode;
+  labels: { up: string; down: string; upSmall: string; downSmall: string };
+  build?: (file: any) => ReturnType<typeof dumbbell>; legendStart?: string; legendEnd?: string; endName?: (end: string) => string; dateOf?: (end: string) => string; calc: (d: ReturnType<typeof dumbbell>) => ReactNode;
 };
 // signed change at the displayed rounding: 1 dp; a figure that rounds to zero is unsigned
 export const chg = (v: number, unit: "pts" | "pct") => { const r = Math.round(v * 10) / 10; return `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(1)}${unit === "pct" ? "%" : ""}`; };
 
 export default function Dumbbell({ file, spec }: { file: unknown; spec: DumbbellSpec }) {
-  const d = useMemo(() => dumbbell(file, spec.start, spec.change), [file, spec.start, spec.change]);
+  const d = useMemo(() => (spec.build ? spec.build(file) : dumbbell(file, spec.start, spec.change)), [file, spec]);
   const [sel, setSel] = useState<string | null>(null);
+  const [at, setAt] = useState<{ y: number; h: number; H: number } | undefined>();
   const vs = d.rows.flatMap((r) => [r.startValue, r.endValue]).filter((v): v is number => v !== null);
   // round ticks (e.g. 50/100/150/200%) with light gridlines; the domain snaps to whole steps, never raw extents
   const lo0 = Math.min(...vs), hi0 = Math.max(...vs), step = [1, 2, 5, 10, 20, 25, 50, 100, 200].find((st) => (hi0 - lo0) / st <= 5) ?? 500;
@@ -36,23 +38,23 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
       headline={top && bot ? <div className="figs">
         {[[top, true], [bot, false]].map(([row, f]) => { const x0 = row as typeof top; return (
           <div className="fig" key={x0.code}><div className="figl">{lbl(x0.change!, f as boolean)}</div><div className="figc"><span><i style={{ background: `var(--${x0.code})` }} />{NAME[x0.code]}</span></div>
-            <div className={spec.change === "pts" ? "figv pts" : "figv"}>{chg(x0.change!, spec.change)}{spec.change === "pts" && <span>pts</span>}</div><div className="figp">{spec.per(d.start)} → {spec.per(x0.end!)}{f && <TagIn tag={srcTag(spec.id, spec.per(d.latest))} />}</div></div>); })}
+            <div className={spec.change === "pts" ? "figv pts" : "figv"}>{chg(x0.change!, spec.change)}{spec.change === "pts" && <span>pts</span>}</div><div className="figp">{spec.dateOf ? spec.dateOf(x0.end!) : `${spec.per(d.start)} → ${spec.per(x0.end!)}`}{f && <TagIn tag={srcTag(spec.id, spec.per(d.latest))} />}</div></div>); })}
       </div> : undefined}
       legend={<>
-        <li><i className="dbs" />{spec.per(d.start)}</li><li><i className="dbe" />Latest{mixed ? " (each country’s own, dated)" : ""}</li>
+        <li><i className="dbs" />{spec.legendStart ?? spec.per(d.start)}</li><li><i className="dbe" />{spec.legendEnd ?? "Latest"}{mixed ? " (each country’s own, dated)" : ""}</li>
       </>}
       source={spec.source}
       calc={spec.calc(d)}>
       <div className="sc db" onPointerDown={() => setSel(null)}>
-        {r && <StatBox title={`${NAME[r.code]} · ${spec.unitLabel}`} onClose={() => setSel(null)} rows={[
+        {r && <StatBox title={`${NAME[r.code]} · ${spec.unitLabel}`} onClose={() => setSel(null)} at={at} rows={[
           { code: r.code, name: spec.per(d.start), value: r.startValue === null ? "n/a" : spec.valueFmt(r.startValue) },
-          { code: r.code, name: r.end ? spec.per(r.end) : "Latest", value: r.endValue === null ? "n/a" : spec.valueFmt(r.endValue) },
+          { code: r.code, name: r.end ? (spec.endName ? spec.endName(r.end) : spec.per(r.end)) : "Latest", value: r.endValue === null ? "n/a" : spec.valueFmt(r.endValue) },
           { code: r.code, name: "Change", value: r.change === null ? "n/a" : `${chg(r.change, spec.change)}${spec.change === "pts" ? " pts" : ""}` },
         ]} />}
         <ol className="scl">
           {d.rows.map((row) => (
             <li key={row.code}>
-              <button type="button" className={`scr${sel === row.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={() => setSel(sel === row.code ? null : row.code)}
+              <button type="button" className={`scr${sel === row.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { setAt(anchorOf(e.currentTarget)); setSel(sel === row.code ? null : row.code); }}
                 aria-label={`${NAME[row.code]}: ${row.startValue === null ? "n/a" : spec.valueFmt(row.startValue)} in ${spec.per(d.start)}, ${row.endValue === null ? "n/a" : spec.valueFmt(row.endValue)} in ${row.end ? spec.per(row.end) : "n/a"}`}>
                 <span className="scn"><i style={{ background: `var(--${row.code})` }} />{NAME[row.code]}</span>
                 <span className="sct">

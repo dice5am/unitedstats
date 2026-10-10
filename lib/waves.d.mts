@@ -1,0 +1,13 @@
+export const ORDER: string[];
+export function latestOf(s: any): { period: string | null; value: number | null };
+export function league(file: any, from?: number): { years: string[]; rank: Record<string, (number | null)[]>; value: Record<string, (number | null)[]>; status: (c: string, y: string) => string | null };
+export function ownLatest(file: any, scale?: number): { code: string; end: string | null; value: number | null }[];
+export const RD_YEARS: string[]; export const RD_DEFAULT: string;
+export function rdStack(gerd: any, berd: any, year: string): { year: string; rows: { code: string; total: number | null; business: number | null; rest: number | null; latestYear: number; flag: string | null }[] };
+export function twoAges(older: any, younger: any): { code: string; end: string | null; a: number | null; b: number | null; gap: number | null; flag: string | null }[];
+export function pairs(xf: any, yf: any, year: string): { code: string; x: number | null; y: number | null; yFlag: string | null }[];
+export function trails(xf: any, yf: any, from?: number): { code: string; pts: { year: string; x: number; y: number }[]; from: string | null; to: string | null; dx: number | null; dy: number | null }[];
+export function yearPop(popJ: any, code: string, year: string | number): { value: number | null; est: boolean };
+export function emissions(ghg: any, popJ: any, mode?: "total" | "pp", from?: string): { code: string; pts: { year: string; value: number | null; est: boolean }[]; end: string | null; change: number | null }[];
+export const MIX_BANDS: [string, string[]][];
+export function mix(ember: any, code: string): { year: string; bands: { name: string; value: number | null }[]; fuels: { name: string; value: number | null }[] }[];

@@ -13,7 +13,7 @@ export const youthSpec = (youth: any): RankBarSpec => ({
   id: "17", eyebrow: "Labour", kind: "ratio", dp: 2, per: monLabel, unitLabel: "youth ÷ overall rate",
   labels: { top: "Highest ratio", bottom: "Lowest ratio" },
   rows: (all) => { const d = youthRatio(youth, all); return { latest: d.latest, rows: d.rows.map((r) => ({ code: r.code, value: r.ratio, end: r.end, spark: r.spark,
-    stat: [{ name: `Ages 15–24 · ${r.end ? monLabel(r.end) : "n/a"}`, value: r.youth === null ? "n/a" : `${r.youth.toFixed(2)}%` }, { name: "Ages 15+", value: r.all === null ? "n/a" : `${r.all.toFixed(2)}%` }, { name: "Ratio", value: r.ratio === null ? "n/a" : r.ratio.toFixed(2) }] })) }; },
+    stat: [{ name: `Ages 15–24 · ${r.end ? monLabel(r.end) : "n/a"}`, value: r.youth === null ? "n/a" : `${r.youth.toFixed(2)}%` }, { name: "Ages 15+", value: r.all === null ? "n/a" : `${r.all.toFixed(2)}%` }, { name: "Ratio", value: r.ratio === null ? "n/a" : `${r.ratio.toFixed(2)}×` }] })) }; },
   sub: (latest) => <>Unemployment rate ages 15–24 ÷ rate ages 15+, same month · each country’s latest month (to {monLabel(latest)}) · 1 = young people no worse off · seasonally adjusted</>,
   source: "Source: OECD · monthly unemployment rates, ages 15–24 and 15+, seasonally adjusted",
   legend: <><li><i className="rbk" />Dashed line: ratio of 1 (same rate as everyone)</li><li>Sparkline: the ratio over the last 5 years</li></>,
@@ -21,7 +21,7 @@ export const youthSpec = (youth: any): RankBarSpec => ({
     <div className="grp"><h3>Measures</h3><dl><dt>Ratio</dt><dd>Youth unemployment rate (ages 15–24) ÷ overall unemployment rate (ages 15+), same month. Strips out the general state of the economy. Already a ratio, so no per-capita view.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_UNE_M · 15–24 and 15+ · seasonally adjusted</dd><dt>Latest</dt><dd>Each country’s own latest month with both rates: {d.rows.map((r: any) => `${r.code} ${r.end ? monLabel(r.end) : "n/a"}`).join(", ")}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Ratio</span><code>rate(15–24) ÷ rate(15+), single month</code></div>
-      {c && c.value !== null && <p className="ex">Canada: <b>{c.stat[0].value} ÷ {c.stat[1].value} = {c.value.toFixed(2)}</b> ({monLabel(c.end)})</p>}</div></div>
+      {c && c.value !== null && <p className="ex">Canada: <b>{c.stat[0].value} ÷ {c.stat[1].value} = {c.value.toFixed(2)}×</b> ({monLabel(c.end)})</p>}</div></div>
     {rules([["n/a", "Gaps are never filled"], ["→", "Each country at its own latest month"]])}
   </>; },
 });

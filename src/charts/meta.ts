@@ -1,7 +1,7 @@
 // Central chart registry metadata. The id is the stable link key (?chart=<id>), never the title.
 // Titles are plain and follow the selected view. One factual description line per chart.
-export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24";
-export type ChartId = BuiltId | "3" | "25" | "15" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
+export type BuiltId = "gdp" | "1" | "unemp" | "2" | "jobs" | "22" | "7" | "13" | "10" | "6" | "20" | "19" | "21" | "17" | "12" | "18" | "24" | "3" | "25" | "15";
+export type ChartId = BuiltId | "4" | "11" | "23" | "8" | "16" | "4" | "11" | "23" | "8" | "16" | "5" | "9" | "14";
 export type TabId = "economy" | "labour" | "finance" | "society" | "environment";
 export type ChartMeta = { id: ChartId; brief: string | null; tab: TabId; titles: Record<string, string>; desc: string; params: string[]; data: string[]; built?: boolean; src?: string[] };
 // src: short source names for the headline tag ("BIS · Aug 2026"); must match the names in the chart's full source line.
@@ -12,10 +12,10 @@ export const CHART_META: Record<ChartId, ChartMeta> = {
   "2": { id: "2", src: ["OECD"], built: true, brief: "#2", tab: "labour", titles: { _: "Unemployment rate by month" }, desc: "Unemployed as % of the labour force, monthly", params: ["uh_win"], data: ["oecd_unemployment_rate_m_15plus.json"] },
   jobs: { id: "jobs", src: ["OECD"], built: true, brief: null, tab: "labour", titles: { jobs: "Jobs", jpc: "Jobs per capita" }, desc: "People employed, ages 15+, indexed to 100 at the window start", params: ["j_view", "j_win", "j_on"], data: ["c1_labour_series.json", "econ_gdp_series.json"] },
   "22": { id: "22", src: ["OECD"], built: true, brief: "#22", tab: "labour", titles: { _: "Employment rate change since 2019" }, desc: "Employment rate, ages 15–64, change since Q4 2019 in percentage points", params: [], data: ["c1_employment_rate.json"] },
-  "3": { id: "3", brief: "#3", tab: "economy", titles: { _: "GDP per capita ranking" }, desc: "GDP per person at current PPPs, rank 1–7 each year", params: [], data: [] },
-  "25": { id: "25", brief: "#25", tab: "economy", titles: { _: "Income inequality (Gini)" }, desc: "Gini coefficient of disposable income, latest year per country", params: [], data: [] },
-  "15": { id: "15", brief: "#15", tab: "economy", titles: { _: "R&D spending, % of GDP" }, desc: "Gross domestic spending on R&D, business and other, % of GDP", params: [], data: [] },
-  "17": { id: "17", src: ["OECD"], built: true, brief: "#17", tab: "labour", titles: { _: "Youth unemployment ratio" }, desc: "Unemployment rate ages 15–24 divided by the rate for ages 15+", params: [], data: ["oecd_unemployment_rate_m_15_24.json", "oecd_unemployment_rate_m_15plus.json"] },
+  "3": { id: "3", src: ["OECD"], built: true, brief: "#3", tab: "economy", titles: { _: "GDP per capita ranking" }, desc: "GDP per person at current PPPs, rank 1–7 each year", params: ["lg_from"], data: ["oecd_gdp_per_capita_ppp_current.json"] },
+  "25": { id: "25", src: ["OECD"], built: true, brief: "#25", tab: "economy", titles: { _: "Income inequality (Gini)" }, desc: "Gini coefficient of disposable income, latest year per country", params: [], data: ["oecd_idd_gini_disposable.json"] },
+  "15": { id: "15", src: ["OECD"], built: true, brief: "#15", tab: "economy", titles: { _: "R&D spending, % of GDP" }, desc: "Gross domestic spending on R&D, business and other, % of GDP", params: ["rd_year"], data: ["oecd_msti_gerd_pct_gdp.json", "oecd_msti_berd_pct_gdp.json"] },
+  "17": { id: "17", src: ["OECD"], built: true, brief: "#17", tab: "labour", titles: { _: "Youth unemployment vs overall rate" }, desc: "Youth unemployment rate (age 15–24) ÷ overall rate", params: [], data: ["oecd_unemployment_rate_m_15_24.json", "oecd_unemployment_rate_m_15plus.json"] },
   "12": { id: "12", src: ["OECD"], built: true, brief: "#12", tab: "labour", titles: { _: "Real average wages" }, desc: "Average annual wages, constant prices, USD at PPP", params: [], data: ["oecd_avg_annual_wage_usd_ppp.json"] },
   "18": { id: "18", src: ["OECD"], built: true, brief: "#18", tab: "labour", titles: { _: "Annual hours worked per worker" }, desc: "Average annual hours actually worked per worker", params: [], data: ["oecd_avg_annual_hours_worked.json"] },
   "24": { id: "24", src: ["ILO"], built: true, brief: "#24", tab: "labour", titles: { _: "Labour share of income" }, desc: "Labour income as % of GDP", params: [], data: ["ilo_labour_share_gdp.json"] },

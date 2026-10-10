@@ -6,7 +6,7 @@ import { useMemo, useState, type MutableRefObject } from "react";
 import { COUNTRIES } from "@/lib/series.mjs";
 import { openness, OPEN_YEARS, OPEN_DEFAULT } from "@/lib/finance.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
-import { CardFrame, Seg, StatBox, useParams, TagIn } from "./kit";
+import { CardFrame, Seg, StatBox, useParams, TagIn, anchorOf } from "./kit";
 
 const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const f1 = (v: number) => `${v.toFixed(1)}%`;
@@ -15,6 +15,7 @@ export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; in
   const [st, set] = useParams(initial, { tr_year: [OPEN_DEFAULT, OPEN_YEARS] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const o = useMemo(() => openness(exp, imp, st.tr_year), [exp, imp, st.tr_year]);
   const [sel, setSel] = useState<string | null>(null);
+  const [at, setAt] = useState<{ y: number; h: number; H: number } | undefined>();
   const ok = o.rows.filter((r) => r.total !== null), max = Math.max(...ok.map((r) => r.total!));
   const top = ok[0], bot = ok[ok.length - 1], r = sel ? o.rows.find((x) => x.code === sel)! : null;
   const na = o.rows.filter((x) => x.total === null);
@@ -41,7 +42,7 @@ export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; in
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>A year a country hasn’t published is n/a, tagged with its latest year; never filled</li></ul></div>
       </>}>
       <div className="sc stb" onPointerDown={() => setSel(null)}>
-        {r && <StatBox title={`${NAME[r.code]} · ${o.year}`} onClose={() => setSel(null)} rows={[
+        {r && <StatBox title={`${NAME[r.code]} · ${o.year}`} onClose={() => setSel(null)} at={at} rows={[
           { code: r.code, name: "Exports", value: r.exports === null ? "n/a" : f1(r.exports) },
           { code: r.code, name: "Imports", value: r.imports === null ? "n/a" : f1(r.imports) },
           { code: r.code, name: "Total", value: r.total === null ? "n/a" : f1(r.total), note: r.total === null ? `${r.latestYear} latest` : undefined },
@@ -49,7 +50,7 @@ export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; in
         <ol className="scl">
           {o.rows.map((x) => (
             <li key={x.code}>
-              <button type="button" className={`scr${sel === x.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={() => setSel(sel === x.code ? null : x.code)}
+              <button type="button" className={`scr${sel === x.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { setAt(anchorOf(e.currentTarget)); setSel(sel === x.code ? null : x.code); }}
                 aria-label={`${NAME[x.code]}: ${x.total === null ? `n/a, ${x.latestYear} latest` : `exports ${f1(x.exports!)}, imports ${f1(x.imports!)}, total ${f1(x.total)} of GDP`}`}>
                 <span className="scn"><i style={{ background: `var(--${x.code})` }} />{NAME[x.code]}</span>
                 <span className="sct">{x.total === null ? <span className="na">n/a · {x.latestYear} latest</span> : <>

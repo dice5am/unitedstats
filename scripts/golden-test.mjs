@@ -305,7 +305,7 @@ check(commonEnds(JP).monthEnd === "2026-03" && commonEnds(JP).quarterEnd === "20
     const built = [...reg.matchAll(/^  "?(\w+)"?: { id: "\w+",(?: src: \[[^\]]*\],)? built: true/gm)].map((m) => m[1]);
     const regLoad = readFileSync(new URL("../src/charts/registry.tsx", import.meta.url), "utf8");
     const loadOk = ids.filter((x) => built.includes(x.id)).every((x) => new RegExp(`^  "?${x.id}"?: \\{`, "m").test(regLoad));
-    check(built.length === 17 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
+    check(built.length === 20 && ids.length === 28 && !dupe.length && prefOk && dataOk && keyOk && loadOk, `chart registry: ${ids.length} charts (${built.length} built: ${built.join(", ")}), ids are link keys (${ids.map((x) => `${x.id}[${x.params.join(",") || "no state"}]`).join(" ")}); params prefixed per chart, no collisions; each has a loader; data files all in manifest`);
     const T = Object.fromEntries(ids.map((x) => [x.id, x.titles]));
     check(T["1"].join("|") === "gdp|Real GDP vs 2019|pc|Real GDP per capita vs 2019" && T["2"].includes("Unemployment rate by month") && T["22"].includes("Employment rate change since 2019")
       && T.gdp.join("|") === "gdp|GDP|pc|GDP per capita" && T.jobs.join("|") === "jobs|Jobs|jpc|Jobs per capita" && T.unemp.includes("Unemployment rate"), "chart titles: plain, per view, total first then per capita"); }
@@ -614,6 +614,28 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   for (const [c, per, v] of sec(24)) { const r = sh.rows.find((x) => x.code === c), m = /([\d.]+)→([\d.]+) \(Δ (-?[\d.]+)\)/.exec(v);
     if (per !== `2004→${r.end}` || Math.abs(r.startValue - +m[1]) > 0.05 + 1e-9 || Math.abs(r.endValue - +m[2]) > 0.05 + 1e-9 || Math.abs(r.change - +m[3]) > 0.051) bad24.push(`${c} ours ${r.end} ${r.change.toFixed(2)} vs ${per} ${v}`); }
   check(sec(24).length === 7 && !bad24.length && F.wholeFlag(ls, "USA") === "I" && F.wholeFlag(ls, "CAN") === null, `#24 labour share 2004→own last actual year = Warehouse for all 7 (${sh.rows.map((r) => `${r.code} ${r.end} ${r.change.toFixed(1)}`).join(", ")}); US whole-series ILO "I" flag → solid line + stats-box tag${bad24.length ? " MISMATCH " + bad24.join("; ") : ""}`); }
+// Economy wave (#3, #25, #15): expected values read FROM the Warehouse REFERENCE-FIGURES.md; ours from lib/waves.mjs
+{ const V = await import("../lib/waves.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+  const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
+  const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8"));
+  const L = V.league(J("oecd_gdp_per_capita_ppp_current.json")), bad3 = [];
+  for (const [c, y, v] of sec(3)) { const i = L.years.indexOf(y), m = /rank (\d) \(([\d,]+)\)/.exec(v); if (L.rank[c][i] !== +m[1] || Math.round(L.value[c][i]) !== +m[2].replace(/,/g, "")) bad3.push(`${c} ${y} ours ${L.rank[c][i]} ${Math.round(L.value[c][i])} vs ${v}`); }
+  const yrsRanked = L.years.every((y, i) => { const r = V.ORDER.map((c) => L.rank[c][i]); return r.every((x) => x !== null) && new Set(r).size === 7; });
+  check(sec(3).length === 7 && !bad3.length && L.years[0] === "1970" && yrsRanked, `#3 GDP per person rank ${L.years[L.years.length - 1]} = Warehouse for all 7 (${sec(3).map(([c, , v]) => `${c} ${v.split(" (")[0].replace("rank ", "")}`).join(", ")}); every year 1970+ has ranks 1–7${bad3.length ? " MISMATCH " + bad3.join("; ") : ""}`);
+  const G = V.ownLatest(J("oecd_idd_gini_disposable.json"), 100), bad25 = [];
+  for (const [c, y, v] of sec(25)) { const r = G.find((x) => x.code === c); if (r.end !== y || Math.abs(r.value / 100 - +v) > 0.0005 + 1e-9) bad25.push(`${c} ours ${r.end} ${(r.value / 100).toFixed(4)} vs ${y} ${v}`); }
+  check(sec(25).length === 7 && !bad25.length, `#25 Gini own latest year = Warehouse for all 7 (${G.map((r) => `${r.code} ${r.end} ${r.value.toFixed(1)}`).join(", ")}; shown ×100)${bad25.length ? " MISMATCH " + bad25.join("; ") : ""}`);
+  const ge = J("oecd_msti_gerd_pct_gdp.json"), be = J("oecd_msti_berd_pct_gdp.json"), bad15 = [];
+  for (const [c, y, v] of sec(15)) { const r = V.rdStack(ge, be, y).rows.find((x) => x.code === c), m = /GERD ([\d.]+), BERD ([\d.]+), rest ([\d.]+)/.exec(v);
+    if (Math.abs(r.total - +m[1]) > 0.005 + 1e-9 || Math.abs(r.business - +m[2]) > 0.005 + 1e-9 || Math.abs(r.rest - +m[3]) > 0.0051) bad15.push(`${c} ${y} ours ${r.total?.toFixed(3)} ${r.business?.toFixed(3)} ${r.rest?.toFixed(3)} vs ${v}`); }
+  const d23 = V.rdStack(ge, be, V.RD_DEFAULT).rows;
+  check(sec(15).length === 7 && !bad15.length && V.RD_DEFAULT === "2023" && d23.every((r) => r.total !== null && r.rest !== null), `#15 R&D GERD/BERD/rest = Warehouse at each country's year for all 7; default year 2023 has all seven (never mixes years)${bad15.length ? " MISMATCH " + bad15.join("; ") : ""}`); }
+// Labour fixes: #17 title/description; #24 headline dates use each country's own end
+{ const F = await import("../lib/finance.mjs"); const meta = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8"), slope = readFileSync(new URL("../src/components/Slope.tsx", import.meta.url), "utf8");
+  const ls = JSON.parse(readFileSync(new URL("../data/ilo_labour_share_gdp.json", import.meta.url), "utf8")), d = F.slope(ls, 2004, "pts");
+  const ok24 = d.rows.every((r) => r.end === ls.series[r.code].periods.filter((p, i) => ls.series[r.code].values[i] !== null).pop()) && /date: `\$\{d\.start\} → \$\{q\.end\}`/.test(slope);
+  check(/titles: \{ _: "Youth unemployment vs overall rate" \}, desc: "Youth unemployment rate \(age 15–24\) ÷ overall rate"/.test(meta), `#17 title "Youth unemployment vs overall rate", description "Youth unemployment rate (age 15–24) ÷ overall rate"`);
+  check(ok24, `#24 headline dates = each country's own end (${d.rows.map((r) => `${r.code} 2004 → ${r.end}`).join(", ")})`); }
 // #7 policy rates: each line's latest figure (the app's own buildLine, every window) = Warehouse REFERENCE-FIGURES.md Card 7, read from the file
 { const S = await import("../lib/series.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
   const rows = /## Card 7 [^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));

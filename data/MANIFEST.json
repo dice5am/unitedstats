@@ -126,6 +126,30 @@
       "cards": [
         "#24"
       ]
+    },
+    "oecd_gdp_per_capita_ppp_current.json": {
+      "cards": [
+        "#3"
+      ],
+      "sha256": "bc8e3b9b62481bf577d367765c07c554d3aab269c77dbf53797c99d35415b350"
+    },
+    "oecd_idd_gini_disposable.json": {
+      "cards": [
+        "#25"
+      ],
+      "sha256": "3ead63dc6e87d1fa7ffdd45f7e220e7d9d2d0a46864b83c60328c3c5fca2710b"
+    },
+    "oecd_msti_gerd_pct_gdp.json": {
+      "cards": [
+        "#15"
+      ],
+      "sha256": "4e589d1f44f64f4ce791ce2a0b92a19fbba495abc370ff86ac3fcc51b8f11ad0"
+    },
+    "oecd_msti_berd_pct_gdp.json": {
+      "cards": [
+        "#15"
+      ],
+      "sha256": "9b599727dfbc7a515a2f399291f50f38634156d5cec875a5596676335466adc8"
     }
   }
 }

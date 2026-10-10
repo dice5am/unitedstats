@@ -37,6 +37,15 @@ export const CHARTS: Record<BuiltId, { load: () => Promise<{ default: ComponentT
   "13": {
     load: async () => { const [{ default: hl }, { default: core }, F, { default: H }] = await Promise.all([import("@/data/oecd_cpi_headline_yoy.json"), import("@/data/oecd_cpi_core_yoy.json"), import("./finance"), import("@/src/components/HeatStrip")]);
       const cfg = F.cpiCfg(hl, core); return { default: ({ initial }: Init) => <H cfg={cfg} initial={initial} /> }; } },
+  "3": {
+    load: async () => { const [{ default: f }, { default: B }] = await Promise.all([import("@/data/oecd_gdp_per_capita_ppp_current.json"), import("@/src/components/Bump")]);
+      return { default: ({ initial }: Init) => <B file={f} initial={initial} /> }; } },
+  "25": {
+    load: async () => { const [{ default: f }, E, { default: R }] = await Promise.all([import("@/data/oecd_idd_gini_disposable.json"), import("./economy"), import("@/src/components/RankBar")]);
+      return { default: () => <R file={f} spec={E.giniSpec} /> }; } },
+  "15": {
+    load: async () => { const [{ default: g }, { default: b }, E, { default: S }] = await Promise.all([import("@/data/oecd_msti_gerd_pct_gdp.json"), import("@/data/oecd_msti_berd_pct_gdp.json"), import("./economy"), import("@/src/components/StackRank")]);
+      const spec = E.rdSpec(g, b); return { default: ({ initial }: Init) => <S spec={spec} initial={initial} /> }; } },
   "17": {
     load: async () => { const [{ default: y }, { default: a }, L, { default: R }] = await Promise.all([import("@/data/oecd_unemployment_rate_m_15_24.json"), import("@/data/oecd_unemployment_rate_m_15plus.json"), import("./labour"), import("@/src/components/RankBar")]);
       const spec = L.youthSpec(y); return { default: () => <R file={a} spec={spec} /> }; } },

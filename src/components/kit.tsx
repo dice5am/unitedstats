@@ -124,12 +124,15 @@ export function useWidth<T extends HTMLElement>() {
 }
 
 // Stats box shared by the new chart types: hidden until a mark is tapped/hovered; ✕, Esc and outside tap close it.
-export function StatBox({ title, rows, onClose, bottom = false }: { title: string; rows: { code: string; name: string; value: string; note?: string }[]; onClose: () => void; bottom?: boolean }) {
+// at: anchor beside the tapped item (y/h inside a container of height H): below it when the item is in the top half,
+// above it otherwise, so the tapped bar or line stays visible.
+export function StatBox({ title, rows, onClose, bottom = false, at }: { title: string; rows: { code: string; name: string; value: string; note?: string }[]; onClose: () => void; bottom?: boolean; at?: { y: number; h: number; H: number } }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   return (
-    <div className={`tip statbox ${bottom ? "bot" : "top"}`} role="status" onPointerDown={(e) => e.stopPropagation()}>
+    <div className={`tip statbox ${at ? (at.y + at.h / 2 < at.H / 2 ? "below" : "above") : bottom ? "bot" : "top"}`} role="status" onPointerDown={(e) => e.stopPropagation()}
+      style={at ? (at.y + at.h / 2 < at.H / 2 ? { top: at.y + at.h + 6, bottom: "auto" } : { bottom: at.H - at.y + 6, top: "auto" }) : undefined}>
       <div className="tiph"><span className="mo">{title}</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
-      {rows.map((r) => <div key={r.code} className="tipr"><i style={{ background: `var(--${r.code})` }} /><span>{r.name}</span><b>{r.value}</b>{r.note && <em>{r.note}</em>}</div>)}
+      {rows.map((r, i) => <div key={`${r.code}${i}`} className="tipr"><i style={{ background: `var(--${r.code})` }} /><span>{r.name}</span><b>{r.value}</b>{r.note && <em>{r.note}</em>}</div>)}
     </div>
   );
 }
@@ -150,3 +153,7 @@ export function useDocTitle(_ref: React.RefObject<Element | null>, title: string
     return () => ids.forEach(clearTimeout);
   }, [title]);
 }
+export type Init = { initial: MutableRefObject<string | null> };
+
+// anchor for StatBox `at` from a tapped row/button inside a positioned container (.sc)
+export const anchorOf = (b: HTMLElement) => { const box = b.closest(".sc") as HTMLElement; return { y: b.getBoundingClientRect().top - box.getBoundingClientRect().top, h: b.offsetHeight, H: box.offsetHeight }; };
