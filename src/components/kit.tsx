@@ -132,7 +132,7 @@ export function StatBox({ title, rows, onClose, bottom = false, at, ax }: { titl
     <div className={`tip statbox ${at ? (at.y + at.h / 2 < at.H / 2 ? "below" : "above") : bottom ? "bot" : "top"}`} role="status" onPointerDown={(e) => e.stopPropagation()}
       style={{ ...(at ? (at.y + at.h / 2 < at.H / 2 ? { top: at.y + at.h + 6, bottom: "auto" } : { bottom: at.H - at.y + 6, top: "auto" }) : {}),
         // ax: beside a vertical guide at x (in a container W wide): to its right, or flipped to its left past the middle
-        ...(ax ? (ax.x < ax.W / 2 ? { left: Math.min(ax.x + 12, ax.W - (ax.w ?? 260)), right: "auto", width: ax.w ?? 260 } : { right: Math.min(ax.W - ax.x + 12, ax.W - (ax.w ?? 260)), left: "auto", width: ax.w ?? 260 }) : {}) }}>
+        ...(ax ? (ax.x < ax.W / 2 ? { left: Math.min(ax.x + 24, ax.W - (ax.w ?? 260)), right: "auto", width: ax.w ?? 260 } : { right: Math.min(ax.W - ax.x + 24, ax.W - (ax.w ?? 260)), left: "auto", width: ax.w ?? 260 }) : {}) }}>
       <div className="tiph"><span className="mo">{title}</span><button type="button" className="tipx" aria-label="Close" onClick={onClose}>✕</button></div>
       {rows.map((r, i) => <div key={`${r.code}${i}`} className="tipr"><i style={{ background: `var(--${r.code})` }} /><span>{r.name}</span><b>{r.value}</b>{r.note && <em>{r.note}</em>}</div>)}
     </div>

@@ -16,6 +16,7 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
   const c = st.em_c, m = useMemo(() => mix(ember, c), [ember, c]);
   const [ref, w] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
+  const [tapY, setTapY] = useState<number | null>(null); // touch: y of the tapped point inside the plot
   const svg = useRef<SVGSVGElement>(null);
   const narrow = w > 0 && w < 560, H = narrow ? 300 : 400, pl = 44, pr = narrow ? 8 : 190, pt = 14, pb = 24, n = m.length;
   const x = (i: number) => pl + (i / (n - 1)) * (w - pl - pr), y = (v: number) => pt + (1 - v / 100) * (H - pt - pb);
@@ -41,9 +42,9 @@ export default function MixArea({ ember, initial }: { ember: any } & Init) {
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>A fuel not published is left out of its band, never 0</li></ul></div>
       </>}>
       <div className="mixa" ref={ref} onPointerDown={() => setHover(null)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
-        {h && <StatBox title={`${NAME[c]} · ${h.year} · % of electricity`} onClose={() => setHover(null)} ax={{ x: x(hover!), W: w, w: Math.min(260, w - 24) }} bottom={false} rows={h.fuels.map((f) => ({ code: c, name: f.name, value: f.value === null ? "n/a" : `${f.value.toFixed(1)}%` }))} />}
+        {h && <StatBox title={`${NAME[c]} · ${h.year} · % of electricity`} onClose={() => setHover(null)} {...(narrow ? { at: { y: (tapY ?? H / 2) - 12, h: 24, H }, ax: { x: x(hover!), W: w, w: Math.min(260, Math.max(x(hover!), w - x(hover!)) - 30) } } : { ax: { x: x(hover!), W: w, w: Math.min(260, w - 24) } })} bottom={false} rows={h.fuels.map((f) => ({ code: c, name: f.name, value: f.value === null ? "n/a" : `${f.value.toFixed(1)}%` }))} />}
         {w > 0 && <svg ref={svg} width={w} height={H} role="img" style={{ touchAction: "pan-y" }} aria-label={`${NAME[c]} electricity mix ${last.year}: ${last.bands.map((b) => `${b.name} ${b.value === null ? "n/a" : b.value.toFixed(1) + "%"}`).join(", ")}`}
-          onPointerDown={(e) => { e.stopPropagation(); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}>
+          onPointerDown={(e) => { e.stopPropagation(); setTapY(e.pointerType === "mouse" ? null : e.clientY - svg.current!.getBoundingClientRect().top); pick(e.clientX); }} onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}>
           {areas.map((d, k) => <path key={k} d={d} className={`mx m${k}`} />)}
           {[0, 25, 50, 75, 100].map((t) => <g key={t}><line x1={pl} x2={w - pr} y1={y(t)} y2={y(t)} className="gl" /><text x={pl - 6} y={y(t) + 4} className="ax" textAnchor="end">{t}%</text></g>)}
           {[0, n - 1, ...m.map((r, i) => (+r.year % 5 === 0 && i > 1 && i < n - 2 ? i : -1)).filter((i) => i > 0)].map((i) => <text key={i} x={x(i)} y={H - 6} className="ax" textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}>{m[i].year}</text>)}
