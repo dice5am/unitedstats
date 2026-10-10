@@ -1,0 +1,54 @@
+{
+ "source": "OECD snapshot_20261010T012507Z DF_IALFS_INDIC EMP 15+ SA monthly",
+ "tolerance_pct": 0.005,
+ "cases": [
+  {
+   "window": "12 months",
+   "start_month": "2025-04",
+   "end_month": "2026-04",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 0.327,
+   "USA_pct": -0.482
+  },
+  {
+   "window": "Jan 2025 on",
+   "start_month": "2025-01",
+   "end_month": "2026-04",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 0.572,
+   "USA_pct": 0.371
+  },
+  {
+   "window": "12 months",
+   "start_month": "2025-05",
+   "end_month": "2026-05",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 0.479,
+   "USA_pct": -0.491
+  },
+  {
+   "window": "Jan 2025 on",
+   "start_month": "2025-01",
+   "end_month": "2026-05",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 0.706,
+   "USA_pct": 0.342
+  },
+  {
+   "window": "12 months",
+   "start_month": "2025-08",
+   "end_month": "2026-08",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 0.812,
+   "USA_pct": -0.541
+  },
+  {
+   "window": "Jan 2025 on",
+   "start_month": "2025-01",
+   "end_month": "2026-08",
+   "avg": "3-month mean ending at start and end month",
+   "CAN_pct": 1.217,
+   "USA_pct": 0.126
+  }
+ ]
+}
