@@ -40,6 +40,8 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const we = workedExample(data, "CAN", years);
   const rex = (() => { const l = buildLine(rate, "CAN", years, "rate") as Line; const f = l.points.find((p) => p.value !== null); return f && l.last !== null ? { start: f.value!, end: l.last, d: l.last - f.value! } : null; })();
   const dataAsOf = asOf(data.data_as_of.snapshot_id);
+  // provisional row only where the stats box actually tags provisional ("P") periods
+  const hasProv = ["monthly", "quarterly"].some((f) => Object.values(ds[f] || {}).some((x) => Object.values((x as { status?: Record<string, string> }).status || {}).includes("P")));
   const econAsOf = econ ? asOf(econ.data_as_of.snapshot_id) : "";
   const qEnd = E ? qLabel(commonEnds(ds).quarterEnd) : "";
   const qx = E ? quarterExample(ds, "CAN", years) : null;
@@ -50,8 +52,9 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
   const span = `${fmtM(win.start)} – ${fmtM(win.end)}`;
 
   useLayoutEffect(() => {
-    const el = segRef.current?.querySelector<HTMLElement>("button.on");
-    if (el) setHl({ x: el.offsetLeft, w: el.offsetWidth });
+    const seg = segRef.current; if (!seg) return;
+    const m = () => { const el = seg.querySelector<HTMLElement>("button.on"); if (el) setHl({ x: el.offsetLeft, w: el.offsetWidth }); };
+    m(); const ro = new ResizeObserver(m); ro.observe(seg); return () => ro.disconnect();
   }, [years, tab]);
 
   const segKey = (e: React.KeyboardEvent) => {
@@ -139,7 +142,7 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
               {E ? (<>
               <div className="grp"><h3>Measures</h3><dl>
                 <dt>{view === "pc" ? "Per capita" : "GDP"}</dt><dd>{view === "pc" ? "Real GDP ÷ population, both from the OECD." : "Total output after inflation. Not per person."}</dd>
-                <dt>Currency</dt><dd>Each country’s own, so only growth is compared, never levels.</dd>
+                <dt>Currency</dt><dd>Own currency · growth only, no exchange rates</dd>
               </dl></div>
               <div className="grp"><h3>Inputs</h3><dl>
                 <dt>Dataset</dt><dd className="mono">OECD DF_QNA · B1GQ{view === "pc" ? " + POP" : ""}</dd>
@@ -208,8 +211,9 @@ export default function App({ data, rate, econ, tab }: { data: any; rate: any; e
                 <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
                 <li><span className="ic"><svg width="16" height="10"><path d="M1 8 L8 3 L15 6" fill="none" stroke="currentColor" strokeWidth="1.5" /><circle cx="8" cy="3" r="2" fill="currentColor" /></svg></span>Quarterly: line + dot per quarter</li>
                 <li><span className="ic"><svg width="2" height="12"><rect width="2" height="12" rx="1" fill="var(--text-2)" /></svg></span>{view === "jobs" ? "Series breaks marked by year" : "Series breaks marked by quarter"}</li>
-                {E ? <li><span className="ic">P</span>Provisional quarters flagged as published</li> : <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
-                <li><span className="ic">—</span>No data at window start: left out of that window</li>
+                {!E && <li><span className="ic">3m</span>3-mo avg blank if a month is missing</li>}
+                {hasProv && <li><span className="ic">P</span>Latest quarters may be provisional</li>}
+                <li><span className="ic">—</span>No data at start: left out</li>
               </ul></div>
             </div>
           </section>

@@ -73,6 +73,11 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   }, [lines, R]);
 
   if (!w) return <div ref={ref} className="chart skeleton" style={{ height: 320 }} />;
+  if (emptyMsg) return (
+    <div ref={ref} className="chart empty" style={{ height: h }} role="status">
+      <div className="emptycard">{emptyMsg}</div>
+    </div>
+  );
 
   const x = (mi: number) => pad.l + ((mi - m0) / (m1 - m0 || 1)) * iw;
   const y = (v: number) => pad.t + (1 - (v - y0) / (y1 - y0)) * ih;
@@ -212,7 +217,6 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           <filter id="glow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation={wide ? 6 : 4} /></filter>
         </defs>
         <text key={`yt${mode}`} x={Math.max(0, pad.l - 10 - Math.max(...ticks.map((v) => textW(R ? v.toFixed(1) : v.toFixed(dec), 12, 400))))} y={pad.t - 14} className="ytitle fadein">{R ? "Employment rate, % (ages 15–64)" : "Index · start = 100"}</text>
-        {emptyMsg && <g className="emptyg"><rect x={pad.l + iw / 2 - (textW(emptyMsg, 13, 600) + 28) / 2} y={pad.t + ih / 2 - 16} width={textW(emptyMsg, 13, 600) + 28} height={32} rx={16} className="pill" /><text x={pad.l + iw / 2} y={pad.t + ih / 2 + 5} textAnchor="middle" className="emptyt">{emptyMsg}</text></g>}
         {covid && <g>
           <rect x={x(covid.a)} y={pad.t} width={Math.max(1, x(covid.b) - x(covid.a))} height={ih} className="covid" />
           <text x={x(covid.a) + 6} y={pad.t + 14} className="ax">COVID-19</text>
