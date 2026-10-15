@@ -1,0 +1,592 @@
+[
+ {
+  "key": "gdp_50Y_pct",
+  "country": "CAN",
+  "window": "50Y",
+  "stored": 220.35,
+  "rebuilt": 220.3471,
+  "diff": -0.0029,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "DEU",
+  "window": "50Y",
+  "stored": 126.67,
+  "rebuilt": 126.6745,
+  "diff": 0.0045,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "FRA",
+  "window": "50Y",
+  "stored": 143.12,
+  "rebuilt": 143.116,
+  "diff": -0.004,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "GBR",
+  "window": "50Y",
+  "stored": 178.46,
+  "rebuilt": 178.4553,
+  "diff": -0.0047,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "ITA",
+  "window": "50Y",
+  "stored": 99.08,
+  "rebuilt": 99.0762,
+  "diff": -0.0038,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "JPN",
+  "window": "50Y",
+  "stored": 156.33,
+  "rebuilt": 156.3275,
+  "diff": -0.0025,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_50Y_pct",
+  "country": "USA",
+  "window": "50Y",
+  "stored": 283.17,
+  "rebuilt": 283.1698,
+  "diff": -0.0002,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "CAN",
+  "window": "50Y",
+  "stored": 82.64,
+  "rebuilt": 82.6377,
+  "diff": -0.0023,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "DEU",
+  "window": "50Y",
+  "stored": 115.65,
+  "rebuilt": 115.6494,
+  "diff": -0.0006,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "FRA",
+  "window": "50Y",
+  "stored": 92.36,
+  "rebuilt": 92.3596,
+  "diff": -0.0004,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "GBR",
+  "window": "50Y",
+  "stored": 123.44,
+  "rebuilt": 123.4427,
+  "diff": 0.0027,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "ITA",
+  "window": "50Y",
+  "stored": 90.94,
+  "rebuilt": 90.936,
+  "diff": -0.004,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "JPN",
+  "window": "50Y",
+  "stored": 135.59,
+  "rebuilt": 135.5889,
+  "diff": -0.0011,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "gdp_per_capita_50Y_pct",
+  "country": "USA",
+  "window": "50Y",
+  "stored": 143.5,
+  "rebuilt": 143.5019,
+  "diff": 0.0019,
+  "ok": true,
+  "note": ""
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "CAN",
+  "window": "1Y",
+  "stored": 0.6554,
+  "rebuilt": 0.6554,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2025-03; ratio-of-means reading = 0.6555"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "CAN",
+  "window": "5Y",
+  "stored": 3.7767,
+  "rebuilt": 3.7767,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2021-03; ratio-of-means reading = 3.7763"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "CAN",
+  "window": "10Y",
+  "stored": 1.9045,
+  "rebuilt": 1.9045,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2016-03; ratio-of-means reading = 1.9045"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "CAN",
+  "window": "20Y",
+  "stored": 0.9686,
+  "rebuilt": 0.9686,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2006-03; ratio-of-means reading = 0.9686"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "CAN",
+  "window": "50Y",
+  "stored": 22.6224,
+  "rebuilt": 22.6224,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 1976-03; ratio-of-means reading = 22.6223"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "USA",
+  "window": "1Y",
+  "stored": -0.7203,
+  "rebuilt": -0.7203,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2025-03; ratio-of-means reading = -0.7202"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "USA",
+  "window": "5Y",
+  "stored": 5.1354,
+  "rebuilt": 5.1354,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2021-03; ratio-of-means reading = 5.1354"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "USA",
+  "window": "10Y",
+  "stored": 2.006,
+  "rebuilt": 2.006,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2016-03; ratio-of-means reading = 2.0059"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "USA",
+  "window": "20Y",
+  "stored": -1.2745,
+  "rebuilt": -1.2745,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 2006-03; ratio-of-means reading = -1.2746"
+ },
+ {
+  "key": "jobs_per_capita_pct",
+  "country": "USA",
+  "window": "50Y",
+  "stored": 17.883,
+  "rebuilt": 17.883,
+  "diff": 0.0,
+  "ok": true,
+  "note": "start 1976-03; ratio-of-means reading = 17.8829"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "CAN",
+  "window": "1Y",
+  "stored": -0.53,
+  "rebuilt": -0.5333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "CAN",
+  "window": "5Y",
+  "stored": -1.03,
+  "rebuilt": -1.0333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "CAN",
+  "window": "10Y",
+  "stored": -0.53,
+  "rebuilt": -0.5333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "CAN",
+  "window": "20Y",
+  "stored": 0.0,
+  "rebuilt": 0.0,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "CAN",
+  "window": "50Y",
+  "stored": -0.7,
+  "rebuilt": -0.7,
+  "diff": 0.0,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "USA",
+  "window": "1Y",
+  "stored": -0.1,
+  "rebuilt": -0.1,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "USA",
+  "window": "5Y",
+  "stored": -1.33,
+  "rebuilt": -1.3333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "USA",
+  "window": "10Y",
+  "stored": -0.73,
+  "rebuilt": -0.7333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "USA",
+  "window": "20Y",
+  "stored": -0.53,
+  "rebuilt": -0.5333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "USA",
+  "window": "50Y",
+  "stored": -3.6,
+  "rebuilt": -3.6,
+  "diff": 0.0,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "JPN",
+  "window": "1Y",
+  "stored": -0.03,
+  "rebuilt": -0.0333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "JPN",
+  "window": "5Y",
+  "stored": -0.37,
+  "rebuilt": -0.3667,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "JPN",
+  "window": "10Y",
+  "stored": -0.6,
+  "rebuilt": -0.6,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "JPN",
+  "window": "20Y",
+  "stored": -1.67,
+  "rebuilt": -1.6667,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "JPN",
+  "window": "50Y",
+  "stored": 0.47,
+  "rebuilt": 0.4667,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "DEU",
+  "window": "1Y",
+  "stored": 0.27,
+  "rebuilt": 0.2667,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "DEU",
+  "window": "5Y",
+  "stored": 0.5,
+  "rebuilt": 0.5,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "DEU",
+  "window": "10Y",
+  "stored": 0.07,
+  "rebuilt": 0.0667,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "DEU",
+  "window": "20Y",
+  "stored": -6.0,
+  "rebuilt": -6.0,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "DEU",
+  "window": "50Y",
+  "stored": null,
+  "rebuilt": null,
+  "diff": null,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "FRA",
+  "window": "1Y",
+  "stored": 0.53,
+  "rebuilt": 0.5333,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "FRA",
+  "window": "5Y",
+  "stored": 0.33,
+  "rebuilt": 0.3333,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "FRA",
+  "window": "10Y",
+  "stored": -1.63,
+  "rebuilt": -1.6333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "FRA",
+  "window": "20Y",
+  "stored": -0.7,
+  "rebuilt": -0.7,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "FRA",
+  "window": "50Y",
+  "stored": null,
+  "rebuilt": null,
+  "diff": null,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "ITA",
+  "window": "1Y",
+  "stored": 0.23,
+  "rebuilt": 0.2333,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2025-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "ITA",
+  "window": "5Y",
+  "stored": -3.17,
+  "rebuilt": -3.1667,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2021-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "ITA",
+  "window": "10Y",
+  "stored": -5.63,
+  "rebuilt": -5.6333,
+  "diff": -0.0033,
+  "ok": true,
+  "note": "2016-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "ITA",
+  "window": "20Y",
+  "stored": -0.7,
+  "rebuilt": -0.7,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2006-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "ITA",
+  "window": "50Y",
+  "stored": null,
+  "rebuilt": null,
+  "diff": null,
+  "ok": true,
+  "note": "1976-08->2026-08"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "GBR_own_end_2026-06",
+  "window": "1Y",
+  "stored": 0.2,
+  "rebuilt": 0.2,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2025-06->2026-06"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "GBR_own_end_2026-06",
+  "window": "5Y",
+  "stored": 0.2,
+  "rebuilt": 0.2,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2021-06->2026-06"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "GBR_own_end_2026-06",
+  "window": "10Y",
+  "stored": 0.0,
+  "rebuilt": 0.0,
+  "diff": 0.0,
+  "ok": true,
+  "note": "2016-06->2026-06"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "GBR_own_end_2026-06",
+  "window": "20Y",
+  "stored": -0.57,
+  "rebuilt": -0.5667,
+  "diff": 0.0033,
+  "ok": true,
+  "note": "2006-06->2026-06"
+ },
+ {
+  "key": "unemployment_long_pts_aug2026",
+  "country": "GBR_own_end_2026-06",
+  "window": "50Y",
+  "stored": null,
+  "rebuilt": null,
+  "diff": null,
+  "ok": true,
+  "note": "1976-06->2026-06"
+ }
+]

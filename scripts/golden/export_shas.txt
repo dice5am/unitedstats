@@ -1,0 +1,33 @@
+bc8e3b9b6248  oecd_gdp_per_capita_ppp_current.json
+d36159da3fc4  wb_SP.POP.65UP.TO.ZS.json
+2d125b7e7ff0  wb_NY.GDP.PCAP.PP.KD.json
+9553a0b0e974  wb_EN.GHG.CO2.PC.CE.AR5.json
+dcef327ef801  oecd_house_price_to_income.json
+3a7bf7cb76b6  wb_SH.XPD.CHEX.GD.ZS.json
+f26aeacf1d17  oecd_life_expectancy_birth.json
+3d93c5243b0e  wb_EG.ELC.COAL.ZS.json
+023d3192d482  wb_EG.ELC.FOSL.ZS.json
+13c87e1962d0  wb_EG.ELC.NUCL.ZS.json
+bdcc1949a8f5  imf_weo_GGXWDG_NGDP.json
+9cea095b9a08  wb_SP.DYN.TFRT.IN.json
+0f176222f52f  oecd_avg_annual_wage_usd_ppp.json
+a51c2b1642dc  oecd_cpi_headline_yoy.json
+0f3ed9dccfc0  oecd_cpi_core_yoy.json
+f07f61eb4a99  oecd_ghg_total.json
+4e589d1f44f6  oecd_msti_gerd_pct_gdp.json
+9b599727dfbc  oecd_msti_berd_pct_gdp.json
+cafc8c7b4774  oecd_eag_tertiary_attainment_25_64.json
+f5d3fdbbe370  oecd_eag_tertiary_attainment_25_34.json
+778211e1c025  oecd_unemployment_rate_m_15_24.json
+b03c496b3590  oecd_avg_annual_hours_worked.json
+e080ea0bf119  oecd_bop_current_account_pct_gdp_q.json
+0d657fe0ffad  bis_household_credit_pct_gdp.json
+e84d36c312e0  wb_NE.EXP.GNFS.ZS.json
+56d55de646b6  wb_NE.IMP.GNFS.ZS.json
+ae63b8592a4b  wb_SM.POP.TOTL.ZS.json
+45631d8737cf  ilo_labour_share_gdp.json
+3ead63dc6e87  oecd_idd_gini_disposable.json
+7859146f7212  ember_electricity_mix_share.json  (full sha256 7859146f7212f4bf3d1f95f029f8bbfb4f3391767b4965a75f357b4767731659; gated 2026-10-10 EMBER-ELEC-MIX-GATE.md)
+36a710cfc718  econ_population_joined.json  (full sha256 36a710cfc718b1c44a057377c5b2fbc73d13342de81f7ae4089da5753b495ba4; canada-factcheck/warehouse/export; re-gated 2026-10-10 Q1-1975 extension)
+c47c563e9792  econ_gdp_per_capita_joined.json  (full sha256 c47c563e97920cb04de0683acdf9f2e70ad0059b954c815d4ad9daf202d062bf; canada-factcheck/warehouse/export; re-gated 2026-10-10 Q1-1975 extension)
+fa432222b6c6  c1_labour_series.json  (full sha256 fa432222b6c64a9e12c1159970e1813f6147ab1dda3988ed07e84fd26b330250; canada-factcheck/warehouse/export; Chart 1 file, identical to repo HEAD commit edc9207; input to golden round 3/4 rebuild PASS)

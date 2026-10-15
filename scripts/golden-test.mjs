@@ -2,7 +2,12 @@ import { writeFileSync as writeFileSync, unlinkSync } from "node:fs";
 // Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
+
+// Vendored Warehouse goldens (self-contained for CI/Vercel; no /workspace paths).
+const GOLDEN = (rel) => new URL(`./golden/${rel}`, import.meta.url);
+const GOLDEN_PATH = (rel) => fileURLToPath(GOLDEN(rel));
 
 const raw = readFileSync(new URL("../data/c1_labour_series.json", import.meta.url));
 const data = JSON.parse(raw);
@@ -466,7 +471,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(nE === nV && wholeEstimate(data, "DEU") && wholeEstimate(J2, "DEU") && !plainDash && !pcDash && firstSolid === "1991-Q1" && !others.length && !wholeEstimate(EV.gdp, "DEU"),
     `estimates: Germany jobs ${nE}/${nV} quarters OECD "E" -> solid line + "OECD estimate" tag (jobs and jobs per capita); no dashes on any German line (starts ${firstSolid}, no "Estimated population" tag); no other whole-series estimates`); }
 // Data Lead independent rebuild (crosscheck/golden4_rebuild/output.json)
-{ const out = JSON.parse(readFileSync("/workspace/skyscraper/unitedstats-warehouse/crosscheck/golden4_rebuild/output.json")); const UL2 = (await import("../lib/series.mjs")).unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
+{ const out = JSON.parse(readFileSync(GOLDEN("golden4_rebuild_output.json"))); const UL2 = (await import("../lib/series.mjs")).unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
   const { ownChange: oc } = await import("../lib/series.mjs"); const JP4 = jobsPerCapitaDataset(data, POPJ); let n = 0; const bad = [];
   for (const r of out) { const y = parseInt(r.window), c = r.country.slice(0, 3); let ours;
     if (r.key === "gdp_50Y_pct") ours = buildLine(EV.gdp, c, y, "index").growth; else if (r.key === "gdp_per_capita_50Y_pct") ours = buildLine(EV.pc, c, y, "index").growth;
@@ -492,9 +497,9 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   console.log("Jobs 50Y (ours): " + ALL.map((c) => { const l = buildLine(JD, c, 50, "jobs"), f = l.points.find((p) => p.value !== null), e = [...l.points].reverse().find((p) => p.value !== null);
     return `${c} ${f.period} → ${e.period} ${l.growth >= 0 ? "+" : ""}${l.growth.toFixed(2)}%${l.full ? "" : " (from " + l.late + ", not ranked)"}`; }).join("; ")); }
 // every data file's sha256 must be listed by the Warehouse (crosscheck/chart_gate/export_shas.txt) or in a gate note
-{ const { readdirSync } = await import("node:fs"); const WH = "/workspace/skyscraper/unitedstats-warehouse";
-  const listed = readFileSync(`${WH}/crosscheck/chart_gate/export_shas.txt`, "utf8").split("\n").map((l) => l.trim().split(/\s+/)[0]).filter((x) => /^[0-9a-f]{8,}$/.test(x));
-  const notes = readdirSync(`${WH}/gates`).filter((f) => f.endsWith(".md")).map((f) => readFileSync(`${WH}/gates/${f}`, "utf8")).join("\n");
+{ const listed = readFileSync(GOLDEN("export_shas.txt"), "utf8").split("\n").map((l) => l.trim().split(/\s+/)[0]).filter((x) => /^[0-9a-f]{8,}$/.test(x));
+  const gatesDir = GOLDEN_PATH("gates");
+  const notes = readdirSync(gatesDir).filter((f) => f.endsWith(".md")).map((f) => readFileSync(`${gatesDir}/${f}`, "utf8")).join("\n");
   // gate-note shas: full hashes, or "prefix…suffix" / "prefix X, suffix Y" forms
   const pairs = [...notes.matchAll(/\b([0-9a-f]{8,64})(?:\s*(?:…|\.\.\.|,? suffix )\s*([0-9a-f]{4,}))?/g)].map((m) => [m[1], m[2] || ""]);
   const gated = (sha) => listed.some((x) => sha.startsWith(x)) || pairs.some(([a, b]) => sha.startsWith(a) && (!b || sha.endsWith(b)));
@@ -505,7 +510,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   // self-test: a modified temp copy of a live file must be caught
   const f0 = Object.keys(man.files)[0], tmp = `/tmp/gatecheck-${process.pid}.json`; writeFileSync(tmp, Buffer.concat([readFileSync(new URL(`../data/${f0}`, import.meta.url)), Buffer.from(" ")]));
   const caught = !gated(shaOf(tmp)); unlinkSync(tmp);
-  check(unl.length === 0 && caught, `Warehouse sha list: all ${Object.keys(man.files).length} data files listed in export_shas.txt or a gate note${unl.length ? ` (UNLISTED: ${unl.join(", ")})` : ""}; self-test: modified temp copy of ${f0} ${caught ? "caught" : "NOT caught"}`); }
+  check(unl.length === 0 && caught, `data sha list: all ${Object.keys(man.files).length} data files listed in scripts/golden/export_shas.txt or a gate note${unl.length ? ` (UNLISTED: ${unl.join(", ")})` : ""}; self-test: modified temp copy of ${f0} ${caught ? "caught" : "NOT caught"}`); }
 // App Lead round: flag tags, ranked dates, own-latest end values, US January note scope
 { const { flagTags, jobsDataset, applyStarts } = await import("../lib/series.mjs"); const JD = jobsDataset(data), JPD = applyStarts(jobsPerCapitaDataset(data, POPJ));
   const G = applyStarts(EV.gdp), PC = applyStarts(EV.pc), j = (d, p) => flagTags(d, "DEU", p).join(" · ");
@@ -539,9 +544,8 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(!bad.length && !hard, `source tags: every built chart's tag names (${Object.keys(lines).map((id) => `${id}=${(srcOf(id) || []).join("+")}`).join(", ")}) appear in its full source line; none hard-coded${bad.length ? ` (BAD: ${bad})` : ""}`); }
 // ---- Finance wave: Warehouse reference figures (REFERENCE-FIGURES.md) + independent in-test maths + structure ----
 { const F = await import("../lib/finance.mjs");
-  // expected figures are read straight from the Warehouse's file (not self-computed); the in-test maths is an extra, independent check
-  const WREF = "/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", md = readFileSync(WREF, "utf8");
-  check(md === readFileSync(new URL("./golden/REFERENCE-FIGURES.md", import.meta.url), "utf8"), `Finance references read from ${WREF} (repo copy scripts/golden/REFERENCE-FIGURES.md identical)`);
+  // expected figures are read from the vendored Warehouse copy (scripts/golden/REFERENCE-FIGURES.md); the in-test maths is an extra, independent check
+  const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const raw = (file, c, p) => { const s = file.series[c], i = s.periods.indexOf(p); return i < 0 ? null : s.values[i]; };
@@ -589,7 +593,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
     check(mm.length === n0 && steps === "01122333445566", `#13 inflation vs Warehouse: Aug 2026 headline and core match for all 7 (1Y cells = published monthly values); fixed bands around 2% (step map ${steps})`); }
   if (mm.length) console.log("  FINANCE MISMATCHES:\n  " + mm.join("\n  ")); }
 // #10 difference note: word for word from the Warehouse gate file, and rendered in #10's How it's calculated; #13 title follows the toggle
-{ const { DIFFERENCE_NOTES } = await import("../lib/differenceNotes.mjs"); const gate = readFileSync("/workspace/skyscraper/unitedstats-warehouse/gates/DIFFERENCE-NOTES.md", "utf8");
+{ const { DIFFERENCE_NOTES } = await import("../lib/differenceNotes.mjs"); const gate = readFileSync(GOLDEN("DIFFERENCE-NOTES.md"), "utf8");
   const line = (gate.split("\n").find((l) => l.startsWith("- **#10 ")) || "").replace(/^- \*\*#10 [^*]+:\*\* /, "");
   const fin = readFileSync(new URL("../src/charts/finance.tsx", import.meta.url), "utf8"), debt = fin.slice(fin.indexOf("export const debtSpec"), fin.indexOf("export const houseSpec"));
   const meta = readFileSync(new URL("../src/charts/meta.ts", import.meta.url), "utf8");
@@ -598,7 +602,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const src = ["src/components/LineChart.tsx", "src/components/ChartCard.tsx", "lib/charts.mjs"].map((f) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8")).join("\n");
   check(!/toLocaleDateString/.test(src) && /"Sep"/.test(src), `one month formatter everywhere: "Sep", never "Sept"`); }
 // Labour wave (#17, #12, #18, #24): expected values read FROM the Warehouse's REFERENCE-FIGURES.md; ours from lib/finance.mjs
-{ const F = await import("../lib/finance.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+{ const F = await import("../lib/finance.mjs"); const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8")), num = (t) => parseFloat(t.replace("−", "-"));
   const y = F.youthRatio(J("oecd_unemployment_rate_m_15_24.json"), J("oecd_unemployment_rate_m_15plus.json")), bad17 = [];
@@ -616,7 +620,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
     if (per !== `2004→${r.end}` || Math.abs(r.startValue - +m[1]) > 0.05 + 1e-9 || Math.abs(r.endValue - +m[2]) > 0.05 + 1e-9 || Math.abs(r.change - +m[3]) > 0.051) bad24.push(`${c} ours ${r.end} ${r.change.toFixed(2)} vs ${per} ${v}`); }
   check(sec(24).length === 7 && !bad24.length && F.wholeFlag(ls, "USA") === "I" && F.wholeFlag(ls, "CAN") === null, `#24 labour share 2004→own last actual year = Warehouse for all 7 (${sh.rows.map((r) => `${r.code} ${r.end} ${r.change.toFixed(1)}`).join(", ")}); US whole-series ILO "I" flag → solid line + stats-box tag${bad24.length ? " MISMATCH " + bad24.join("; ") : ""}`); }
 // Economy wave (#3, #25, #15): expected values read FROM the Warehouse REFERENCE-FIGURES.md; ours from lib/waves.mjs
-{ const V = await import("../lib/waves.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+{ const V = await import("../lib/waves.mjs"); const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8"));
   const L = V.league(J("oecd_gdp_per_capita_ppp_current.json")), bad3 = [];
@@ -644,7 +648,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const d23 = V.rdStack(ge, be, V.RD_DEFAULT).rows;
   check(sec(15).length === 7 && !bad15.length && V.RD_DEFAULT === "2023" && d23.every((r) => r.total !== null && r.rest !== null), `#15 R&D GERD/BERD/rest = Warehouse at each country's year for all 7; default year 2023 has all seven (never mixes years)${bad15.length ? " MISMATCH " + bad15.join("; ") : ""}`); }
 // Society wave (#4, #11, #23, #8, #16): expected values read FROM the Warehouse REFERENCE-FIGURES.md
-{ const V = await import("../lib/waves.mjs"), F = await import("../lib/finance.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+{ const V = await import("../lib/waves.mjs"), F = await import("../lib/finance.mjs"); const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8")), near = (a, b, t) => a !== null && Math.abs(a - b) <= t + 1e-9;
   const g = F.slope(J("wb_SP.POP.65UP.TO.ZS.json"), 1990, "pts"), b4 = [];
@@ -664,7 +668,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   for (const [c, y, v] of sec(16)) { const r = ta.find((x) => x.code === c), m = /25-34 ([\d.]+) vs 25-64 ([\d.]+) \(gap ([\d.]+)\)/.exec(v); if (r.end !== y || !near(r.b, +m[1], 0.05) || !near(r.a, +m[2], 0.05) || !near(r.gap, +m[3], 0.051)) b16.push(`${c} ours ${r.gap?.toFixed(2)} vs ${v}`); }
   check(sec(16).length === 7 && !b16.length, `#16 degree gap 25–34 vs 25–64 = Warehouse for all 7 (${ta.map((r) => `${r.code} ${r.gap.toFixed(1)}`).join(", ")})${b16.length ? " MISMATCH " + b16.join("; ") : ""}`); }
 // Environment wave (#5, #14, #9): expected values read FROM the Warehouse REFERENCE-FIGURES.md (and the Ember gate for #9)
-{ const V = await import("../lib/waves.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+{ const V = await import("../lib/waves.mjs"); const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const sec = (n) => new RegExp(`## Card ${n} [^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`).exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const J = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), "utf8"));
   const T = V.trails(J("wb_NY.GDP.PCAP.PP.KD.json"), J("wb_EN.GHG.CO2.PC.CE.AR5.json")), b5 = [];
@@ -698,7 +702,7 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   check(/titles: \{ _: "Youth unemployment vs overall rate" \}, desc: "Youth unemployment rate \(age 15–24\) ÷ overall rate"/.test(meta), `#17 title "Youth unemployment vs overall rate", description "Youth unemployment rate (age 15–24) ÷ overall rate"`);
   check(ok24, `#24 headline dates = each country's own end (${d.rows.map((r) => `${r.code} 2004 → ${r.end}`).join(", ")})`); }
 // #7 policy rates: each line's latest figure (the app's own buildLine, every window) = Warehouse REFERENCE-FIGURES.md Card 7, read from the file
-{ const S = await import("../lib/series.mjs"); const md = readFileSync("/workspace/skyscraper/unitedstats-warehouse/REFERENCE-FIGURES.md", "utf8");
+{ const S = await import("../lib/series.mjs"); const md = readFileSync(GOLDEN("REFERENCE-FIGURES.md"), "utf8");
   const rows = /## Card 7 [^\n]*\n([\s\S]*?)(?=\n## |$)/.exec(md)[1].split("\n").filter((l) => l.startsWith("- ")).map((l) => l.slice(2).split(" | "));
   const ds = S.policyDataset(JSON.parse(readFileSync(new URL("../data/bis_policy_rate_m.json", import.meta.url), "utf8"))), bad = [];
   for (const yrs of [1, 5, 10, 20, 50]) for (const [c, per, v] of rows) { const l = S.buildLine(ds, c, yrs, "level"), lp = [...l.points].reverse().find((q) => q.value !== null);
@@ -735,9 +739,8 @@ const WINDOWS_ALL = [1, 5, 10, 20, 50];
   const { UNEMP_NOTE, UNEMP_EU_NOTE } = { UNEMP_NOTE: (readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8").match(/UNEMP_NOTE = "([^"]+)"/) || [])[1], UNEMP_EU_NOTE: (readFileSync(new URL("../src/components/ChartCard.tsx", import.meta.url), "utf8").match(/UNEMP_EU_NOTE = "([^"]+)"/) || [])[1] };
   const r4raw = readFileSync(new URL("./golden/golden_round4.json", import.meta.url)), R4 = JSON.parse(r4raw), r4sha = createHash("sha256").update(r4raw).digest("hex");
   const r3sha = createHash("sha256").update(readFileSync(new URL("./golden/golden_round3.json", import.meta.url))).digest("hex");
-  const up = createHash("sha256").update(readFileSync("/workspace/skyscraper/canada-factcheck/analysis/golden_round4.json")).digest("hex");
   check(r3sha.startsWith("5246aebe"), `golden_round3.json kept (sha ${r3sha.slice(0, 8)}) as the 1Y/5Y/10Y baseline`);
-  console.log(`golden_round4.json sha ${r4sha.slice(0, 8)}${up !== r4sha ? ` — Warehouse copy CHANGED (now ${up.slice(0, 8)}): re-copy and re-run` : " (matches Warehouse copy)"}`);
+  console.log(`golden_round4.json sha ${r4sha.slice(0, 8)} (vendored LOCKED copy)`);
   const UL = unempLongDataset(JSON.parse(readFileSync(new URL("../data/c1_unemployment_rate_long.json", import.meta.url))));
   const T = R4.unemployment_long_pts_aug2026, rows = [];
   for (const [k, byW] of Object.entries(T)) { if (!/^[A-Z]{3}/.test(k)) continue; const c = k.slice(0, 3), own = k.includes("own");
