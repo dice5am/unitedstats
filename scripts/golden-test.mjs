@@ -1,6 +1,6 @@
 import { writeFileSync as writeFileSync, unlinkSync } from "node:fs";
 // Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
 
@@ -806,3 +806,13 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
     if (sub !== want) bad.push(`${c} ${row.year} "${sub}" vs file "${want}"`); if (row.year === "2025") seen[c] = sub; }
   check(!bad.length && !/Other/.test(seen.CAN) && !/Other/.test(seen.JPN) && /Other renewables n\/a/.test(seen.GBR) && /Wind \d+\.\d%/.test(seen.GBR) && /scrollIntoView\(\{ block: "nearest", behavior: matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches \? "auto" : "smooth" \}\)/.test(mx),
     `#9 sub-lines: none on the 5 single-source bands; renewables = file values for every country-year (CA 2025 "${seen.CAN}", JP "${seen.JPN}", UK "${seen.GBR}"); absent series omitted, nulls n/a; 390 box scrolls into view (block nearest)${bad.length ? " MISMATCH " + bad.slice(0, 3).join("; ") : ""}`); }
+
+// Japan colour = Option B magenta (locked): dark #E86BE0, light #A0168F. No leftover old crimson hex in src/lib/scripts.
+{ const css = readFileSync("src/app/globals.css", "utf8");
+  const darkHex = (css.match(/:root,\[data-theme="dark"\]\{[^}]*--JPN:(#[0-9A-Fa-f]{6})/) || [])[1];
+  const lightHex = (css.match(/\[data-theme="light"\]\{[^}]*--JPN:(#[0-9A-Fa-f]{6})/) || [])[1];
+  const leftover = [];
+  const walk = (d) => { for (const n of readdirSync(d)) { const p = `${d}/${n}`, st = statSync(p); if (st.isDirectory()) { if (n === "node_modules" || n === ".next" || n === "data") continue; walk(p); } else if (/\.(css|tsx?|mjs|jsx?|md)$/.test(n)) { const old = ["#F060"+"9E", "#B012"+"4F"]; const body = readFileSync(p, "utf8"); if (old.some((h) => body.includes(h))) leftover.push(p); } } };
+  for (const root of ["src", "lib"]) walk(root);
+  check(darkHex === "#E86BE0" && lightHex === "#A0168F" && leftover.length === 0,
+    `Japan colour Option B magenta: dark ${darkHex} / light ${lightHex} (want #E86BE0 / #A0168F); old crimson leftovers: ${leftover.join(", ") || "none"}`); }

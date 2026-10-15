@@ -2,7 +2,7 @@
  --bg:#0B0B0E;--card-solid:#121217;--card-grad:linear-gradient(180deg,#141419,#101014);--surface-2:rgba(30,30,37,.88);
  --grid:rgba(255,255,255,.055);--card-border:rgba(255,255,255,.07);--base:#6A6A74;
  --text:#F2F2F5;--text-2:#A9A9B4;--muted:#85858F;--focus:#1899EC;
- --CAN:#F2484B;--USA:#5B8CFF;--JPN:#F0609E;--GBR:#A08CFF;--DEU:#F2C230;--FRA:#2EC4E6;--ITA:#3CC87A;--amber:#F9AD26;
+ --CAN:#F2484B;--USA:#5B8CFF;--JPN:#E86BE0;--GBR:#A08CFF;--DEU:#F2C230;--FRA:#2EC4E6;--ITA:#3CC87A;--amber:#F9AD26;
  --glass:rgba(30,30,37,.55);--glass-border:rgba(255,255,255,.08);--glass-hl:rgba(255,255,255,.10);--glass-hl-border:rgba(255,255,255,.14);
  --shadow:0 24px 60px -24px rgba(0,0,0,.7);--inset:inset 0 1px 0 rgba(255,255,255,.04);
  --aura:radial-gradient(60% 50% at 85% -10%,rgba(248,76,69,.10),transparent 70%),radial-gradient(50% 40% at 0% 0%,rgba(24,153,236,.08),transparent 70%);
@@ -13,7 +13,7 @@
  --bg:#F6F3EC;--card-solid:#FFFDF8;--card-grad:linear-gradient(180deg,#FFFEFA,#FBF8F1);--surface-2:rgba(255,255,255,.88);
  --grid:rgba(30,25,15,.07);--card-border:rgba(30,25,15,.08);--base:#8A8476;
  --text:#16151A;--text-2:#4A4852;--muted:#6B6873;--focus:#0568A4;
- --CAN:#C8102E;--USA:#1D4ED8;--JPN:#B0124F;--GBR:#5B3FD1;--DEU:#8A6200;--FRA:#00758F;--ITA:#0F7A3C;--amber:#8D5E05;
+ --CAN:#C8102E;--USA:#1D4ED8;--JPN:#A0168F;--GBR:#5B3FD1;--DEU:#8A6200;--FRA:#00758F;--ITA:#0F7A3C;--amber:#8D5E05;
  --glass:rgba(255,253,248,.62);--glass-border:rgba(30,25,15,.08);--glass-hl:rgba(30,25,15,.06);--glass-hl-border:rgba(30,25,15,.10);
  --shadow:0 24px 48px -28px rgba(60,45,20,.28);--inset:inset 0 1px 0 rgba(255,255,255,.8);
  --aura:radial-gradient(60% 50% at 85% -10%,rgba(187,4,20,.06),transparent 70%),radial-gradient(50% 40% at 0% 0%,rgba(5,104,164,.05),transparent 70%);
