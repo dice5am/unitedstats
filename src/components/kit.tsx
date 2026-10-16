@@ -200,7 +200,7 @@ export function useFitH(ref: { current: Element | null }, curRef: { current: num
       const el = ref.current as HTMLElement | null, cur = curRef.current; if (!el || innerWidth < 1024 || !cur) { setFit((v) => (v === null ? v : null)); return; }
       const src = el.closest(".cardsec")?.querySelector(".source"); if (!src) return;
       const min = (innerHeight < 800 ? 340 : 480) - Math.max(0, el.getBoundingClientRect().height - cur), t = Math.max(min, Math.round(cur + innerHeight - 8 - (src.getBoundingClientRect().bottom + scrollY)));
-      setFit((v) => (v !== null && Math.abs(v - t) <= tol ? v : t)); // tol: panel grids floor per row, so they settle within rows px
+      setFit((v) => (v !== null && Math.abs(v - t) <= Math.max(1, tol) ? v : t)); // never re-render for a change of 1px or less (Design lock) // tol: panel grids floor per row, so they settle within rows px
     };
     f(); addEventListener("resize", f); return () => removeEventListener("resize", f);
   });
