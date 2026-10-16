@@ -13,7 +13,7 @@ const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const f1 = (v: number) => `${v.toFixed(1)}%`;
 
 export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; initial: MutableRefObject<string | null> }) {
-  const ALL = useAllText(); // count text, pending PM wording
+  const ALL = useAllText(); // count text (PM lock)
   const [st, set] = useParams(initial, { tr_year: [OPEN_DEFAULT, OPEN_YEARS] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const o = useMemo(() => openness(exp, imp, st.tr_year), [exp, imp, st.tr_year]);
   const [sel, setSel] = useState<string | null>(null);

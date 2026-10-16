@@ -1,6 +1,6 @@
 // Finance wave card specs (#13, #10, #6, #20, #19). Components are the generic ones (HeatStrip, Dumbbell, Multiples);
 // only wording, inputs and formats live here. Source lines name the actual international source.
-import { qLabel } from "@/lib/series.mjs";
+import { qLabel, PEERS } from "@/lib/series.mjs";
 import { CPI_LABELS, cpiStep } from "@/lib/finance.mjs";
 import { monLabel } from "@/lib/charts.mjs";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
@@ -11,6 +11,15 @@ import type { HeatCfg } from "@/src/components/HeatStrip";
 export const rules = (items: [string, string][]) => <div className="grp"><h3>Rules</h3><ul className="rules">{items.map(([ic, t]) => <li key={t}><span className="ic">{ic}</span>{t}</li>)}</ul></div>;
 const pct1 = (v: number) => `${v.toFixed(1)}%`;
 
+// #13 Dataset line: every drawn country under the OECD dataflow it comes from (G7 fixed; new countries from SOURCES.json),
+// plus any annual continuation (Russia: World Bank from 2023)
+const CPI_G7_DF: Record<string, string> = { USA: "DF_PRICES_ALL", GBR: "DF_PRICES_ALL", DEU: "DF_PRICES_ALL", CAN: "DF_PRICES_C2018_ALL", JPN: "DF_PRICES_C2018_ALL", FRA: "DF_PRICES_C2018_ALL", ITA: "DF_PRICES_C2018_ALL" };
+export function cpiDatasets(file: any, codes: string[]): string {
+  const nm = (c: string) => PEERS.find((p) => p.code === c)?.short ?? c, by: Record<string, string[]> = {};
+  for (const c of codes) { const df = CPI_G7_DF[c] ?? (/@(DF_[A-Z0-9_]+)/.exec(String(file?.g20_sources?.[c]?.dataflow ?? "")) || [])[1]; if (df) (by[df] = by[df] || []).push(nm(c)); }
+  const ext = Object.entries((file?.g20_ext ?? {}) as Record<string, { src: string; periods: string[] }>).filter(([c]) => codes.includes(c)).map(([c, x]) => `${x.src} (${nm(c)}, annual from ${x.periods[0]})`);
+  return ["OECD " + Object.entries(by).map(([df, cs]) => `${df} (${cs.join(", ")})`).join(" · "), ...ext].join(" · ");
+}
 export const cpiCfg = (headline: unknown, core: unknown): HeatCfg => ({
   id: "13", eyebrow: "Finance", winParam: "in_win", defWin: "5", viewParam: "in_view",
   views: [["headline", "Headline", headline], ["core", "Core", core]], step: cpiStep, aria: "Inflation",
@@ -21,7 +30,7 @@ export const cpiCfg = (headline: unknown, core: unknown): HeatCfg => ({
   calc: (h, v) => <>
     <div className="grp"><h3>Measures</h3><dl><dt>Inflation</dt><dd>{v === "core" ? "CPI excluding food and energy" : "CPI, all items"}, % change on the same month a year earlier. Already a rate, so no per-capita view.</dd>
       <dt>Colour</dt><dd>Fixed bands around the 2% target, the same in every window: {CPI_LABELS.join(" · ")}. Below 1.5%: grey; 1.5–2.5%: plain; above 2.5%: warm.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_PRICES_ALL (US, UK, Germany) · DF_PRICES_C2018_ALL (Canada, Japan, France, Italy)</dd><dt>Other countries</dt><dd>Each cited under Sources by country below.</dd><dt>Method</dt><dd>National CPI (not HICP); each country wholly from one dataset.</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">{cpiDatasets(v === "core" ? core : headline, h.rows.map((r) => r.code))}</dd><dt>Other countries</dt><dd>Each cited under Sources by country below.</dd><dt>Method</dt><dd>National CPI (not HICP); each country wholly from one dataset.</dd></dl></div>
     <div className="grp"><h3>Window</h3><dl><dt>Columns</dt><dd className="strong">{h.cols.length ? `${h.cols[0].label} – ${h.cols[h.cols.length - 1].label}` : "n/a"}</dd><dt>Ends</dt><dd>{monLabel(h.end)}, the latest month any country has.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Quarter / year cell</span><code>mean of its monthly rates published so far; n/a if any is missing</code></div></div></div>
     {rules([["n/a", "Gaps (n/a) are never filled"], ["*", "Latest period uses months published so far"]])}

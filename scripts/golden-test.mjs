@@ -1,6 +1,6 @@
 import { writeFileSync as writeFileSync, unlinkSync } from "node:fs";
 // Fails the build if the app's default 1-year view disagrees with scripts/golden/c1_golden.json.
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, G7, PEERS, PEER_CODES, PRESETS, fmtOn, hasSeries, monotoneSegments, workedExample } from "../lib/series.mjs";
@@ -898,6 +898,49 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
     const lc = rdS("src/components/LineChart.tsx");
     check(/fy < h \/ 2/.test(lc) && /innerHeight - vr\.top/.test(lc) && /maxHeight: tipCap/.test(lc),
       "App Lead (c): stats box goes to the half away from the tapped point, capped short of it at phone width, and kept inside the viewport (DOM-measured in g20-applead.cjs)");
+    // ---- PM lock 2026-10-16: Russia annual extensions, splice markers by chart type, copy, projections, Saudi population ----
+    const cpiR = CH.heatStrip(G20M.pickCodes(cpiH, ["CAN", "RUS"]), 10), rr = cpiR.rows.find((r) => r.code === "RUS");
+    const ann = rr.cells.filter((c) => c.unit === "annual");
+    check(ann.length === 3 && ann.every((c) => c.src === "World Bank") && ann.map((c) => c.from).join() === "2023,2024,2025" && rr.ext && rr.ext.src === "World Bank" && /\(c as \{ src\?: string \}\)\.src/.test(rdS("src/components/HeatStrip.tsx")),
+      "#13 Russia: World Bank annual figures 2023–2025 drawn after OECD stops (own frequency, stats box 'annual · World Bank')");
+    const bop = mg("oecd_bop_current_account_pct_gdp_q.json"), mR = (await import("../lib/finance.mjs")).multiples(G20M.pickCodes(bop, ["CAN", "RUS"]), "2016-Q2"), pR = mR.panels.find((p) => p.code === "RUS");
+    const mc = rdS("src/components/Multiples.tsx");
+    check(pR.ext.map((e) => e.period).join() === "2022,2023,2024,2025" && pR.ext.every((e) => e.src === "IMF" && e.freq === "annual") && /className="ext" data-freq="annual"/.test(mc) && /<circle key=\{e\.period\}/.test(mc) && /`annual · \$\{sp\.src\}`/.test(mc),
+      "#19 Russia: IMF annual current account 2022–2025 drawn after OECD stops: dots joined by the line, stats box 'annual · IMF'");
+    const SPL = { "#3": ["oecd_gdp_per_capita_ppp_current.json", "OECD to 2020 | World Bank from 2021", "tick"], "#8": ["oecd_life_expectancy_birth.json", "OECD to 2023 | World Bank from 2024", "copy"],
+      "#13": ["oecd_cpi_headline_yoy.json", "OECD to 2022-03 | World Bank from 2023", "divider"], "#15": ["oecd_msti_gerd_pct_gdp.json", "OECD to 2020 | World Bank from 2021", "copy"],
+      "#19": ["oecd_bop_current_account_pct_gdp_q.json", "OECD to 2021-Q3 | IMF from 2022", "rule"], "#22": ["c1_employment_rate.json", "OECD to 2021-Q4 | ILO from 2022-Q1", "copy"],
+      "#25": ["oecd_idd_gini_disposable.json", "OECD to 2017 | World Bank from 2018", "copy"] };
+    const MK = { tick: /className="brk spl"/.test(rdS("src/components/Bump.tsx")), divider: /hspl/.test(rdS("src/components/HeatStrip.tsx")) && cpiR.rows.find((r) => r.code === "RUS").splice?.[0]?.label === SPL["#13"][1], rule: /className="splr"/.test(mc), copy: true };
+    const noMark = ["Scatter", "StackRank", "Scorecard", "RankBar"].every((f) => !/spliced|brk spl|splr|hspl/.test(rdS(`src/components/${f}.tsx`)));
+    const bad = Object.entries(SPL).filter(([, [f, lab, kind]]) => (mg(f).g20_splice?.RUS ?? []).map((x) => x.label)[0] !== lab || !MK[kind]);
+    check(!bad.length && noMark && /sc\?\.splice\?\.\[c\]/.test(kit) && /x\.notes \?\? \[\]/.test(rdS("src/components/Sel.tsx")),
+      `Russia splices: copy 'OECD to … | … from …' in Sources by country + stats box on every chart; marker by type: ${Object.entries(SPL).map(([k, v]) => `${k} ${v[2]}`).join(", ")} (ranked/single-value: copy only, no marker)${bad.length ? " BAD " + bad.map((b) => b[0]) : ""}`);
+    // windowed: #3 tick only when 2021 is inside the window (Bump j > 0), #19 rule only when inside q0..q1, #13 divider only when ci > 0
+    check(CH.heatStrip(G20M.pickCodes(cpiH, ["CAN", "RUS"]), 1).rows.find((r) => r.code === "RUS").splice === undefined && /if \(j <= 0 \|\| rs\[j\] === null\) return null/.test(rdS("src/components/Bump.tsx")) && /if \(qq <= q0 \|\| qq > q1\) return null/.test(mc),
+      "Splice markers show only when the splice falls inside the selected window (#13 1Y: no divider)");
+    const NOTE = { "bis_policy_rate_m.json": ["EU", "Euro area: BIS publishes the euro area, not the EU27, for this series."], "bis_household_credit_pct_gdp.json": ["EU", "Euro area: BIS publishes the euro area, not the EU27, for this series."],
+      "oecd_house_price_to_income.json": ["EU", "Euro area: OECD publishes the euro area, not the EU27, for this series."], "imf_weo_GGXWDG_NGDP.json": ["EU", "EU: IMF WEO actuals end 2025; forecasts not shown."],
+      "econ_gdp_series.json": ["CHN", "China: OECD publishes China's real GDP as growth rates only. We chain them into an index, so compare growth, not levels."], "econ_population_joined.json": ["SAU", "Saudi Arabia: population from World Bank throughout."] };
+    const nb = Object.entries(NOTE).filter(([f, [c, t]]) => !(mg(f).g20_notes?.[c] ?? []).includes(t));
+    check(!nb.length && !/[()]/.test(Object.values(NOTE).map((x) => x[1]).join("")), `Locked copy in Sources by country (Euro area #6/#7/#20, EU debt #10, China GDP, Saudi population), no brackets${nb.length ? " BAD " + nb.map((x) => x[0]) : ""}`);
+    const proj = readdirSync("data-g20").filter((f) => f.endsWith(".json") && f !== "SOURCES.json" && existsSync(`data/${f}`)).flatMap((f) => { const m = mg(f), cs = rdj("data-g20", f).country_sources || {};
+      return ["series", "monthly", "quarterly", "annual_only", "gdp"].flatMap((k) => Object.entries(m[k] || {}).filter(([c, s]) => /projection/i.test(JSON.stringify(cs[c] || "")) && s && Array.isArray(s.periods) && s.periods.some((p) => +p.slice(0, 4) >= +String(cs[c].pulled_at).slice(0, 4))).map(([c]) => `${f}:${c}`)); });
+    const chU = mg("c1_unemployment_rate_long.json").annual_only.CHN.periods;
+    check(!proj.length && chU[chU.length - 1] === "2025", `No projected years in any series (ILO modelled-estimate years from the pull year on dropped; China unemployment ends ${chU[chU.length - 1]})${proj.length ? " BAD " + proj : ""}`);
+    const sauJ = (s, step) => { let mx = 0; for (let k = step; k < s.values.length; k++) { const a0 = s.values[k - step], b0 = s.values[k]; if (a0 && b0) mx = Math.max(mx, Math.abs(b0 / a0 - 1)); } return mx; };
+    const sp1 = rdj("data-g20", "econ_population_joined.json").population.SAU, sp2 = rdj("data-g20", "econ_gdp_series.json").population?.SAU;
+    const jm = Math.max(sauJ(sp1, /Q/.test(sp1.periods[0]) ? 4 : 1), sp2 ? sauJ(sp2, /Q/.test(sp2.periods[0]) ? 4 : 1) : 0);
+    // "about 6%": the real 1980–84 growth peaks at 6.3% y/y (smooth); the old OECD/WB join was a 13.4% step. Also no
+    // quarter-on-quarter step above 2% (a splice step shows there, natural growth is ~1.5%/q at most)
+    const qm = Math.max(sauJ(sp1, 1), sp2 ? sauJ(sp2, 1) : 0);
+    check(jm <= 0.065 && qm <= 0.02, `Saudi Arabia population (World Bank throughout, Warehouse 9eebfdd): largest year-on-year change ${(jm * 100).toFixed(1)}% (≤ about 6%: 6.5%), largest quarter step ${(qm * 100).toFixed(2)}% (≤ 2%)`);
+    const cssG = rdS("src/app/globals.css"), fin = rdS("src/charts/finance.tsx"), scc = rdS("src/components/Scorecard.tsx");
+    check(/\.cl1 > \.vseg\{order:2;width:100%/.test(cssG) && /\.cl1 \.vseg button\{height:32px/.test(cssG), "App Lead re-review (2): at 390 the measure toggle has its own full-width 32px row under the country button (measured in g20-layout2.cjs, both themes)");
+    check(/cpiDatasets\(v === "core" \? core : headline, h\.rows\.map/.test(fin) && !/<dd className="mono">OECD DF_PRICES_ALL \(US, UK, Germany\)/.test(fin), "App Lead re-review (3): #13 Dataset line lists every drawn country by dataflow (plus Russia's World Bank continuation)");
+    check(/grid-template-columns:subgrid/.test(cssG) && /column-gap:8px/.test(cssG) && !/className="na">n\/a/.test(scc), "App Lead re-review (4): #22 one label column (longest name), 8px to the marker, names wrap not cut, n/a only in the value column");
+    const sel = rdS("src/components/Sel.tsx");
+    check(/with data/.test(sel) && /"all seven"/.test(sel) && !/PENDING|pending PM/.test(sel + rdS("src/components/Scorecard.tsx")), "Count text: 'all N selected' / 'all N selected with data' when some are greyed; G7 preset 'all seven'; pending markers removed");
   }
   // colour tokens = palette v2 (approved): every --<code> in both themes equals palette.json (vendored copy; Warehouse copy compared when present)
   const dk = (css.match(/:root,\[data-theme="dark"\]\{[^}]*\}/) || [""])[0], lt = (css.match(/\[data-theme="light"\]\{[^}]*\}/) || [""])[0];

@@ -185,6 +185,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
+  // merged splice rule: a spliced country in the stats box always carries its source line ("OECD to 2021-Q3 | IMF from 2021-Q4")
+  if (hover !== null) for (const r of rows) for (const b of r.l.breaks) { const t = `${r.l.name}: ${b.label}`; if (b.label.includes(" | ") && !brk.includes(t)) brk.push(t); }
   const cx = hover === null ? 0 : x(hover);
   const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
   const tipH = 44 + Math.min(rows.length * 24 + rows.filter((r) => "note" in r && r.note).length * 18, 240) + (jan ? 26 : 0) + brk.length * 22;

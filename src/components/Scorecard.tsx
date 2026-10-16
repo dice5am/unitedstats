@@ -12,7 +12,7 @@ const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const pts = (v: number) => `${v >= 0.005 ? "+" : v <= -0.005 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
 
 export default function Scorecard({ rate }: { rate: unknown }) {
-  const ALL = useAllText(); // count text, pending PM wording
+  const ALL = useAllText(); // count text (PM lock)
   const s = useMemo(() => scorecard(rate), [rate]);
   const [sel, setSel] = useState<string | null>(null);
   const [at, setAt] = useState<{ y: number; h: number; H: number } | undefined>();
@@ -56,9 +56,9 @@ export default function Scorecard({ rate }: { rate: unknown }) {
             return (
               <li key={x.code} data-code={x.code} data-freq={x.freq}>
                 <button type="button" className={`scr${sel === x.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { setAt(anchorOf(e.currentTarget)); setSel(sel === x.code ? null : x.code); }} aria-label={`${NAME[x.code]}: ${v === null ? "n/a" : `${pts(v)} points`}`}>
-                  <span className="scn"><i style={{ background: `var(--${x.code})` }} />{NAME[x.code]}</span>
+                  <span className="scn"><i style={{ background: `var(--${x.code})` }} /><span className="scnt">{NAME[x.code]}</span></span>
                   <span className="sct"><span className="scz" style={{ left: `${z}%` }} />
-                    {v === null ? <span className="na">n/a</span> : <span className="scb" style={{ left: `${l}%`, width: `${Math.max(w, 0.6)}%`, background: `var(--${x.code})` }} />}</span>
+                    {v === null ? null : <span className="scb" style={{ left: `${l}%`, width: `${Math.max(w, 0.6)}%`, background: `var(--${x.code})` }} />}</span>
                   <span className="scv">{v === null ? "n/a" : pts(v)}{x.est && <em>est.</em>}{x.freq === "annual" && <em>{x.own.period}</em>}</span>
                 </button>
               </li>

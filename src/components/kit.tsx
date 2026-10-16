@@ -143,6 +143,9 @@ export function useWidth<T extends HTMLElement>() {
 // above it otherwise, so the tapped bar or line stays visible.
 export function StatBox({ title, rows, onClose, bottom = false, at, ax }: { title: string; rows: { code: string; name: string; value: string; note?: string }[]; onClose: () => void; bottom?: boolean; ax?: { x: number; W: number; w?: number }; at?: { y: number; h: number; H: number } }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
+  // merged splice rule (PM 2026-10-16): every chart's stats box names the source on each side for a spliced country
+  const sc = useSelCtx(), sl = [...new Set(rows.map((r) => r.code))].flatMap((c) => (sc?.splice?.[c] ?? []).map((l) => ({ code: c, name: "Sources", value: "", note: l })));
+  rows = [...rows, ...sl.filter((x) => !rows.some((r) => r.note === x.note))];
   return (
     <div className={`tip statbox ${at ? (at.y + at.h / 2 < at.H / 2 ? "below" : "above") : bottom ? "bot" : "top"}`} role="status" onPointerDown={(e) => e.stopPropagation()}
       style={{ ...(at ? (at.y + at.h / 2 < at.H / 2 ? { top: at.y + at.h + 6, bottom: "auto" } : { bottom: at.H - at.y + 6, top: "auto" }) : {}),

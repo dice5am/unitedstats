@@ -83,6 +83,9 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
           {CS.map((c) => { const rs = L.rank[c].slice(i0); if (rs.every((r) => r === null)) return null; let d = ""; rs.forEach((r, j) => { if (r === null) return; d += `${d && rs[j - 1] !== null ? "L" : "M"}${x(j).toFixed(1)},${y(r).toFixed(1)}`; });
             return <g key={c} style={{ color: `var(--${c})` }}>
               <path d={d} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
+              {/* splice tick (merged splice rule): on the line at the first spliced year, only inside the window */}
+              {(((file as any).g20_splice?.[c] ?? []) as { froms: string[]; label: string }[]).map((sp) => { const j = years.indexOf(sp.froms[0]); if (j <= 0 || rs[j] === null) return null;
+                return <g key={sp.label} className="brk spl" data-code={c} data-from={sp.froms[0]}><rect x={x(j) - 1} y={y(rs[j]!) - 6} width={2} height={12} rx={1} className="brkt" /><title>{sp.label}</title></g>; })}
               {n <= 25 && rs.map((r, j) => r !== null && <circle key={j} cx={x(j)} cy={y(r)} r={2.5} fill="currentColor" />)}
               {(() => { let k = n - 1; while (k >= 0 && rs[k] === null) k--; return k >= 0 ? <circle cx={x(k)} cy={y(rs[k]!)} r={4} fill="currentColor" /> : null; })()}
               {rs[0] !== null && <text x={x(0) - 8} y={y(rs[0]) + 4} className="bl" textAnchor="end">{narrow ? CODE[c] : `${NAME[c]} ${rs[0]}`}</text>}

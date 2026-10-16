@@ -566,3 +566,23 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .tipr.focus .nm{font-weight:700}
 .chart .hit{cursor:pointer}.chart .endl{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.chart .series,.chart .endl{transition:none}}
+
+/* Russia-style splice markers on non-line charts (merged splice rule): grey 40%, same as the line tick */
+.hc.hspl{box-shadow:inset 1px 0 0 color-mix(in srgb,var(--text-2) 40%,transparent)}
+.splr{stroke:color-mix(in srgb,var(--text-2) 40%,transparent);stroke-width:1}
+/* Design 2026-10-16: at phone width the measure toggle gets its own row under the country button: full width, 32px tall,
+   full labels ("GDP per capita", never shortened); the country button keeps the top row to itself */
+@media (max-width:767px){
+ .cl1:has(.vseg){flex-direction:column;align-items:stretch}
+ .cl1:has(.vseg) > :not(.vseg){order:1;align-self:flex-start}
+ .cl1 > .vseg{order:2;width:100%;flex:none}
+ .cl1 .vseg button{height:32px;flex:1;padding:0 6px;white-space:nowrap}
+ .cl1 .vseg .hl{height:32px}
+}
+/* #22 (Design 2026-10-16): one fixed label column for all rows, sized to the longest name (Saudi Arabia), 8px to the
+   marker; at phone width the name wraps to two lines (never cut, never overlapping); n/a only in the value column */
+.sc .scl{display:grid;grid-template-columns:fit-content(45%) minmax(0,1fr) 76px;column-gap:8px}
+.sc .scl > li{display:grid;grid-column:1/-1;grid-template-columns:subgrid}
+.sc .scl .scr{grid-column:1/-1;grid-template-columns:subgrid;gap:0 8px}
+.sc .scn{white-space:normal;min-width:0}.sc .scnt{overflow-wrap:break-word;line-height:1.2}
+@media (max-width:767px){.sc .scl{grid-template-columns:fit-content(34%) minmax(0,1fr) 64px}}

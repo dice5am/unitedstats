@@ -45,7 +45,7 @@ function Panel({ p, lo, hi, first, onOpen }: { p: ReturnType<typeof comeback>["p
 }
 
 export default function Comeback({ econ, initial }: { econ: unknown; initial: MutableRefObject<string | null> }) {
-  const ALL = useAllText(); // count text, pending PM wording
+  const ALL = useAllText(); // count text (PM lock)
   const [st, set] = useParams(initial, { cr_view: ["gdp", ["gdp", "pc"] as const] });
   const view = st.cr_view as "pc" | "gdp";
   const c = useMemo(() => comeback(econ, view), [econ, view]);

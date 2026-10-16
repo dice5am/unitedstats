@@ -20,7 +20,7 @@ export type HeatCfg = {
   source: (view: string) => string; calc: (h: H, view: string) => ReactNode; aria: string;
 };
 export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; initial: MutableRefObject<string | null>; cfg?: HeatCfg }) {
-  const ALL = useAllText(); // count text, pending PM wording
+  const ALL = useAllText(); // count text (PM lock)
   const spec: Record<string, [string, readonly string[]]> = cfg ? { [cfg.winParam]: [cfg.defWin, WIN], [cfg.viewParam]: [cfg.views[0][0], cfg.views.map((v) => v[0])] } : { uh_win: ["20", WIN] };
   const [st, set] = useParams(initial, spec as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const wp = cfg ? cfg.winParam : "uh_win", view = cfg ? st[cfg.viewParam] : "";
@@ -77,7 +77,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
           const note0 = c.v === null ? (c.why === "before first reading" ? `before ${own ? "its data" : "OECD monthly data"} starts (${perLabel(sel.r.first)})` : c.why === "gap" ? `no data for a ${own === "annual" ? "year" : own === "quarterly" ? "quarter" : "month"} in this period` : own ? `data ends ${sel.r.last}` : `not yet published (latest ${perLabel(sel.r.last)})`)
             : own && c.n === 1 ? perLabel(c.from!) : c.of > 1 ? `mean of ${c.n === c.of ? `all ${c.of} ${U}` : `${perLabel(c.from!)}–${perLabel(c.to!)} (${c.n} of ${c.of} ${U})`}` : undefined;
           // own-frequency rows (G20 quarterly-only / annual-only) carry their frequency in the stats box
-          const note = own ? [note0, own].filter(Boolean).join(" · ") : note0;
+          const note = own ? [note0, own, (c as { src?: string }).src].filter(Boolean).join(" · ") : note0;
           return <StatBox bottom={cur![0] < 3} title={`${NAME[sel.r.code]} · ${sel.c.label}`} onClose={() => setCur(null)} rows={[{ code: sel.r.code, name: cfg ? cfg.valueName(view) : "Unemployment rate", value: fmt(sel.v), note }]} />; })()}
         <div className={nC > 20 ? "hgrid y50" : "hgrid"} role="grid" aria-label={`${cfg ? cfg.aria : "Unemployment rate"} by country and period. Arrow keys move between cells.`} tabIndex={0} onKeyDown={key}
           style={{ gridTemplateColumns: `${narrow ? 28 : 72}px repeat(${nC}, minmax(0, 1fr))` }}>
@@ -86,7 +86,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
               <span role="rowheader" className="hrh">{narrow ? SHORT_CODE[r.code] : NAME[r.code]}</span>
               {r.vals.map((v, ci) => (
                 <span role="gridcell" key={ci} aria-selected={cur?.[0] === ri && cur?.[1] === ci} aria-label={`${NAME[r.code]} ${h.cols[ci].label}: ${fmt(v)}`}
-                  className={`hc ${v === null ? "hna" : cfg ? `hd${cfg.step(v)}` : `hs${heatStep(v, h.min, h.max)}`}${cur?.[0] === ri && cur?.[1] === ci ? " cur" : ""}`}
+                  className={`hc ${v === null ? "hna" : cfg ? `hd${cfg.step(v)}` : `hs${heatStep(v, h.min, h.max)}`}${cur?.[0] === ri && cur?.[1] === ci ? " cur" : ""}${(r as { splice?: { ci: number }[] }).splice?.some((x) => x.ci === ci) ? " hspl" : ""}`}
                   onPointerDown={(e) => { e.stopPropagation(); setCur([ri, ci]); }} onPointerEnter={(e) => e.pointerType === "mouse" && setCur([ri, ci])}>{v === null ? <em>n/a</em> : null}</span>
               ))}
             </div>
