@@ -9,6 +9,7 @@ import { qLabel, PEERS } from "@/lib/series.mjs";
 import { multiples, winFromQ, lastNN } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH } from "./kit";
+import { useSelNames } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const WIN = ["1", "5", "10", "20", "50"] as const;
@@ -20,14 +21,18 @@ export type MultiplesSpec = {
 };
 
 export default function Multiples({ file, spec, initial }: { file: any; spec: MultiplesSpec; initial: MutableRefObject<string | null> }) {
+  const NM = useSelNames(NAME);
   const [st, set] = useParams(initial, { [spec.param]: [spec.defWin, WIN] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const years = Number(st[spec.param]);
   const end = useMemo(() => Object.values(file.series as Record<string, any>).map((s) => s.periods[lastNN(s)]).sort().pop() as string, [file]);
   const m = useMemo(() => multiples(file, winFromQ(end, years), spec.ref ?? null), [file, end, years, spec.ref]);
   const [wrap, w] = useWidth<HTMLDivElement>();
-  const phNow = useRef(0), fitT = useFitH(wrap, phNow);
+  const phNow = useRef(0), fitT = useFitH(wrap, phNow, 24);
   const [cur, setCur] = useState<{ code: string; i: number } | null>(null);
-  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(m.panels.length / cols), ph = fitT ? Math.floor(fitT / rows) : cols === 4 ? 150 : 120;
+  // Design rule 2026-10-16: columns 2 at phone, 3 at 1366, 4 at 1440+; never squeeze: min panel height 96 (phone) / 120 (desktop);
+  // fit-to-viewport only up to 8 panels, otherwise the card grows and the page scrolls.
+  const vw = w && typeof window !== "undefined" ? innerWidth : 0, minPh = vw >= 1024 ? 120 : 96;
+  const cols = vw >= 1440 ? 4 : vw >= 1024 ? 3 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(m.panels.length / cols), ph = Math.max(minPh, fitT && m.panels.length <= 8 ? Math.floor(fitT / rows) : cols >= 3 ? 150 : 120);
   phNow.current = rows * ph;
   const pl = 6, pr = 6, pt = 16, pb = 18, iw = pw - pl - pr, ih = ph - pt - pb;
   const q0 = qi(m.from), q1 = qi(m.to), n = q1 - q0 + 1;
@@ -46,12 +51,12 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
       controls={<div className="bar solo"><Seg label="Timeframe" value={String(years)} options={WIN.map((v) => [v, `${v}Y`])} onChange={(v) => { setCur(null); set(spec.param, v); }} /></div>}
       legend={<>
         {spec.kind === "area" && refIn && <li><i className="refl" />{qLabel(spec.ref!)} level</li>}
-        {m.panels.some((p) => p.late) && <li><i className="late" />Starts later: {m.panels.filter((p) => p.late).map((p) => `${NAME[p.code]} from ${p.late!.slice(0, 4)}`).join(", ")}</li>}
+        {m.panels.some((p) => p.late) && <li><i className="late" />Starts later: {m.panels.filter((p) => p.late).map((p) => `${NM[p.code]} from ${p.late!.slice(0, 4)}`).join(", ")}</li>}
         <li>Same scale in all panels: {tf(lo)} to {tf(hi)}, gridlines every {step}%</li>
       </>}
       source={spec.source} calc={spec.calc(m)}>
       <div className="smgrid fm" ref={wrap} onPointerDown={() => setCur(null)} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap }}>
-        {sp && sel && <StatBox title={`${NAME[sel.code]} · ${qLabel(sp.period)}`} onClose={() => setCur(null)} rows={[
+        {sp && sel && <StatBox title={`${NM[sel.code]} · ${qLabel(sp.period)}`} onClose={() => setCur(null)} rows={[
           { code: sel.code, name: spec.unitLabel, value: sp.value === null ? "n/a" : spec.fmt(sp.value), note: (sp.status && spec.statusNote?.[sp.status]) || undefined },
           ...(sel.ref && sel.ref.value !== null && refIn ? [{ code: sel.code, name: qLabel(sel.ref.period), value: spec.fmt(sel.ref.value) }] : []),
         ]} />}
@@ -63,8 +68,8 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
           const pick = (e: React.PointerEvent<SVGSVGElement>) => { const r = e.currentTarget.getBoundingClientRect(); const qq = Math.round(((e.clientX - r.left - pl) / iw) * n - 0.5) + q0; const i = qq - qi(p.points[0].period); if (i >= 0 && i < p.points.length) setCur({ code: p.code, i }); };
           return (
             <figure key={p.code} className="smp">
-              <figcaption style={{ color: `var(--${p.code})` }}><span>{NAME[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><b>{spec.fmt(p.last.value)}</b></figcaption>
-              <svg width={pw} height={ph} role="img" aria-label={`${NAME[p.code]}: ${spec.unitLabel} ${qLabel(p.points[0].period)} to ${qLabel(p.last.period)}, latest ${spec.fmt(p.last.value)}`}
+              <figcaption style={{ color: `var(--${p.code})` }}><span>{NM[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><b>{spec.fmt(p.last.value)}</b></figcaption>
+              <svg width={pw} height={ph} role="img" aria-label={`${NM[p.code]}: ${spec.unitLabel} ${qLabel(p.points[0].period)} to ${qLabel(p.last.period)}, latest ${spec.fmt(p.last.value)}`}
                 onPointerDown={(e) => { e.stopPropagation(); pick(e); }} onPointerMove={(e) => e.pointerType === "mouse" && pick(e)} style={{ touchAction: "pan-y" }}>
                 {ticks.map((t) => <g key={t}><line x1={pl} x2={pw - pr} y1={y(t)} y2={y(t)} className={t === 0 ? "zl" : "gl"} />{(i % cols === 0) && (t === lo || t === hi || t === 0) && <text x={pl + 2} y={y(t) - 3} className="ax fmt">{tf(t)}</text>}</g>)}
                 {spec.kind === "area" ? <>

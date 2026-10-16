@@ -7,11 +7,13 @@ import { PEERS } from "@/lib/series.mjs";
 import { openness, OPEN_YEARS, OPEN_DEFAULT } from "@/lib/finance.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, TagIn, anchorOf } from "./kit";
+import { useAllText } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const f1 = (v: number) => `${v.toFixed(1)}%`;
 
 export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; initial: MutableRefObject<string | null> }) {
+  const ALL = useAllText(); // count text, pending PM wording
   const [st, set] = useParams(initial, { tr_year: [OPEN_DEFAULT, OPEN_YEARS] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const o = useMemo(() => openness(exp, imp, st.tr_year), [exp, imp, st.tr_year]);
   const [sel, setSel] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function StackBar({ exp, imp, initial }: { exp: any; imp: any; in
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>Openness</dt><dd>Exports + imports of goods and services, each as % of GDP. Already a share of GDP, so no per-capita view.</dd></dl></div>
         <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">World Bank WDI · NE.EXP.GNFS.ZS + NE.IMP.GNFS.ZS</dd><dt>Frequency</dt><dd>Yearly. Canada, Germany, France, UK and Italy to 2025; the US and Japan to 2024.</dd></dl></div>
-        <div className="grp"><h3>Window</h3><dl><dt>Year</dt><dd className="strong">{o.year}</dd><dt>Default</dt><dd>2024, the latest year all seven share, so the default never mixes years.</dd></dl></div>
+        <div className="grp"><h3>Window</h3><dl><dt>Year</dt><dd className="strong">{o.year}</dd><dt>Default</dt><dd>2024, the latest year {ALL} share, so the default never mixes years.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Total</span><code>exports % GDP + imports % GDP</code></div>
           {(() => { const c = o.rows.find((x) => x.code === "CAN"); return c && c.total !== null && <p className="ex">Canada, {o.year}: <b>{c.exports!.toFixed(1)} + {c.imports!.toFixed(1)} = {c.total.toFixed(1)}% of GDP</b></p>; })()}</div></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>A year a country hasn’t published is n/a, tagged with its latest year; never filled</li></ul></div>

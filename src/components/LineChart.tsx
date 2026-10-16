@@ -2,11 +2,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MON } from "@/lib/charts.mjs";
 import { DISPLAY_DP } from "@/lib/series.mjs";
-import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands, flagTags } from "@/lib/series.mjs";
+import { SHORT_CODE, mStr, qOfMonth, monotonePath, rawLevel, glowLeaders, statusAt, estAt, ownChange, wholeEstimate, noDataBands, flagTags, dataEnd } from "@/lib/series.mjs";
 
 export type Pt = { period: string; mi: number; value: number | null };
 export type Line = {
-  code: string; name: string; freq: "monthly" | "quarterly"; points: Pt[]; breaks: { mi: number; label: string }[];
+  code: string; name: string; freq: "monthly" | "quarterly" | "annual"; points: Pt[]; breaks: { mi: number; label: string }[];
   last: number | null; growth: number | null; janJumps: string[]; indexedFrom: string | null; excluded?: boolean; late?: string | null; full?: boolean;
 };
 
@@ -15,6 +15,7 @@ const col = (c: string) => `var(--${c})`;
 const COVID = { a: 2020 * 12 + 2, b: 2021 * 12 + 5 };
 // one month formatter everywhere ("Sep", never "Sept")
 const fmtM = (mi: number, short = false) => `${MON[mi % 12]} ${short ? "’" + String(Math.floor(mi / 12)).slice(2) : Math.floor(mi / 12)}`;
+const pEndMi = (p: string) => (/Q/.test(p) ? +p.slice(0, 4) * 12 + +p.slice(-1) * 3 - 1 : /^\d{4}$/.test(p) ? +p * 12 + 11 : +p.slice(0, 4) * 12 + +p.slice(5, 7) - 1);
 const qLabel = (p: string) => { const [y, q] = p.split("-"); return `${q} ${y}`; };
 
 let ctx: CanvasRenderingContext2D | null = null;
@@ -145,13 +146,19 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const ends = lines.filter((l) => !(data.noEndLabel || []).includes(l.code) || !lines.some((q) => q.code === "XM")).map((l) => {
     const lp = [...l.points].reverse().find((p) => p.value !== null);
     return lp ? { l, mi: lp.mi, v: lp.value as number, ty: y(lp.value as number) } : null;
-  }).filter((e): e is NonNullable<typeof e> => !!e).sort((a, b) => a.ty - b.ty);
-  for (let i = 0; i < ends.length; i++) ends[i].ty = Math.max(ends[i].ty, pad.t + 6, i ? ends[i - 1].ty + minGap : -Infinity);
-  for (let i = ends.length - 1; i >= 0; i--) ends[i].ty = Math.min(ends[i].ty, i === ends.length - 1 ? bottom - 4 : ends[i + 1].ty - minGap);
+  }).filter((e): e is NonNullable<typeof e> => !!e).sort((a, b) => a.ty - b.ty)
+    // Design rule 2026-10-16: at phone width with more than 8 lines, label only the top line, the bottom line and Canada
+    // (max 3), plus the tapped line as part of its focus; 1366 and up keep every label. Slots stay inside the plot.
+    .filter((e, i, arr) => wide || lines.length <= 8 || i === 0 || i === arr.length - 1 || e.l.code === "CAN" || e.l.code === focus);
+  // labels never leave the plot: with many lines on a short plot (20 at 1366x657) the slot gap tightens to fit
+  const gapE = ends.length > 1 ? Math.min(minGap, (bottom - 4 - (pad.t + 6)) / (ends.length - 1)) : minGap;
+  for (let i = 0; i < ends.length; i++) ends[i].ty = Math.max(ends[i].ty, pad.t + 6, i ? ends[i - 1].ty + gapE : -Infinity);
+  for (let i = ends.length - 1; i >= 0; i--) ends[i].ty = Math.min(ends[i].ty, i === ends.length - 1 ? bottom - 4 : ends[i + 1].ty - gapE);
 
   // tooltip
   const ptAt = (l: Line, mi: number) => {
     if (l.freq === "monthly") return l.points.find((p) => p.mi === mi) ?? null;
+    if (l.freq === "annual") { const yr = Math.floor(mi / 12), lastA = l.points[l.points.length - 1]; return l.points.find((p) => Math.floor(p.mi / 12) === yr) ?? (lastA && yr > Math.floor(lastA.mi / 12) ? lastA : null); }
     const q = qOfMonth(mi), last = l.points[l.points.length - 1];
     return l.points.find((p) => qOfMonth(p.mi) === q) ?? (last && q > qOfMonth(last.mi) ? last : null);
   };
@@ -161,16 +168,19 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   };
   const rows = hover === null ? [] : picked.map((l) => {
     const p = l.excluded ? null : ptAt(l, hover);
+    if (l.excluded) { const de = dataEnd(data, l.code); return { l, p: null, v: null, lvl: null, note: de && pEndMi(de) < hover ? `data ends ${de}` : "", tag: null }; }
     const lvl = p ? rawLevel(data, l.code, p.period) : null;
     const band = bands.find((b) => b.code === l.code && hover < b.to);
     if (band) return { l, p: null, v: null, lvl: null, note: band.label, tag: null };
-    const pre = l.late && hover < l.points.find((q) => q.value !== null)!.mi ? `from ${l.late.includes("Q") ? qLabel(l.late) : fmtM(Number(l.late.slice(0, 4)) * 12 + Number(l.late.slice(5)) - 1)}` : null;
+    const pre = l.late && hover < l.points.find((q) => q.value !== null)!.mi ? `from ${/^\d{4}$/.test(l.late) ? l.late : l.late.includes("Q") ? qLabel(l.late) : fmtM(Number(l.late.slice(0, 4)) * 12 + Number(l.late.slice(5)) - 1)}` : null;
     // early ender (e.g. UK monthly to Jun 2026): past its last reading, show its own last figure tagged "to <month>"
     const lastP = [...l.points].reverse().find((q) => q.value !== null);
     if (!l.excluded && l.freq === "monthly" && lastP && lastP.mi < m1 && hover > lastP.mi) { const oc = R ? ownChange(data, l.code, years) : null;
       return { l, p: lastP, v: lastP.value, lvl: rawLevel(data, l.code, lastP.period), tag: `to ${fmtM(lastP.mi)}${oc ? ` · ${oc.change > 0.004 ? "+" : oc.change < -0.004 ? "−" : ""}${Math.abs(oc.change).toFixed(2)} pts over ${years}Y` : ""}` }; }
     const fl = p && p.value !== null ? flagTags(data, l.code, p.period) : []; // general rule: estimate · OECD estimate · provisional
-    return { l, p, v: p ? p.value : null, lvl, oe: fl.includes("OECD estimate"), note: fl.join(" · "), tag: pre ?? (l.freq === "quarterly" && p ? qLabel(p.period) : null) };
+    // n/a after a country's own last period (e.g. Russia GDP): say where its data ends
+    const de = (!p || p.value === null) ? dataEnd(data, l.code) : null; if (de && pEndMi(de) < hover) fl.push(`data ends ${de}`);
+    return { l, p, v: p ? p.value : null, lvl, oe: fl.includes("OECD estimate"), note: fl.join(" · "), tag: pre ?? (l.freq === "annual" && p ? `${p.period} · annual` : l.freq === "quarterly" && p ? (allQ ? qLabel(p.period) : `${qLabel(p.period)} · quarterly`) : null) };
   }).sort((a, b) => (a.v === null ? 1 : b.v === null ? -1 : b.v - a.v));
   const jan = hover !== null && showJumps && lines.some((l) => l.janJumps.includes(mStr(hover)));
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
@@ -297,6 +307,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
               {vis && !l.excluded && <path d={monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })))} className="hit" data-code={l.code} fill="none" stroke="transparent" strokeWidth={wide ? 12 : 20} pointerEvents="stroke"
                 onPointerEnter={(e) => { if (e.pointerType === "mouse") setFocus(l.code); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setFocus(null); }}
                 onPointerDown={(e) => { e.stopPropagation(); setBrkTip(null); setCovTip(false); setFocus(l.code); pick(e.clientX); }} />}
+              {vis && !allQ && l.freq !== "monthly" && l.points.map((q) => q.value !== null && <circle key={`f${q.period}`} className="fpt" data-freq={l.freq} cx={x(q.mi)} cy={y(q.value)} r={2.5} fill={col(l.code)} />)}
               {dd && <path key={`d${l.code}${years}${mode}`} d={dd} className="ln est fadein" data-code={l.code} fill="none" stroke={col(l.code)} strokeWidth={2} strokeDasharray="4 3" strokeLinecap="butt" />}
               {vis && showJumps && l.janJumps.map((jp) => {
                 const p = l.points.find((q) => q.period === jp);
@@ -350,7 +361,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         {lines.flatMap((l) => l.breaks.map((bk) => {
           if (!Number.isFinite(bk.mi) || bk.mi < m0 || bk.mi > m1) return null;
           const p = l.points.reduce<Pt | null>((best, q) => (q.value !== null && (!best || Math.abs(q.mi - bk.mi) < Math.abs(best.mi - bk.mi)) ? q : best), null);
-          if (!p || p.value === null || Math.abs(p.mi - bk.mi) > (l.freq === "quarterly" ? 2 : 1)) return null; // must sit on a drawn stretch
+          if (!p || p.value === null || Math.abs(p.mi - bk.mi) > (l.freq === "annual" ? 6 : l.freq === "quarterly" ? 2 : 1)) return null; // must sit on a drawn stretch
           const bx = x(p.mi), by = y(p.value); // snap to the nearest drawn reading so the tick sits on the line
           return (
             <g key={`${l.code}${bk.mi}`} className="brk" data-code={l.code} data-mi={bk.mi} onPointerEnter={(e) => e.pointerType === "mouse" && setBrkTip({ x: bx, y: by, label: bk.label })}

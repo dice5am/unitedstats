@@ -5,6 +5,7 @@ import { monotonePath, qLabel, PEERS } from "@/lib/series.mjs";
 import { comeback, qi } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth, TagIn } from "./kit";
+import { useAllText } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const pct = (v: number) => `${v - 100 >= 0.005 ? "+" : v - 100 <= -0.005 ? "−" : ""}${Math.abs(v - 100).toFixed(1)}%`;
@@ -44,6 +45,7 @@ function Panel({ p, lo, hi, first, onOpen }: { p: ReturnType<typeof comeback>["p
 }
 
 export default function Comeback({ econ, initial }: { econ: unknown; initial: MutableRefObject<string | null> }) {
+  const ALL = useAllText(); // count text, pending PM wording
   const [st, set] = useParams(initial, { cr_view: ["gdp", ["gdp", "pc"] as const] });
   const view = st.cr_view as "pc" | "gdp";
   const c = useMemo(() => comeback(econ, view), [econ, view]);
@@ -58,7 +60,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
   const op = open ? c.panels.find((p) => p.code === open)! : null;
   return (
     <CardFrame id="chart-1" eyebrow="Economy" title={chartTitle("1", view)}
-      sub={<>{view === "pc" ? "Real GDP per person" : "Real GDP, total"} · Q4 2019 = 100 · same scale in all panels · to {qLabel(c.end)}, the latest quarter all seven share</>}
+      sub={<>{view === "pc" ? "Real GDP per person" : "Real GDP, total"} · Q4 2019 = 100 · same scale in all panels · to {qLabel(c.end)}, the latest quarter {ALL} share</>}
       controls={<Seg className="vseg" label="Measure" value={view} options={[["gdp", "Total GDP"], ["pc", "Per person"]]} onChange={(v) => set("cr_view", v)} />}
       tag={srcTag("1", qLabel(c.end))}
       headline={
@@ -80,11 +82,11 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
           {exEnd.value !== null && <p className="ex">{NAME[ex.code] ?? ex.code}, {qLabel(exEnd.period)}: <b>index {exEnd.value.toFixed(2)}</b>{ex.back ? <> · first back in <b>{qLabel(ex.back)}</b></> : null}</p>}
         </div></div>
         <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">Q1 2019 – {qLabel(c.end)} · quarterly</dd>
-          <dt>Ends</dt><dd>{view === "pc" ? "Q1 2026, the latest quarter all seven share (France’s population stops there)." : "Q2 2026, the latest quarter all seven share."}</dd></dl></div>
+          <dt>Ends</dt><dd>{view === "pc" ? `Q1 2026, the latest quarter ${ALL} share (France’s population stops there).` : `Q2 2026, the latest quarter ${ALL} share.`}</dd></dl></div>
         <div className="grp"><h3>Rules</h3><ul className="rules">
           <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
           <li><span className="ic">P</span>Latest quarters may be provisional</li>
-          <li><span className="ic">=</span>Shared y-scale across all seven panels</li>
+          <li><span className="ic">=</span>Shared y-scale across {ALL} panels</li>
         </ul></div>
       </>}>
       <div className="smwrap" onPointerDown={() => setOpen(null)}>

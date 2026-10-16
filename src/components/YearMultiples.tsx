@@ -16,12 +16,15 @@ export default function YearMultiples({ file, spec, initial }: { file: any; spec
   const panels = useMemo(() => Object.keys(file.series).filter((c) => (file.series[c].values as (number | null)[]).some((v, i) => v !== null && +file.series[c].periods[i] >= +from)).map((c) => { const s = file.series[c]; const pts = s.periods.map((p: string, i: number) => ({ y: +p, v: s.values[i] as number | null })).filter((q: any) => q.y >= +from);
     const last = [...pts].reverse().find((q: any) => q.v !== null); return { code: c, pts, end: String(last.y), value: last.v as number }; }), [file, from]);
   const [wrap, w] = useWidth<HTMLDivElement>();
-  const phNow = useRef(0), fitT = useFitH(wrap, phNow);
+  const phNow = useRef(0), fitT = useFitH(wrap, phNow, 24);
   const [sel, setSel] = useState<string | null>(null);
   const all = panels.flatMap((p) => p.pts.map((q: any) => q.v)).filter((v: any) => v !== null).concat(spec.ref ? [spec.ref.value] : []);
   const step = [0.25, 0.5, 1, 2, 5, 10].find((s) => (Math.max(...all) - Math.min(0, ...all)) / s <= 5) ?? 20, lo = Math.min(0, Math.floor(Math.min(...all) / step) * step), hi = Math.ceil(Math.max(...all) / step) * step;
   const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => +(lo + i * step).toFixed(2));
-  const cols = w >= 900 ? 4 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(panels.length / cols), ph = fitT ? Math.floor(fitT / rows) : cols === 4 ? 140 : 110, pl = 6, pr = 6, pt = 16, pb = 18;
+  // Design rule 2026-10-16: columns 2 at phone, 3 at 1366, 4 at 1440+; never squeeze: min panel height 96 (phone) / 120 (desktop);
+  // fit-to-viewport only up to 8 panels, otherwise the card grows and the page scrolls.
+  const vw = w && typeof window !== "undefined" ? innerWidth : 0, minPh = vw >= 1024 ? 120 : 96;
+  const cols = vw >= 1440 ? 4 : vw >= 1024 ? 3 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(panels.length / cols), ph = Math.max(minPh, fitT && panels.length <= 8 ? Math.floor(fitT / rows) : cols >= 3 ? 140 : 110), pl = 6, pr = 6, pt = 16, pb = 18;
   phNow.current = rows * ph;
   const y0 = panels[0].pts[0].y, y1 = Math.max(...panels.map((p) => +p.end));
   const x = (yr: number) => pl + ((yr - y0) / (y1 - y0 || 1)) * (pw - pl - pr), y = (v: number) => pt + ((hi - v) / (hi - lo)) * (ph - pt - pb);

@@ -1,4 +1,5 @@
 // Economy wave specs (#25 Gini dot plot, #15 R&D stacked bar). #3 is its own component (Bump).
+import { allText } from "@/src/components/Sel";
 import { ownLatest, rdStack, RD_YEARS, RD_DEFAULT } from "@/lib/waves.mjs";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { rules } from "./finance";
@@ -30,7 +31,7 @@ export const rdSpec = (gerd: unknown, berd: unknown): StackSpec => ({
   source: "Source: OECD Main Science and Technology Indicators · GERD and BERD, % of GDP",
   calc: (y, rows) => { const c = rows.find((r) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>R&D</dt><dd>Total R&D spending in the country (GERD), with the part spent by businesses (BERD). The rest is government, universities and non-profits. Already a share of GDP, so no per-capita toggle.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD MSTI · G_XGDP and B_XGDP</dd><dt>Default</dt><dd>2023, the latest year all seven have, so the default never mixes years. The UK has no 2024 total; Canada alone has 2025.</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD MSTI · G_XGDP and B_XGDP</dd><dt>Default</dt><dd>2023, the latest year {allText(rows.map((r) => r.code))} have, so the default never mixes years. The UK has no 2024 total; Canada alone has 2025.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Rest</span><code>GERD − BERD</code></div>
       {c && c.total !== null && <p className="ex">Canada, {y}: <b>{c.total.toFixed(2)} − {c.parts[0]!.toFixed(2)} = {c.parts[1]!.toFixed(2)}% of GDP</b></p>}</div></div>
     {rules([["n/a", "A year a country hasn’t published is n/a, tagged with its latest year; never filled"], ["D", "US totals carry OECD’s ‘definition differs’ flag; the stats box tags it"]])}

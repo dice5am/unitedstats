@@ -1,11 +1,12 @@
 "use client";
 import { Fragment, useEffect, useMemo, useRef, useState, useLayoutEffect, type MutableRefObject } from "react";
-import { COUNTRIES, WINDOWS, EURO, estAt, buildLine, headlinePick, headlineLabels, fmtHeadline, workedExample, quarterExample, qLabel, commonEnds, windowLabel, DEFAULT_ON, parseOn, PEERS, PEER_CODES, fmtOn, hasSeries } from "@/lib/series.mjs";
+import { COUNTRIES, WINDOWS, EURO, estAt, buildLine, headlinePick, headlineLabels, fmtHeadline, workedExample, quarterExample, qLabel, commonEnds, windowLabel, DEFAULT_ON, parseOn, PEERS, PEER_CODES, fmtOn, hasSeries, dataEnd } from "@/lib/series.mjs";
 import { writeSel, OLD_ON } from "./kit";
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
 import { NO_DATA_NOTE, SelCites, citesFor } from "./Sel";
+import { euLabel } from "@/lib/g20.mjs";
 import { writeParams, CalcDisclosure, useDocTitle, TagIn } from "./kit";
 import { MON } from "@/lib/charts.mjs";
 import { srcTag, chartTitle } from "@/src/charts/meta";
@@ -51,6 +52,18 @@ const fmtL = (v: number) => (v >= 1000 ? Math.round(v).toLocaleString("en-GB") :
 const k = (v: number) => `${v.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
 
 
+// period comparison across frequencies ("2021-Q3" vs "2025-08"): compare by month index of the period's last month
+const pEnd = (p: string) => (/Q/.test(p) ? +p.slice(0, 4) * 12 + +p.slice(-1) * 3 - 1 : /^\d{4}$/.test(p) ? +p * 12 + 11 : +p.slice(0, 4) * 12 + +p.slice(5, 7) - 1);
+const endsBefore = (a: string, b: string) => pEnd(a) < pEnd(b);
+// G20 areas whose data ends inside the window and cover under half of it (Russia GDP to 2021-Q3 on 5Y) are n/a for
+// that window, never a two-point stub; the menu and stats box say "data ends <period>". G7 lines are never cut.
+function staleCut(ds: unknown, code: string, l: Line): Line {
+  if (G7_CODES.includes(code) || l.excluded) return l;
+  const de = dataEnd(ds, code), lastP = l.points[l.points.length - 1]?.period; if (!de || !lastP || !endsBefore(de, lastP)) return l;
+  const n = l.points.filter((p) => p.value !== null).length;
+  return n * 2 >= l.points.length ? l : ({ ...l, excluded: true, last: null, growth: null, points: l.points.map((p) => ({ ...p, value: null, raw: null })) } as Line);
+}
+const G7_CODES = ["CAN", "USA", "JPN", "GBR", "DEU", "FRA", "ITA", "XM"];
 export default function ChartCard({ kind, sets, primary = false, initialSearch }: {
   kind: Kind; sets: Partial<Record<View, DS>>; primary?: boolean; initialSearch: MutableRefObject<string | null>;
 }) {
@@ -101,9 +114,10 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const tagStr = (() => { const ce = commonEnds(ds); const anyM = Object.keys(ds.monthly || {}).length > 0;
             return srcTag(E ? "gdp" : PR ? "7" : R ? "unemp" : "jobs", `${ds.rankEnd ? fmtM(ds.rankEnd) : anyM ? fmtM(ce.monthEnd) : qLabel(ce.quarterEnd)}`); })();
   // #7: DE/FR/IT national lines end Dec 1998; one euro-area line (XM) carries them from Jan 1999 when any is picked.
-  const lines = useMemo(() => [...PEERS.filter((c) => hasSeries(ds, c.code)).map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
+  const lines = useMemo(() => [...PEERS.filter((c) => hasSeries(ds, c.code)).map((c) => ({ ...staleCut(ds, c.code, buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
     ...(PR ? [{ ...(buildLine(ds, "XM", years, mode) as Line), name: "Euro area" }] : [])], [ds, years, mode, PR]);
-  const onX: Record<string, boolean> = PR ? { ...on, XM: EURO.some((c) => on[c]) } : on;
+  const euNames: Record<string, string> = (() => { const l = euLabel(Object.values(sets)); return (l ? { EU: l } : {}) as Record<string, string>; })();
+  const onX: Record<string, boolean> = PR ? { ...on, XM: EURO.some((c) => on[c]) || !!on.EU } : on; // #7: the EU slot is the euro-area line (XM)
   const sel = [...PEER_CODES.filter((c) => on[c] && lines.some((l) => l.code === c)), ...(onX.XM ? ["XM"] : [])];
   // nothing drawable picked (only peers with no data yet): the window label falls back to the chart's own countries; no headline
   const wl = windowLabel(ds, sel.length ? sel : lines.map((l) => l.code), years, mode);
@@ -118,8 +132,8 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
   const brkUnit = brks.length && brks.every((b) => b.label.includes("Q")) ? "quarter" : "year";
   const hasJan = kind === "jobs" && shown.some((l) => l.code === "USA"); // whenever the US is on, every window (incl. 50Y)
-  const noData = Object.fromEntries(PEER_CODES.filter((c) => !Object.values(sets).some((d) => d && hasSeries(d, c))).map((c) => [c, NO_DATA_NOTE]));
-  const naNote = { ...noData, ...Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`])) };
+  const noData = Object.fromEntries(PEER_CODES.filter((c) => !(PR && c === "EU" && !!sets.policy && hasSeries(sets.policy, "XM")) && !Object.values(sets).some((d) => d && hasSeries(d, c))).map((c) => [c, NO_DATA_NOTE]));
+  const naNote = { ...noData, ...Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => { const de = dataEnd(ds, l.code), w0 = l.points[l.points.length - 1]?.period; return [l.code, `n/a for ${years}Y${de && w0 && endsBefore(de, w0) ? ` · data ends ${de}` : ""}`]; })) };
   const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); const nd = PEER_CODES.filter((c) => on[c] && noData[c]);
     if (!s.length) return nd.length ? `No data yet for ${nd.map((c) => PEERS.find((p) => p.code === c)!.name).join(", ")}` : null;
     return s.every((l) => l.excluded) ? `No OECD data for ${s.map((l) => PEERS.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
@@ -274,7 +288,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
             </div>
           )}
 
-            <Picker on={on} setOn={setOn} na={naNote} />
+            <Picker on={on} setOn={setOn} na={naNote} names={euNames} />
           </div>
           <div className="seg" role="radiogroup" aria-label="Timeframe" ref={segRef} onKeyDown={segKey}>
             <span className="hl" style={{ transform: `translateX(${hl.x}px)`, width: hl.w }} aria-hidden />

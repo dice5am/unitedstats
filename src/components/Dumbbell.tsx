@@ -7,6 +7,7 @@ import { PEERS } from "@/lib/series.mjs";
 import { dumbbell } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, StatBox, TagIn, anchorOf } from "./kit";
+import { useSelNames } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 export type DumbbellSpec = {
@@ -19,6 +20,7 @@ export type DumbbellSpec = {
 export const chg = (v: number, unit: "pts" | "pct") => { const r = Math.round(v * 10) / 10; return `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(1)}${unit === "pct" ? "%" : ""}`; };
 
 export default function Dumbbell({ file, spec }: { file: unknown; spec: DumbbellSpec }) {
+  const NM = useSelNames(NAME);
   const d = useMemo(() => (spec.build ? spec.build(file) : dumbbell(file, spec.start, spec.change)), [file, spec]);
   const [sel, setSel] = useState<string | null>(null);
   const [at, setAt] = useState<{ y: number; h: number; H: number } | undefined>();
@@ -37,7 +39,7 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
       tag={srcTag(spec.id, spec.per(d.latest))}
       headline={top && bot ? <div className="figs">
         {[[top, true], [bot, false]].map(([row, f]) => { const x0 = row as typeof top; return (
-          <div className="fig" key={x0.code}><div className="figl">{lbl(x0.change!, f as boolean)}</div><div className="figc"><span><i style={{ background: `var(--${x0.code})` }} />{NAME[x0.code]}</span></div>
+          <div className="fig" key={x0.code}><div className="figl">{lbl(x0.change!, f as boolean)}</div><div className="figc"><span><i style={{ background: `var(--${x0.code})` }} />{NM[x0.code]}</span></div>
             <div className={spec.change === "pts" ? "figv pts" : "figv"}>{chg(x0.change!, spec.change)}{spec.change === "pts" && <span>pts</span>}</div><div className="figp">{spec.dateOf ? spec.dateOf(x0.end!) : `${spec.per(d.start)} → ${spec.per(x0.end!)}`}{f && <TagIn tag={srcTag(spec.id, spec.per(d.latest))} />}</div></div>); })}
       </div> : undefined}
       legend={<>
@@ -46,7 +48,7 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
       source={spec.source}
       calc={spec.calc(d)}>
       <div className="sc db" onPointerDown={() => setSel(null)}>
-        {r && <StatBox title={`${NAME[r.code]} · ${spec.unitLabel}`} onClose={() => setSel(null)} at={at} rows={[
+        {r && <StatBox title={`${NM[r.code]} · ${spec.unitLabel}`} onClose={() => setSel(null)} at={at} rows={[
           { code: r.code, name: spec.per(d.start), value: r.startValue === null ? "n/a" : spec.valueFmt(r.startValue) },
           { code: r.code, name: r.end ? (spec.endName ? spec.endName(r.end) : spec.per(r.end)) : "Latest", value: r.endValue === null ? "n/a" : spec.valueFmt(r.endValue) },
           { code: r.code, name: "Change", value: r.change === null ? "n/a" : `${chg(r.change, spec.change)}${spec.change === "pts" ? " pts" : ""}` },
@@ -55,8 +57,8 @@ export default function Dumbbell({ file, spec }: { file: unknown; spec: Dumbbell
           {d.rows.map((row) => (
             <li key={row.code}>
               <button type="button" className={`scr${sel === row.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { setAt(anchorOf(e.currentTarget)); setSel(sel === row.code ? null : row.code); }}
-                aria-label={`${NAME[row.code]}: ${row.startValue === null ? "n/a" : spec.valueFmt(row.startValue)} in ${spec.per(d.start)}, ${row.endValue === null ? "n/a" : spec.valueFmt(row.endValue)} in ${row.end ? spec.per(row.end) : "n/a"}`}>
-                <span className="scn"><i style={{ background: `var(--${row.code})` }} />{NAME[row.code]}</span>
+                aria-label={`${NM[row.code]}: ${row.startValue === null ? "n/a" : spec.valueFmt(row.startValue)} in ${spec.per(d.start)}, ${row.endValue === null ? "n/a" : spec.valueFmt(row.endValue)} in ${row.end ? spec.per(row.end) : "n/a"}`}>
+                <span className="scn"><i style={{ background: `var(--${row.code})` }} />{NM[row.code]}</span>
                 <span className="sct">
                   {ticks.map((t) => <span key={t} className="dbg" style={{ left: `${x(t)}%` }} aria-hidden />)}
                   {row.startValue !== null && row.endValue !== null ? <>

@@ -14,7 +14,8 @@ export function pickerLabel(sel: string[]) {
   return sel.length === 1 ? NAME[sel[0]] : `${sel.length} countries`;
 }
 
-export default function Picker({ on, setOn, na = {} }: { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na?: Record<string, string> }) {
+export default function Picker({ on, setOn, na = {}, names = {} }: { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na?: Record<string, string>; names?: Record<string, string> }) {
+  const NM = (c: string) => names[c] ?? NAME[c];
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [focus, setFocus] = useState(0);
@@ -27,8 +28,8 @@ export default function Picker({ on, setOn, na = {} }: { on: Record<string, bool
   // desktop popover: if it would run past the bottom of a short window (1366x657), scroll just enough to show it
   useEffect(() => { if (!open || mobile) return; const id = requestAnimationFrame(() => panelRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" as ScrollBehavior })); return () => cancelAnimationFrame(id); }, [open, mobile]);
   const sel = PEER_CODES.filter((c) => on[c]);
-  const label = pickerLabel(sel);
-  const shown = useMemo(() => { const t = q.trim().toLowerCase(); return t ? PEERS.filter((c) => c.name.toLowerCase().includes(t) || NAME[c.code].toLowerCase().includes(t) || c.code.toLowerCase().startsWith(t)).map((c) => c.code) : PEER_CODES; }, [q]);
+  const label = sel.length === 1 ? NM(sel[0]) : pickerLabel(sel);
+  const shown = useMemo(() => { const t = q.trim().toLowerCase(); return t ? PEERS.filter((c) => c.name.toLowerCase().includes(t) || NM(c.code).toLowerCase().includes(t) || c.code.toLowerCase().startsWith(t)).map((c) => c.code) : PEER_CODES; }, [q]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -82,7 +83,7 @@ export default function Picker({ on, setOn, na = {} }: { on: Record<string, bool
                   className={`prow ${chk ? "on" : ""} ${na[c] ? "na" : ""}`} onClick={() => { setFocus(i); toggle(c); }} onKeyDown={(e) => rowKey(e, i)}>
                   <span className="box" aria-hidden>{chk && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}</span>
                   <i style={{ background: `var(--${c})` }} aria-hidden />
-                  <span>{NAME[c]}</span>{na[c] && <span className="nanote">{na[c]}</span>}
+                  <span>{NM(c)}</span>{na[c] && <span className="nanote">{na[c]}</span>}
                 </div>
               );
             })}
