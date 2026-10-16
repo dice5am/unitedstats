@@ -1,6 +1,6 @@
 {
  "note": "Citation register for G20 sidecar files in data-g20/ (kept outside data/ because golden-test requires every entry in data/ to be a MANIFEST-listed file). One record per file x area: source, dataflow/indicator, dims, frequency, period range, raw path + sha256 (raw kept read-only under skyscraper/unitedstats-warehouse/raw/*_g20_*). G7 citations stay in the original files.",
- "built": "2026-10-16T06:26:58Z",
+ "built": "2026-10-16T08:05:30Z",
  "raw_dirs": {
   "oecd": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z",
   "worldbank": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z",
@@ -1659,33 +1659,18 @@
       "seasonal_adjustment": "SA",
       "period_range": "2010-Q1–2026-Q2"
      },
-     "population_quarterly": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/qna.csv",
-      "raw_sha256": "177c43fe19b3795fe5c31b15f8f42263e1e6e7c1a0b89c26ca665ee1e9647b26",
-      "pulled_at": "20261015T224201Z",
-      "url": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,/Q..ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020.S1.S1.POP+B1GQ.........?dimensionAtObservation=AllDimensions",
-      "source": "OECD SDMX",
-      "dataflow": "OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,",
-      "dims": {
-       "REF_AREA": "SAU",
-       "TRANSACTION": "POP",
-       "TABLE_IDENTIFIER": "T0110"
-      },
-      "frequency": "Q",
-      "period_range": "2010-Q1–2020-Q4"
-     },
      "population_joined": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SP.POP.TOTL.json",
-      "raw_sha256": "f12c9c25a0471e4b331f18f88066dd28770fd37d2b911b63704a3e9dff513292",
-      "pulled_at": "20261015T224815Z",
-      "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SP.POP.TOTL?format=json&per_page=20000",
+      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_sau_pop_20261016T080518Z/wb_SAU_SP.POP.TOTL.json",
+      "raw_sha256": "aa7297336faab67490a116be0d2ba68a1919ca77d145b869e634c9b1a1612995",
+      "pulled_at": "20261016T080518Z",
+      "url": "https://api.worldbank.org/v2/country/SAU/indicator/SP.POP.TOTL?format=json&per_page=20000",
       "source": "World Bank WDI API v2",
       "indicator": "SP.POP.TOTL",
       "dims": {
        "country": "SAU"
       },
       "frequency": "A",
-      "role": "annual pins (mid-year), linear interpolation to quarters; bridged to OECD quarterly at joins; status W",
+      "role": "SINGLE SOURCE for the whole series (no OECD quarterly splice; replaces earlier OECD+WB join that had a 13.4% jump): annual pins (mid-year), linear interpolation to quarters; status W",
       "transform": "persons / 1000",
       "period_range": "1975-Q1–2025-Q2"
      }
@@ -2254,33 +2239,18 @@
       "seasonal_adjustment": "SA",
       "period_range": "2010-Q1–2026-Q2"
      },
-     "population_quarterly": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/qna.csv",
-      "raw_sha256": "177c43fe19b3795fe5c31b15f8f42263e1e6e7c1a0b89c26ca665ee1e9647b26",
-      "pulled_at": "20261015T224201Z",
-      "url": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,/Q..ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020.S1.S1.POP+B1GQ.........?dimensionAtObservation=AllDimensions",
-      "source": "OECD SDMX",
-      "dataflow": "OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,",
-      "dims": {
-       "REF_AREA": "SAU",
-       "TRANSACTION": "POP",
-       "TABLE_IDENTIFIER": "T0110"
-      },
-      "frequency": "Q",
-      "period_range": "2010-Q1–2020-Q4"
-     },
      "population_joined": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SP.POP.TOTL.json",
-      "raw_sha256": "f12c9c25a0471e4b331f18f88066dd28770fd37d2b911b63704a3e9dff513292",
-      "pulled_at": "20261015T224815Z",
-      "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SP.POP.TOTL?format=json&per_page=20000",
+      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_sau_pop_20261016T080518Z/wb_SAU_SP.POP.TOTL.json",
+      "raw_sha256": "aa7297336faab67490a116be0d2ba68a1919ca77d145b869e634c9b1a1612995",
+      "pulled_at": "20261016T080518Z",
+      "url": "https://api.worldbank.org/v2/country/SAU/indicator/SP.POP.TOTL?format=json&per_page=20000",
       "source": "World Bank WDI API v2",
       "indicator": "SP.POP.TOTL",
       "dims": {
        "country": "SAU"
       },
       "frequency": "A",
-      "role": "annual pins (mid-year), linear interpolation to quarters; bridged to OECD quarterly at joins; status W",
+      "role": "SINGLE SOURCE for the whole series (no OECD quarterly splice; replaces earlier OECD+WB join that had a 13.4% jump): annual pins (mid-year), linear interpolation to quarters; status W",
       "transform": "persons / 1000",
       "period_range": "1975-Q1–2025-Q2"
      }
@@ -2669,33 +2639,18 @@
      }
     },
     "SAU": {
-     "population_quarterly": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/qna.csv",
-      "raw_sha256": "177c43fe19b3795fe5c31b15f8f42263e1e6e7c1a0b89c26ca665ee1e9647b26",
-      "pulled_at": "20261015T224201Z",
-      "url": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,/Q..ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020.S1.S1.POP+B1GQ.........?dimensionAtObservation=AllDimensions",
-      "source": "OECD SDMX",
-      "dataflow": "OECD.SDD.NAD,DSD_NAMAIN1@DF_QNA,",
-      "dims": {
-       "REF_AREA": "SAU",
-       "TRANSACTION": "POP",
-       "TABLE_IDENTIFIER": "T0110"
-      },
-      "frequency": "Q",
-      "period_range": "2010-Q1–2020-Q4"
-     },
      "population_joined": {
-      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SP.POP.TOTL.json",
-      "raw_sha256": "f12c9c25a0471e4b331f18f88066dd28770fd37d2b911b63704a3e9dff513292",
-      "pulled_at": "20261015T224815Z",
-      "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SP.POP.TOTL?format=json&per_page=20000",
+      "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_sau_pop_20261016T080518Z/wb_SAU_SP.POP.TOTL.json",
+      "raw_sha256": "aa7297336faab67490a116be0d2ba68a1919ca77d145b869e634c9b1a1612995",
+      "pulled_at": "20261016T080518Z",
+      "url": "https://api.worldbank.org/v2/country/SAU/indicator/SP.POP.TOTL?format=json&per_page=20000",
       "source": "World Bank WDI API v2",
       "indicator": "SP.POP.TOTL",
       "dims": {
        "country": "SAU"
       },
       "frequency": "A",
-      "role": "annual pins (mid-year), linear interpolation to quarters; bridged to OECD quarterly at joins; status W",
+      "role": "SINGLE SOURCE for the whole series (no OECD quarterly splice; replaces earlier OECD+WB join that had a 13.4% jump): annual pins (mid-year), linear interpolation to quarters; status W",
       "transform": "persons / 1000",
       "period_range": "1975-Q1–2025-Q2"
      }
