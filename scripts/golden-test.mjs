@@ -850,6 +850,32 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
     for (const [c, rec] of Object.entries(r.areas || {})) { if (JSON.stringify(b.country_sources?.[c]) !== JSON.stringify(rec)) srcBad++;
       for (const l of G20M.citeLines(rec)) { nCite++; if (!CITE.test(l)) citeBad++; } } }
   check(!srcBad && !citeBad && nCite > 0 && /<SelCites/.test(cc), `citations: country_sources match SOURCES.json in ${Object.keys(SRC).length} files; ${nCite} per-country citation lines all built by one formatter: "source[ · dataflow] · frequency · range[ · caveat]"`);
+  // never silently missing (Cavin 2026-10-16): on all 28 charts every selected country is DRAWN (at its own frequency where
+  // that differs from the chart's) or GREYED with a note. (a) any series whose frequency differs from the G7 series in the
+  // same map may only sit on a chart whose renderer draws own frequencies; (b) those renderers, run on the merged data,
+  // must give every non-greyed country something drawn; (c) charts outside SOURCES (none expected) are listed.
+  const SER = await import("../lib/series.mjs"), CH = await import("../lib/charts.mjs"), FI = await import("../lib/finance.mjs");
+  const frq = (p) => (/^\d{4}-\d{2}$/.test(p) ? "M" : /^\d{4}-Q\d$/.test(p) ? "Q" : /^\d{4}$/.test(p) ? "A" : "?");
+  const OWN_FREQ = new Set(["unemp", "2", "17", "22", "13", "jobs", "gdp", "1"]); // renderers with an own-frequency path
+  const silent = [], ownSeen = []; const g7f = (m) => new Set(Object.entries(m || {}).filter(([c]) => G7.includes(c)).map(([, s]) => frq(s.periods[0])));
+  const allIds = Object.keys(JSON.parse(JSON.stringify(Object.fromEntries([...readFileSync("src/charts/meta.ts", "utf8").matchAll(/^\s*"?(\w+)"?: \{ id: "(\w+)"/gm)].map((m) => [m[2], 1])))));
+  for (const [ch, fs] of Object.entries({ ...byChart, "9": SRC["ember_electricity_mix_share.json"] ? ["ember_electricity_mix_share.json"] : [] })) {
+    const files = fs.map(mg); const grey = new Set(PEER_CODES.filter((c) => files.some((x) => !G20M.present(x, c))));
+    for (const c of PEER_CODES.filter((k) => !grey.has(k) && !G7.includes(k))) for (const f of files) for (const k of ["series", "monthly", "quarterly", "gdp", "annual_only"]) {
+      const s = f[k] && f[k][c]; if (!s || !s.periods) continue; let G = g7f(f[k]); if (!G.size) G = g7f(f.series || f.monthly); const fr = frq(s.periods[0]);
+      if (G.size && !G.has(fr)) { if (OWN_FREQ.has(ch)) ownSeen.push(`${ch}:${c}:${fr}`); else silent.push(`${ch}:${c} ${k} is ${fr}, chart draws ${[...G]}`); } }
+    if (ch === "9") { const em = files[0]; for (const c of PEER_CODES) if (!em.series[c] && !grey.has(c)) silent.push(`9:${c} not in the country list`); }
+  }
+  const drawnBy = { unemp: () => { const ds = SER.unempLongDataset(mg("c1_unemployment_rate_long.json")); return PEER_CODES.filter((c) => SER.hasSeries(ds, c) && !SER.buildLine(ds, c, 20, "unemp").excluded); },
+    "2": () => CH.heatStrip(mg("oecd_unemployment_rate_m_15plus.json"), 5).rows.filter((r) => r.vals.some((v) => v !== null)).map((r) => r.code),
+    "13": () => CH.heatStrip(mg("oecd_cpi_headline_yoy.json"), 5).rows.filter((r) => r.vals.some((v) => v !== null)).map((r) => r.code),
+    "17": () => FI.youthRatio(mg("oecd_unemployment_rate_m_15_24.json"), mg("oecd_unemployment_rate_m_15plus.json")).rows.filter((r) => r.ratio !== null).map((r) => r.code),
+    "22": () => CH.scorecard(mg("c1_employment_rate.json")).rows.filter((r) => r.own.value !== null).map((r) => r.code) };
+  for (const [ch, fn] of Object.entries(drawnBy)) { const files = byChart[ch].map(mg), grey = PEER_CODES.filter((c) => files.some((x) => !G20M.present(x, c))), got = fn();
+    const miss = PEER_CODES.filter((c) => !grey.includes(c) && !got.includes(c)); if (miss.length) silent.push(`${ch}: not drawn and not greyed: ${miss.join(" ")}`); }
+  const noSrc = allIds.filter((id) => !byChart[id] && id !== "9");
+  check(!silent.length && !noSrc.length && ownSeen.some((x) => x.startsWith("2:CHN")) && ownSeen.some((x) => x.startsWith("13:AUS")),
+    `never silently missing: ${allIds.length} charts; every non-greyed country is drawn (own-frequency rows/points on ${[...new Set(ownSeen.map((x) => x.split(":")[0]))].join(", ")}: ${ownSeen.length} series) or greyed with a note${silent.length ? " :: " + silent.join(" | ") : ""}${noSrc.length ? " :: no source map for " + noSrc.join(" ") : ""}`);
   // colour tokens = palette v2 (approved): every --<code> in both themes equals palette.json (vendored copy; Warehouse copy compared when present)
   const dk = (css.match(/:root,\[data-theme="dark"\]\{[^}]*\}/) || [""])[0], lt = (css.match(/\[data-theme="light"\]\{[^}]*\}/) || [""])[0];
   const PAL = JSON.parse(rd("scripts/golden/palette.json")), PN = { Canada: "CAN", US: "USA", UK: "GBR", Japan: "JPN", Germany: "DEU", France: "FRA", Italy: "ITA", Argentina: "ARG", Australia: "AUS", Brazil: "BRA", China: "CHN", India: "IND", Indonesia: "IDN", Mexico: "MEX", Russia: "RUS", "Saudi Arabia": "SAU", "South Africa": "ZAF", "South Korea": "KOR", Turkey: "TUR", EU: "EU" };

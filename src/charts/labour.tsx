@@ -1,5 +1,6 @@
 // Labour wave card specs (#17, #12, #18, #24) on the generic RankBar / Slope components. Wording, inputs and formats only.
 import { COUNTRIES } from "@/lib/series.mjs";
+import { perLabel } from "@/lib/charts.mjs";
 import { youthRatio, changeSince } from "@/lib/finance.mjs";
 import { monLabel } from "@/lib/charts.mjs";
 import { rules } from "./finance";
@@ -10,16 +11,16 @@ const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
 const CODES = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
 
 export const youthSpec = (youth: any): RankBarSpec => ({
-  id: "17", eyebrow: "Labour", kind: "ratio", dp: 2, per: monLabel, unitLabel: "youth ÷ overall rate",
+  id: "17", eyebrow: "Labour", kind: "ratio", dp: 2, per: perLabel, unitLabel: "youth ÷ overall rate",
   labels: { top: "Highest ratio", bottom: "Lowest ratio" },
   rows: (all) => { const d = youthRatio(youth, all); return { latest: d.latest, rows: d.rows.map((r) => ({ code: r.code, value: r.ratio, end: r.end, spark: r.spark,
-    stat: [{ name: `Ages 15–24 · ${r.end ? monLabel(r.end) : "n/a"}`, value: r.youth === null ? "n/a" : `${r.youth.toFixed(2)}%` }, { name: "Ages 15+", value: r.all === null ? "n/a" : `${r.all.toFixed(2)}%` }, { name: "Ratio", value: r.ratio === null ? "n/a" : `${r.ratio.toFixed(2)}×` }] })) }; },
+    stat: [{ name: `Ages 15–24 · ${r.end ? perLabel(r.end) : "n/a"}${r.freq !== "monthly" ? ` · ${r.freq}` : ""}`, value: r.youth === null ? "n/a" : `${r.youth.toFixed(2)}%` }, { name: "Ages 15+", value: r.all === null ? "n/a" : `${r.all.toFixed(2)}%` }, { name: "Ratio", value: r.ratio === null ? "n/a" : `${r.ratio.toFixed(2)}×` }] })) }; },
   sub: () => <>Youth unemployment rate (age 15–24) ÷ overall rate</>,
   source: "Source: OECD · monthly unemployment rates, ages 15–24 and 15+, seasonally adjusted",
   legend: <><li><i className="rbk" />Dashed line: ratio of 1 (same rate as everyone)</li><li>Sparkline: the ratio over the last 5 years</li></>,
   calc: (d) => { const c = d.rows.find((r: any) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Ratio</dt><dd>Youth unemployment rate (ages 15–24) ÷ overall unemployment rate (ages 15+), same month. Strips out the general state of the economy. Already a ratio, so no per-capita view.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_UNE_M · 15–24 and 15+ · seasonally adjusted</dd><dt>Latest</dt><dd>Each country’s own latest month with both rates: {d.rows.map((r: any) => `${r.code} ${r.end ? monLabel(r.end) : "n/a"}`).join(", ")}.</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_UNE_M · 15–24 and 15+ · seasonally adjusted</dd><dt>Latest</dt><dd>Each country’s own latest month with both rates: {d.rows.map((r: any) => `${r.code} ${r.end ? perLabel(r.end) : "n/a"}`).join(", ")}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Ratio</span><code>rate(15–24) ÷ rate(15+), single month</code></div>
       {c && c.value !== null && <p className="ex">Canada: <b>{c.stat[0].value} ÷ {c.stat[1].value} = {c.value.toFixed(2)}×</b> ({monLabel(c.end)})</p>}</div></div>
     {rules([["n/a", "Gaps are never filled"], ["→", "Each country at its own latest month"]])}

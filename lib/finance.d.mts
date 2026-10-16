@@ -14,7 +14,7 @@ export const OPEN_DEFAULT: string;
 export const CPI_BANDS: number[];
 export const CPI_LABELS: string[];
 export function cpiStep(v: number): number;
-export type YRow = { code: string; end: string | null; youth: number | null; all: number | null; ratio: number | null; spark: (number | null)[] };
+export type YRow = { code: string; freq: "monthly" | "quarterly" | "annual"; end: string | null; youth: number | null; all: number | null; ratio: number | null; spark: (number | null)[] };
 export function youthRatio(youth: any, all: any, sparkMonths?: number): { rows: YRow[]; latest: string; ends: string[] };
 export type SRow = { code: string; start: string; startValue: number | null; end: string | null; endValue: number | null; change: number | null; status: string | null; pct?: number | null };
 export function slope(file: any, start: string | number, change?: "pct" | "pts", endYear?: number | null): { rows: SRow[]; start: string; ends: string[] };

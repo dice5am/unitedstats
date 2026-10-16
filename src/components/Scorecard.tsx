@@ -6,11 +6,13 @@ import { scorecard } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, StatBox, TagIn, anchorOf } from "./kit";
+import { useAllText } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const pts = (v: number) => `${v >= 0.005 ? "+" : v <= -0.005 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
 
 export default function Scorecard({ rate }: { rate: unknown }) {
+  const ALL = useAllText(); // count text, pending PM wording
   const s = useMemo(() => scorecard(rate), [rate]);
   const [sel, setSel] = useState<string | null>(null);
   const [at, setAt] = useState<{ y: number; h: number; H: number } | undefined>();
@@ -22,7 +24,7 @@ export default function Scorecard({ rate }: { rate: unknown }) {
   const ca = s.rows.find((x) => x.code === "CAN");
   return (
     <CardFrame id="chart-22" eyebrow="Labour" title={chartTitle("22")}
-      sub={<>Employment rate, ages 15–64 · change since Q4 2019, in points · to {qLabel(s.end)}, the latest quarter all seven share</>}
+      sub={<>Employment rate, ages 15–64 · change since Q4 2019, in points · to {qLabel(s.end)}, the latest quarter {ALL} share</>}
       tag={srcTag("22", qLabel(s.end))}
       headline={
         <div className="figs">
@@ -33,8 +35,8 @@ export default function Scorecard({ rate }: { rate: unknown }) {
       source="Source: OECD · employment rate 15–64, quarterly, SA"
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>Rate</dt><dd>Employed ÷ population, ages 15–64. Already adjusted for population, so no per-capita view.</dd></dl></div>
-        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_INDIC · EMP_WAP</dd><dt>Frequency</dt><dd>Quarterly, all seven (monthly countries use their published quarters)</dd></dl></div>
-        <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">{qLabel(s.base)} → {qLabel(s.end)}</dd><dt>Ends</dt><dd>{qLabel(s.end)}, the latest quarter all seven share.</dd></dl></div>
+        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_INDIC · EMP_WAP</dd><dt>Frequency</dt><dd>Quarterly, {ALL} (monthly countries use their published quarters)</dd></dl></div>
+        <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">{qLabel(s.base)} → {qLabel(s.end)}</dd><dt>Ends</dt><dd>{qLabel(s.end)}, the latest quarter {ALL} share.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>change = rate(end) − rate(Q4 2019), in points</code></div>
           {ca && ca.change !== null && <p className="ex">Canada: <b>{ca.end!.toFixed(2)}% − {ca.start!.toFixed(2)}% = {pts(ca.change)} pts</b></p>}</div></div>
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["22"]}</p></div>
@@ -42,20 +44,20 @@ export default function Scorecard({ rate }: { rate: unknown }) {
       </>}>
       <div className="sc" onPointerDown={() => setSel(null)}>
         {r && <StatBox title={`${NAME[r.code]} · employment rate 15–64`} onClose={() => setSel(null)} at={at} rows={[
-          { code: r.code, name: qLabel(s.base), value: r.start === null ? "n/a" : `${r.start.toFixed(2)}%` },
-          { code: r.code, name: `${qLabel(s.end)} · shared end`, value: r.end === null ? "n/a" : `${r.end.toFixed(2)}% (${pts(r.change!)} pts)`, note: r.est ? "est." : undefined },
-          ...(r.own.period !== s.end ? [{ code: r.code, name: `${qLabel(r.own.period)} · own latest`, value: r.own.value === null ? "n/a" : `${r.own.value.toFixed(2)}% (${pts(r.own.change!)} pts)`, note: r.own.est ? "est." : undefined }] : []),
+          { code: r.code, name: r.freq === "annual" ? `${s.base.slice(0, 4)} · annual` : qLabel(s.base), value: r.start === null ? "n/a" : `${r.start.toFixed(2)}%` },
+          { code: r.code, name: r.freq === "annual" ? `${r.own.period} · annual` : `${qLabel(s.end)} · shared end`, value: r.end === null ? "n/a" : `${r.end.toFixed(2)}% (${pts(r.change!)} pts)`, note: r.est ? "est." : undefined },
+          ...(r.freq !== "annual" && r.own.period !== s.end ? [{ code: r.code, name: `${qLabel(r.own.period)} · own latest`, value: r.own.value === null ? "n/a" : `${r.own.value.toFixed(2)}% (${pts(r.own.change!)} pts)`, note: r.own.est ? "est." : undefined }] : []),
         ]} />}
         <ol className="scl">
           {s.rows.map((x) => {
             const v = x.change, w = v === null ? 0 : (Math.abs(v) / span) * 100, l = v === null ? z : v >= 0 ? z : z - w;
             return (
-              <li key={x.code}>
+              <li key={x.code} data-code={x.code} data-freq={x.freq}>
                 <button type="button" className={`scr${sel === x.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { setAt(anchorOf(e.currentTarget)); setSel(sel === x.code ? null : x.code); }} aria-label={`${NAME[x.code]}: ${v === null ? "n/a" : `${pts(v)} points`}`}>
                   <span className="scn"><i style={{ background: `var(--${x.code})` }} />{NAME[x.code]}</span>
                   <span className="sct"><span className="scz" style={{ left: `${z}%` }} />
                     {v === null ? <span className="na">n/a</span> : <span className="scb" style={{ left: `${l}%`, width: `${Math.max(w, 0.6)}%`, background: `var(--${x.code})` }} />}</span>
-                  <span className="scv">{v === null ? "n/a" : pts(v)}{x.est && <em>est.</em>}</span>
+                  <span className="scv">{v === null ? "n/a" : pts(v)}{x.est && <em>est.</em>}{x.freq === "annual" && <em>{x.own.period}</em>}</span>
                 </button>
               </li>
             );

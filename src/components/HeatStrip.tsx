@@ -3,10 +3,11 @@ import { DISPLAY_DP, PEERS, SHORT_CODE } from "@/lib/series.mjs";
 // #2 Unemployment heat strip — rows = countries (fixed G7 order), columns fit the width. Sequential 7-step scale
 // built from neutral tokens + one hue (never country colours). Monthly OECD data (DF_IALFS_UNE_M), all seven.
 import { useMemo, useState, type MutableRefObject } from "react";
-import { heatStrip, heatStep, HEAT_STEPS, monLabel } from "@/lib/charts.mjs";
+import { heatStrip, heatStep, HEAT_STEPS, monLabel, perLabel } from "@/lib/charts.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import type { ReactNode } from "react";
 import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
+import { useAllText } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const WIN = ["1", "5", "10", "20", "50"] as const;
@@ -19,6 +20,7 @@ export type HeatCfg = {
   source: (view: string) => string; calc: (h: H, view: string) => ReactNode; aria: string;
 };
 export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; initial: MutableRefObject<string | null>; cfg?: HeatCfg }) {
+  const ALL = useAllText(); // count text, pending PM wording
   const spec: Record<string, [string, readonly string[]]> = cfg ? { [cfg.winParam]: [cfg.defWin, WIN], [cfg.viewParam]: [cfg.views[0][0], cfg.views.map((v) => v[0])] } : { uh_win: ["20", WIN] };
   const [st, set] = useParams(initial, spec as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const wp = cfg ? cfg.winParam : "uh_win", view = cfg ? st[cfg.viewParam] : "";
@@ -63,20 +65,23 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
       source={cfg ? cfg.source(view) : "Source: OECD · unemployment rate 15+, monthly, SA"}
       calc={cfg ? cfg.calc(h, view) : <>
         <div className="grp"><h3>Measures</h3><dl><dt>Rate</dt><dd>OECD unemployment rate, ages 15+, as published. Already a rate, so no per-capita view.</dd><dt>Colour</dt><dd>7 equal steps from the lowest to the highest value in the window. Sequential: a rate has no meaningful zero here.</dd></dl></div>
-        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_UNE_M · ages 15+</dd><dt>Frequency</dt><dd>Monthly, all seven. 1Y shows months; 5Y quarters; 10Y, 20Y and 50Y years (averages of months, so the columns fit a phone).</dd></dl></div>
-        <div className="grp"><h3>Window</h3><dl><dt>Columns</dt><dd className="strong">{h.cols[0].label} – {h.cols[nC - 1].label} · {nC} {h.unit}s</dd><dt>Ends</dt><dd>{monLabel(h.end)}, the latest month any country has. Each country’s own latest: {h.rows.map((r) => `${NAME[r.code]} ${monLabel(r.last)}`).join(", ")}. Later cells are n/a.</dd></dl></div>
+        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_UNE_M · ages 15+</dd><dt>Frequency</dt><dd>Monthly, {ALL}. 1Y shows months; 5Y quarters; 10Y, 20Y and 50Y years (averages of months, so the columns fit a phone).</dd></dl></div>
+        <div className="grp"><h3>Window</h3><dl><dt>Columns</dt><dd className="strong">{h.cols[0].label} – {h.cols[nC - 1].label} · {nC} {h.unit}s</dd><dt>Ends</dt><dd>{monLabel(h.end)}, the latest month any country has. Each country’s own latest: {h.rows.map((r) => `${NAME[r.code]} ${perLabel(r.last)}`).join(", ")}. Later cells are n/a.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Quarter / year cell</span><code>mean of its months published so far; n/a if any is missing</code></div><div className="code"><span>Step</span><code>⌊(v − min) ÷ (max − min) × 7⌋, capped at 6</code></div></div></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps (n/a) are never filled</li><li><span className="ic">*</span>Latest period uses months published so far</li><li><span className="ic">—</span>Before a country’s first monthly reading: n/a{(() => { const l = h.rows.filter((r) => r.first > h.cols[0].months[0]); return l.length ? ` (${l.map((r) => `${NAME[r.code]} from ${r.first.slice(0, 4)}`).join(", ")})` : ""; })()}</li></ul></div>
       </>}>
       <div className="heat" ref={wrap} onPointerDown={() => setCur(null)}>
         {sel && (() => { const c = h.rows[cur![0]].cells[cur![1]];
-          const note = c.v === null ? (c.why === "before first reading" ? `before OECD monthly data starts (${monLabel(sel.r.first)})` : c.why === "gap" ? "no data for a month in this period" : `not yet published (latest ${monLabel(sel.r.last)})`)
-            : c.of > 1 ? `mean of ${c.n === c.of ? `all ${c.of} months` : `${monLabel(c.from!)}–${monLabel(c.to!)} (${c.n} of ${c.of} months)`}` : undefined;
+          const own = (c as { unit?: string }).unit, U = own === "annual" ? "years" : own === "quarterly" ? "quarters" : "months";
+          const note0 = c.v === null ? (c.why === "before first reading" ? `before ${own ? "its data" : "OECD monthly data"} starts (${perLabel(sel.r.first)})` : c.why === "gap" ? `no data for a ${own === "annual" ? "year" : own === "quarterly" ? "quarter" : "month"} in this period` : own ? `data ends ${sel.r.last}` : `not yet published (latest ${perLabel(sel.r.last)})`)
+            : own && c.n === 1 ? perLabel(c.from!) : c.of > 1 ? `mean of ${c.n === c.of ? `all ${c.of} ${U}` : `${perLabel(c.from!)}–${perLabel(c.to!)} (${c.n} of ${c.of} ${U})`}` : undefined;
+          // own-frequency rows (G20 quarterly-only / annual-only) carry their frequency in the stats box
+          const note = own ? [note0, own].filter(Boolean).join(" · ") : note0;
           return <StatBox bottom={cur![0] < 3} title={`${NAME[sel.r.code]} · ${sel.c.label}`} onClose={() => setCur(null)} rows={[{ code: sel.r.code, name: cfg ? cfg.valueName(view) : "Unemployment rate", value: fmt(sel.v), note }]} />; })()}
         <div className={nC > 20 ? "hgrid y50" : "hgrid"} role="grid" aria-label={`${cfg ? cfg.aria : "Unemployment rate"} by country and period. Arrow keys move between cells.`} tabIndex={0} onKeyDown={key}
           style={{ gridTemplateColumns: `${narrow ? 28 : 72}px repeat(${nC}, minmax(0, 1fr))` }}>
           {h.rows.map((r, ri) => (
-            <div role="row" key={r.code} className="hrow">
+            <div role="row" key={r.code} className="hrow" data-code={r.code} data-freq={r.freq}>
               <span role="rowheader" className="hrh">{narrow ? SHORT_CODE[r.code] : NAME[r.code]}</span>
               {r.vals.map((v, ci) => (
                 <span role="gridcell" key={ci} aria-selected={cur?.[0] === ri && cur?.[1] === ci} aria-label={`${NAME[r.code]} ${h.cols[ci].label}: ${fmt(v)}`}

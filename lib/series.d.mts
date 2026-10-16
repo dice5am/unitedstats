@@ -61,3 +61,5 @@ export const PRESETS: { label: string; codes: string[] }[];
 export function fmtOn(codes: string[]): string;
 export function hasSeries(ds: any, code: string): boolean;
 export function g7v<T>(obj: Record<string, T> | undefined): T[];
+
+export function dataEnd(ds: unknown, code: string): string | null;
