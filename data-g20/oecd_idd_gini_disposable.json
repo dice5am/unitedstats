@@ -1,0 +1,681 @@
+{
+ "g20_note": "G20 sidecar: new areas only (ARG AUS BRA CHN IND IDN MEX RUS SAU ZAF KOR TUR EU). G7 values live unchanged in ../<same file name>. Per-area source in country_sources. Gaps are null, never filled; status as published (OECD A and ILO blank stored as null).",
+ "source": "OECD SDMX IDD (+ World Bank PIP fills)",
+ "measure": "Gini coefficient, disposable income",
+ "unit": "ratio 0-1",
+ "frequency": "A",
+ "eu_handling": "No EU aggregate in OECD IDD or WB PIP: EU has no data",
+ "series": {
+  "ARG": {
+   "periods": [
+    "1980",
+    "1986",
+    "1987",
+    "1991",
+    "1992",
+    "1993",
+    "1994",
+    "1995",
+    "1996",
+    "1997",
+    "1998",
+    "1999",
+    "2000",
+    "2001",
+    "2002",
+    "2003",
+    "2004",
+    "2005",
+    "2006",
+    "2007",
+    "2008",
+    "2009",
+    "2010",
+    "2011",
+    "2012",
+    "2013",
+    "2014",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+   ],
+   "values": [
+    0.408,
+    0.428,
+    0.45299999999999996,
+    0.46799999999999997,
+    0.455,
+    0.44799999999999995,
+    0.459,
+    0.489,
+    0.495,
+    0.49100000000000005,
+    0.507,
+    0.498,
+    0.51,
+    0.533,
+    0.538,
+    0.51,
+    0.485,
+    0.478,
+    0.46399999999999997,
+    0.46299999999999997,
+    0.45,
+    0.438,
+    0.43700000000000006,
+    0.42700000000000005,
+    0.414,
+    0.41100000000000003,
+    0.418,
+    0.423,
+    0.414,
+    0.41700000000000004,
+    0.433,
+    0.42700000000000005,
+    0.424,
+    0.40700000000000003,
+    0.424,
+    0.424
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "AUS": {
+   "periods": [
+    "2012",
+    "2014",
+    "2016",
+    "2018",
+    "2020"
+   ],
+   "values": [
+    0.326,
+    0.337,
+    0.33,
+    0.325,
+    0.319
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "BRA": {
+   "periods": [
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022"
+   ],
+   "values": [
+    0.462346856,
+    0.47471741,
+    0.473973287,
+    0.475687831,
+    0.448271122,
+    0.469417416,
+    0.45117845
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "CHN": {
+   "periods": [
+    "2011"
+   ],
+   "values": [
+    0.5142616
+   ],
+   "status": [
+    null
+   ]
+  },
+  "IND": {
+   "periods": [
+    "2004",
+    "2011"
+   ],
+   "values": [
+    0.481503174,
+    0.494791479
+   ],
+   "status": [
+    null,
+    null
+   ]
+  },
+  "IDN": {
+   "periods": [
+    "1984",
+    "1987",
+    "1990",
+    "1993",
+    "1996",
+    "1998",
+    "1999",
+    "2000",
+    "2001",
+    "2002",
+    "2003",
+    "2004",
+    "2005",
+    "2006",
+    "2007",
+    "2008",
+    "2009",
+    "2010",
+    "2011",
+    "2012",
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "values": [
+    0.32299999999999995,
+    0.304,
+    0.311,
+    0.318,
+    0.342,
+    0.309,
+    0.308,
+    0.303,
+    0.312,
+    0.302,
+    0.29300000000000004,
+    0.304,
+    0.299,
+    0.315,
+    0.332,
+    0.326,
+    0.334,
+    0.34600000000000003,
+    0.379,
+    0.371,
+    0.389,
+    0.38799999999999996,
+    0.38200000000000006,
+    0.369,
+    0.364,
+    0.363,
+    0.354,
+    0.353,
+    0.355,
+    0.355,
+    0.36100000000000004,
+    0.349,
+    0.344
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "MEX": {
+   "periods": [
+    "2012",
+    "2014",
+    "2016",
+    "2018",
+    "2020",
+    "2022"
+   ],
+   "values": [
+    0.4572018,
+    0.4593388,
+    0.4586722,
+    0.4179922,
+    0.4204694,
+    0.4001119
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "RUS": {
+   "periods": [
+    "2011",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "values": [
+    0.376,
+    0.331,
+    0.317,
+    0.353,
+    0.35700000000000004,
+    0.337,
+    0.35100000000000003,
+    0.33899999999999997,
+    0.33
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "ZAF": {
+   "periods": [
+    "2015",
+    "2017"
+   ],
+   "values": [
+    0.625602135,
+    0.617578538
+   ],
+   "status": [
+    null,
+    null
+   ]
+  },
+  "KOR": {
+   "periods": [
+    "2011",
+    "2012",
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "values": [
+    0.386999994516373,
+    0.382999986410141,
+    0.370000004768372,
+    0.361000001430511,
+    0.349999994039536,
+    0.352999985218048,
+    0.351999998092651,
+    0.342000007629395,
+    0.335999995470047,
+    0.328000009059906,
+    0.328999996185303,
+    0.324000000953674,
+    0.323000013828278
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "TUR": {
+   "periods": [
+    "2011",
+    "2012",
+    "2013",
+    "2014",
+    "2015",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022"
+   ],
+   "values": [
+    0.403,
+    0.399,
+    0.39,
+    0.398,
+    0.404,
+    0.409403,
+    0.397035,
+    0.414758,
+    0.402874,
+    0.433142,
+    0.427148
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  }
+ },
+ "country_sources": {
+  "ARG": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SI.POV.GINI.json",
+   "raw_sha256": "9c3d435cfeece88ab1a36b24b0dbb7fd095021787c8c7d0a2cfa906dc4bffba8",
+   "pulled_at": "20261015T224759Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SI.POV.GINI?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SI.POV.GINI",
+   "dims": {
+    "country": "ARG"
+   },
+   "frequency": "A",
+   "fill": true,
+   "transform": "divided by 100 to 0-1 scale",
+   "caveat": "World Bank PIP Gini (IDN consumption-based; ARG urban income); NOT OECD IDD disposable-income definition",
+   "period_range": "1980–2024"
+  },
+  "AUS": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "AUS",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2012–2020"
+  },
+  "BRA": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "BRA",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2016–2022"
+  },
+  "CHN": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "CHN",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2011–2011"
+  },
+  "IND": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "IND",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2004–2011"
+  },
+  "IDN": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SI.POV.GINI.json",
+   "raw_sha256": "9c3d435cfeece88ab1a36b24b0dbb7fd095021787c8c7d0a2cfa906dc4bffba8",
+   "pulled_at": "20261015T224759Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SI.POV.GINI?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SI.POV.GINI",
+   "dims": {
+    "country": "IDN"
+   },
+   "frequency": "A",
+   "fill": true,
+   "transform": "divided by 100 to 0-1 scale",
+   "caveat": "World Bank PIP Gini (IDN consumption-based; ARG urban income); NOT OECD IDD disposable-income definition",
+   "period_range": "1984–2025"
+  },
+  "MEX": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "MEX",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2012–2022"
+  },
+  "RUS": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "RUS",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "splice": [
+    {
+     "from": "2018",
+     "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_alt_SI.POV.GINI.json",
+     "raw_sha256": "9c3d435cfeece88ab1a36b24b0dbb7fd095021787c8c7d0a2cfa906dc4bffba8",
+     "pulled_at": "20261015T224759Z",
+     "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SI.POV.GINI?format=json&per_page=20000",
+     "source": "World Bank WDI API v2",
+     "indicator": "SI.POV.GINI",
+     "dims": {
+      "country": "RUS"
+     },
+     "frequency": "A",
+     "transform": "divided by 100",
+     "caveat": "World Bank PIP Gini, different survey basis than OECD IDD"
+    }
+   ],
+   "period_range": "2011–2023"
+  },
+  "ZAF": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "ZAF",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2015–2017"
+  },
+  "KOR": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "KOR",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2011–2023"
+  },
+  "TUR": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/oecd_g20_20261015T224201Z/idd.csv",
+   "raw_sha256": "e1ea059b86bfd3b69e21a6a14a219603de069523cae44858ad1670bee17d1dc6",
+   "pulled_at": "20261015T224225Z",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0/ARG+AUS+BRA+CHN+IND+IDN+MEX+RUS+SAU+ZAF+KOR+TUR+EU27_2020..INC_DISP_GINI..._T...?dimensionAtObservation=AllDimensions",
+   "source": "OECD SDMX",
+   "dataflow": "OECD.WISE.INE,DSD_WISE_IDD@DF_IDD,1.0",
+   "dims": {
+    "REF_AREA": "TUR",
+    "MEASURE": "INC_DISP_GINI",
+    "METHODOLOGY": "METH2012",
+    "DEFINITION": "D_CUR",
+    "AGE": "_T"
+   },
+   "frequency": "A",
+   "period_range": "2011–2022"
+  }
+ },
+ "areas_without_data": [
+  "SAU",
+  "EU"
+ ]
+}

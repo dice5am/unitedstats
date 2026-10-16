@@ -1,0 +1,598 @@
+{
+ "g20_note": "G20 sidecar: new areas only (ARG AUS BRA CHN IND IDN MEX RUS SAU ZAF KOR TUR EU). G7 values live unchanged in ../<same file name>. Per-area source in country_sources. Gaps are null, never filled; status as published (OECD A and ILO blank stored as null).",
+ "source": "World Bank WDI API v2",
+ "measure": "International migrant stock (% of population)",
+ "unit": "percent of population",
+ "frequency": "A",
+ "eu_handling": "EU = World Bank EUU (EU27)",
+ "series": {
+  "ARG": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    5.0,
+    4.5,
+    4.1,
+    4.2,
+    4.4,
+    4.3,
+    4.2,
+    4.3
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "AUS": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    23.3,
+    23.3,
+    22.9,
+    24.1,
+    26.6,
+    28.1,
+    29.5,
+    30.4
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "BRA": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.5,
+    0.5,
+    0.4,
+    0.3,
+    0.3,
+    0.3,
+    0.5,
+    0.7
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "CHN": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.0,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "IND": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.8,
+    0.7,
+    0.6,
+    0.5,
+    0.5,
+    0.4,
+    0.4,
+    0.3
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "IDN": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.1,
+    0.1,
+    0.1,
+    0.0,
+    0.0,
+    0.1,
+    0.1,
+    0.2
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "MEX": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.8,
+    0.5,
+    0.5,
+    0.7,
+    0.8,
+    0.9,
+    1.1,
+    1.3
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "RUS": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    7.7,
+    8.0,
+    8.1,
+    8.1,
+    7.8,
+    6.3,
+    5.0,
+    5.3
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "SAU": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    42.1,
+    36.5,
+    32.3,
+    32.1,
+    35.7,
+    44.2,
+    42.2,
+    40.3
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "ZAF": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    3.2,
+    2.3,
+    2.1,
+    3.1,
+    4.3,
+    5.6,
+    4.4,
+    4.1
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "KOR": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    0.0,
+    0.1,
+    0.3,
+    0.5,
+    1.2,
+    2.6,
+    3.3,
+    3.5
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "TUR": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    2.1,
+    2.0,
+    2.0,
+    1.9,
+    1.9,
+    4.7,
+    7.6,
+    8.1
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "EU": {
+   "periods": [
+    "1990",
+    "1995",
+    "2000",
+    "2005",
+    "2010",
+    "2015",
+    "2020",
+    "2024"
+   ],
+   "values": [
+    5.87836310290496,
+    6.81743841493179,
+    7.46997850314899,
+    8.79850958561865,
+    9.91312348363159,
+    10.6238017287592,
+    12.1831809025657,
+    14.0964604059842
+   ],
+   "status": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  }
+ },
+ "country_sources": {
+  "ARG": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "ARG"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "AUS": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "AUS"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "BRA": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "BRA"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "CHN": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "CHN"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "IND": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "IND"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "IDN": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "IDN"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "MEX": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "MEX"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "RUS": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "RUS"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "SAU": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "SAU"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "ZAF": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "ZAF"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "KOR": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "KOR"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "TUR": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "TUR"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  },
+  "EU": {
+   "raw_path": "/workspace/skyscraper/unitedstats-warehouse/raw/worldbank_g20_20261015T224207Z/wb_SM.POP.TOTL.ZS.json",
+   "raw_sha256": "0eba8edc7d0f4a91c8098d73ed6ba4c79b8960fa1b86b89cbadea6204efccc95",
+   "pulled_at": "20261015T224211Z",
+   "url": "https://api.worldbank.org/v2/country/ARG;AUS;BRA;CHN;IND;IDN;MEX;RUS;SAU;ZAF;KOR;TUR;EUU/indicator/SM.POP.TOTL.ZS?format=json&per_page=20000",
+   "source": "World Bank WDI API v2",
+   "indicator": "SM.POP.TOTL.ZS",
+   "dims": {
+    "country": "EUU"
+   },
+   "frequency": "A",
+   "period_range": "1990–2024"
+  }
+ },
+ "areas_without_data": []
+}
