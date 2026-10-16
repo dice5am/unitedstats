@@ -898,9 +898,13 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
     const lc = rdS("src/components/LineChart.tsx");
     check(/fy < h \/ 2/.test(lc) && /innerHeight - vr\.top/.test(lc) && /maxHeight: tipCap/.test(lc),
       "App Lead (c): stats box goes to the half away from the tapped point, capped short of it at phone width, and kept inside the viewport (DOM-measured in g20-applead.cjs)");
+    // ---- App Lead review of 687feb2 ----
+    { const r1 = CH.heatStrip(G20M.pickCodes(cpiH, ["CAN", "RUS"]), 1).rows.find((r) => r.code === "RUS");
+      check(r1.cells.some((c) => c.v !== null && c.src === "World Bank" && c.from === "2025") && !r1.cells.some((c) => c.why === "not yet published"),
+        "Fix687 (6/c): #13 at 1Y Russia shows its World Bank 2025 cells; 'not yet published' only when no source has a point in the window"); }
     // ---- PM lock 2026-10-16: Russia annual extensions, splice markers by chart type, copy, projections, Saudi population ----
     const cpiR = CH.heatStrip(G20M.pickCodes(cpiH, ["CAN", "RUS"]), 10), rr = cpiR.rows.find((r) => r.code === "RUS");
-    const ann = rr.cells.filter((c) => c.unit === "annual");
+    const ann = rr.cells.filter((c) => c.unit === "annual" && c.v !== null);
     check(ann.length === 3 && ann.every((c) => c.src === "World Bank") && ann.map((c) => c.from).join() === "2023,2024,2025" && rr.ext && rr.ext.src === "World Bank" && /\(c as \{ src\?: string \}\)\.src/.test(rdS("src/components/HeatStrip.tsx")),
       "#13 Russia: World Bank annual figures 2023–2025 drawn after OECD stops (own frequency, stats box 'annual · World Bank')");
     const bop = mg("oecd_bop_current_account_pct_gdp_q.json"), mR = (await import("../lib/finance.mjs")).multiples(G20M.pickCodes(bop, ["CAN", "RUS"]), "2016-Q2"), pR = mR.panels.find((p) => p.code === "RUS");

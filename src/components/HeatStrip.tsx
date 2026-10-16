@@ -74,7 +74,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
       <div className="heat" ref={wrap} onPointerDown={() => setCur(null)}>
         {sel && (() => { const c = h.rows[cur![0]].cells[cur![1]];
           const own = (c as { unit?: string }).unit, U = own === "annual" ? "years" : own === "quarterly" ? "quarters" : "months";
-          const note0 = c.v === null ? (c.why === "before first reading" ? `before ${own ? "its data" : "OECD monthly data"} starts (${perLabel(sel.r.first)})` : c.why === "gap" ? `no data for a ${own === "annual" ? "year" : own === "quarterly" ? "quarter" : "month"} in this period` : own ? `data ends ${sel.r.last}` : `not yet published (latest ${perLabel(sel.r.last)})`)
+          const note0 = c.v === null ? (c.why === "before first reading" ? `before ${own ? "its data" : "OECD monthly data"} starts (${perLabel(sel.r.first)})` : c.why === "after latest" ? `no data yet (latest ${(sel.r as { ext?: { src: string; last: string } }).ext?.src} ${(sel.r as { ext?: { last: string } }).ext?.last})` : c.why === "gap" ? `no data for a ${own === "annual" ? "year" : own === "quarterly" ? "quarter" : "month"} in this period` : own ? `data ends ${sel.r.last}` : `not yet published (latest ${perLabel(sel.r.last)})`)
             : own && c.n === 1 ? perLabel(c.from!) : c.of > 1 ? `mean of ${c.n === c.of ? `all ${c.of} ${U}` : `${perLabel(c.from!)}–${perLabel(c.to!)} (${c.n} of ${c.of} ${U})`}` : undefined;
           // own-frequency rows (G20 quarterly-only / annual-only) carry their frequency in the stats box
           const note = own ? [note0, own, (c as { src?: string }).src].filter(Boolean).join(" · ") : note0;

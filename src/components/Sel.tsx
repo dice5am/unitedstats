@@ -62,6 +62,8 @@ export function useSelNames<T extends Record<string, string>>(base: T): T { cons
 // "all N selected with data" when some selected countries are greyed on this chart (N = countries drawn).
 export const allText = (codes: string[], greyed = false) => (!greyed && codes.length === 7 && G7.every((c) => codes.includes(c)) ? "all seven" : `all ${codes.length} selected${greyed ? " with data" : ""}`);
 export function useAllText() { const c = useContext(SelCtx); return c ? allText(c.drawn, (c.sel ?? c.drawn).length > c.drawn.length) : "all seven"; }
+// count text for non-component callers (spec calc functions): the codes they list, greyed flag from the selection context
+export function AllText({ codes }: { codes: string[] }) { const c = useContext(SelCtx); return <>{allText(codes, !!c && (c.sel ?? c.drawn).length > c.drawn.length)}</>; }
 export function useSelNeed(idx: number[] | null) { const c = useContext(SelCtx); const k = idx ? idx.join() : ""; useEffect(() => { c?.setNeedIdx?.(idx); }, [k]); } // eslint-disable-line react-hooks/exhaustive-deps
 export function SelCites({ cites }: { cites?: { code: string; freq?: string | null; lines: string[]; notes?: string[] }[] }) {
   const c = useContext(SelCtx); const list = cites ?? c?.cites ?? [];

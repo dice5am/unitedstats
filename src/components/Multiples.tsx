@@ -66,11 +66,11 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
           for (const pt0 of p.points) { if (pt0.value === null) { if (cur0) segs.push(cur0); cur0 = ""; continue; } cur0 += `${cur0 ? "L" : "M"}${x(pt0.period).toFixed(1)},${y(pt0.value).toFixed(1)}`; }
           if (cur0) segs.push(cur0);
           const bw = Math.max(1, iw / n - (n > 60 ? 0.5 : 1.5));
-          const pick = (e: React.PointerEvent<SVGSVGElement>) => { const r = e.currentTarget.getBoundingClientRect(); const qq = Math.round(((e.clientX - r.left - pl) / iw) * n - 0.5) + q0; const i = qq - qi(p.points[0].period); if (i >= 0 && i < p.points.length) return setCur({ code: p.code, i }); const k = p.ext.findIndex((e) => Math.floor(qq / 4) === +e.period); if (k >= 0) setCur({ code: p.code, i: p.points.length + k }); };
+          const pick = (e: React.PointerEvent<SVGSVGElement>) => { const r = e.currentTarget.getBoundingClientRect(); const qq = Math.round(((e.clientX - r.left - pl) / iw) * n - 0.5) + q0; const i = p.points.length ? qq - qi(p.points[0].period) : -1; if (i >= 0 && i < p.points.length) return setCur({ code: p.code, i }); const k = p.ext.findIndex((e) => Math.floor(qq / 4) === +e.period); if (k >= 0) setCur({ code: p.code, i: p.points.length + k }); };
           return (
             <figure key={p.code} className="smp">
-              <figcaption style={{ color: `var(--${p.code})` }}><span>{NM[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><b>{spec.fmt(p.last.value)}</b></figcaption>
-              <svg width={pw} height={ph} role="img" aria-label={`${NM[p.code]}: ${spec.unitLabel} ${qLabel(p.points[0].period)} to ${qLabel(p.last.period)}, latest ${spec.fmt(p.last.value)}`}
+              <figcaption style={{ color: `var(--${p.code})` }}><span>{NM[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><b>{p.head.value === null ? "n/a" : spec.fmt(p.head.value)}{p.head.freq === "annual" && <span className="from srct" data-head-src={p.head.src}> · {p.head.src} {p.head.period}</span>}</b></figcaption>
+              <svg width={pw} height={ph} role="img" aria-label={`${NM[p.code]}: ${spec.unitLabel} ${p.points.length ? qLabel(p.points[0].period) : p.ext.length ? p.ext[0].period : m.from} to ${p.head.freq === "annual" ? p.head.period : qLabel(p.head.period)}, latest ${p.head.value === null ? "n/a" : spec.fmt(p.head.value)}${p.head.src ? ` (${p.head.src})` : ""}`}
                 onPointerDown={(e) => { e.stopPropagation(); pick(e); }} onPointerMove={(e) => e.pointerType === "mouse" && pick(e)} style={{ touchAction: "pan-y" }}>
                 {ticks.map((t) => <g key={t}><line x1={pl} x2={pw - pr} y1={y(t)} y2={y(t)} className={t === 0 ? "zl" : "gl"} />{(i % cols === 0) && (t === lo || t === hi || t === 0) && <text x={pl + 2} y={y(t) - 3} className="ax fmt">{tf(t)}</text>}</g>)}
                 {spec.kind === "area" ? <>
@@ -78,16 +78,16 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
                     return <path key={`a${i}`} d={`${d}L${lx},${y(Math.max(0, m.min))}L${fx},${y(Math.max(0, m.min))}Z`} fill={`var(--${p.code})`} opacity={0.14} />; })}
                   {segs.map((d, i) => <path key={i} d={d} fill="none" stroke={`var(--${p.code})`} strokeWidth={2} strokeLinejoin="round" />)}
                   {refIn && p.ref && p.ref.value !== null && <g className="refg"><line x1={x(spec.ref!)} x2={pw - pr} y1={y(p.ref.value)} y2={y(p.ref.value)} className="refl" /><circle cx={x(spec.ref!)} cy={y(p.ref.value)} r={2.5} className="refd" /></g>}
-                  <circle cx={x(p.last.period)} cy={y(p.last.value)} r={3} fill={`var(--${p.code})`} />
+                  {p.points.length > 0 && p.last.value !== null && qi(p.last.period) >= q0 && <circle cx={x(p.last.period)} cy={y(p.last.value)} r={3} fill={`var(--${p.code})`} />}
                 </> : p.points.map((pt0) => pt0.value === null ? null : (
                   <rect key={pt0.period} x={x(pt0.period) - bw / 2} width={bw} y={Math.min(y(0), y(pt0.value))} height={Math.max(0.5, Math.abs(y(pt0.value) - y(0)))} fill={`var(--${p.code})`} opacity={pt0.value < 0 ? 0.55 : 1} />))}
-                {p.ext.length > 0 && <g className="ext" data-freq="annual" data-src={p.ext[0].src}><path d={(p.last.value !== null ? `M${x(p.last.period).toFixed(1)},${y(p.last.value).toFixed(1)}` : "") + p.ext.map((e, k) => `${k || p.last.value !== null ? "L" : "M"}${xa(e.period).toFixed(1)},${y(e.value!).toFixed(1)}`).join("")} fill="none" stroke={`var(--${p.code})`} strokeWidth={1.5} />{p.ext.map((e) => <circle key={e.period} cx={xa(e.period)} cy={y(e.value!)} r={2.75} fill={`var(--${p.code})`} />)}</g>}
+                {p.ext.length > 0 && <g className="ext" data-freq="annual" data-src={p.ext[0].src}><path d={((p.last.value !== null && qi(p.last.period) >= q0) ? `M${x(p.last.period).toFixed(1)},${y(p.last.value).toFixed(1)}` : "") + p.ext.map((e, k) => `${k || (p.last.value !== null && qi(p.last.period) >= q0) ? "L" : "M"}${xa(e.period).toFixed(1)},${y(e.value!).toFixed(1)}`).join("")} fill="none" stroke={`var(--${p.code})`} strokeWidth={1.5} />{p.ext.map((e) => <circle key={e.period} cx={xa(e.period)} cy={y(e.value!)} r={2.75} fill={`var(--${p.code})`} />)}</g>}
                 {/* splice rule: a thin vertical rule (grey 40%) inside this country's panel only, between the last reading before the
                     splice and the first after it; only when the splice falls inside the window */}
                 {((file.g20_splice?.[p.code] ?? []) as { froms: string[]; label: string }[]).map((sp) => { const f0 = sp.froms[0]; const qq = /Q/.test(f0) ? qi(f0) : +f0 * 4;
                   if (qq <= q0 || qq > q1) return null; const sx = pl + ((qq - q0) / n) * iw;
                   return <line key={sp.label} className="splr" data-code={p.code} data-from={f0} x1={sx} x2={sx} y1={pt} y2={pt + ih}><title>{sp.label}</title></line>; })}
-                {p.late && <circle cx={x(p.points[0].period)} cy={y(p.points.find((q) => q.value !== null)?.value ?? 0)} r={3} fill="var(--card-solid)" stroke={`var(--${p.code})`} strokeWidth={1.5} />}
+                {p.late && p.points.length > 0 && <circle cx={x(p.points[0].period)} cy={y(p.points.find((q) => q.value !== null)?.value ?? 0)} r={3} fill="var(--card-solid)" stroke={`var(--${p.code})`} strokeWidth={1.5} />}
                 {cur && cur.code === p.code && sp && <line x1={sp.freq === "annual" ? xa(sp.period) : x(sp.period)} x2={sp.freq === "annual" ? xa(sp.period) : x(sp.period)} y1={pt} y2={pt + ih} className="xh" />}
                 <text x={pl} y={ph - 4} className="ax">{m.from.slice(0, 4)}</text><text x={pw - pr} y={ph - 4} className="ax" textAnchor="end">{(m.toX ?? m.to).slice(0, 4)}</text>
               </svg>
