@@ -43,6 +43,9 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
   const tf = (v: number) => `${v > 0 && lo < 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}%`;
   const x = (p: string) => pl + ((qi(p) - q0 + 0.5) / n) * iw, y = (v: number) => pt + ((hi - v) / (hi - lo || 1)) * ih;
   const refIn = spec.ref && qi(spec.ref) >= q0;
+  // Design 2026-10-16: the second-source tag sits on its own line under the value; when any panel has one, every header
+  // takes the same fixed height so the grid stays aligned
+  const anyTag = m.panels.some((p) => p.head.freq === "annual");
   const sel = cur ? m.panels.find((p) => p.code === cur.code)! : null, sp: any = sel ? [...sel.points, ...sel.ext][cur!.i] : null;
   const xa = (y: string) => pl + ((+y * 4 + 2 - q0) / n) * iw; // annual point: mid-year
 
@@ -69,7 +72,7 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
           const pick = (e: React.PointerEvent<SVGSVGElement>) => { const r = e.currentTarget.getBoundingClientRect(); const qq = Math.round(((e.clientX - r.left - pl) / iw) * n - 0.5) + q0; const i = p.points.length ? qq - qi(p.points[0].period) : -1; if (i >= 0 && i < p.points.length) return setCur({ code: p.code, i }); const k = p.ext.findIndex((e) => Math.floor(qq / 4) === +e.period); if (k >= 0) setCur({ code: p.code, i: p.points.length + k }); };
           return (
             <figure key={p.code} className="smp">
-              <figcaption style={{ color: `var(--${p.code})` }}><span>{NM[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><b>{p.head.value === null ? "n/a" : spec.fmt(p.head.value)}{p.head.freq === "annual" && <span className="from srct" data-head-src={p.head.src}> · {p.head.src} {p.head.period}</span>}</b></figcaption>
+              <figcaption className={anyTag ? "tagged" : undefined} style={{ color: `var(--${p.code})` }}><span>{NM[p.code]}{p.late && <span className="from"> · from {p.late.slice(0, 4)}</span>}</span><span className="hv"><b>{p.head.value === null ? "n/a" : spec.fmt(p.head.value)}</b>{p.head.freq === "annual" && <span className="from srct" data-head-src={p.head.src}>{p.head.src} {p.head.period}</span>}</span></figcaption>
               <svg width={pw} height={ph} role="img" aria-label={`${NM[p.code]}: ${spec.unitLabel} ${p.points.length ? qLabel(p.points[0].period) : p.ext.length ? p.ext[0].period : m.from} to ${p.head.freq === "annual" ? p.head.period : qLabel(p.head.period)}, latest ${p.head.value === null ? "n/a" : spec.fmt(p.head.value)}${p.head.src ? ` (${p.head.src})` : ""}`}
                 onPointerDown={(e) => { e.stopPropagation(); pick(e); }} onPointerMove={(e) => e.pointerType === "mouse" && pick(e)} style={{ touchAction: "pan-y" }}>
                 {ticks.map((t) => <g key={t}><line x1={pl} x2={pw - pr} y1={y(t)} y2={y(t)} className={t === 0 ? "zl" : "gl"} />{(i % cols === 0) && (t === lo || t === hi || t === 0) && <text x={pl + 2} y={y(t) - 3} className="ax fmt">{tf(t)}</text>}</g>)}

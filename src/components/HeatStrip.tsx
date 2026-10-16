@@ -2,7 +2,7 @@
 import { DISPLAY_DP, PEERS, SHORT_CODE } from "@/lib/series.mjs";
 // #2 Unemployment heat strip — rows = countries (fixed G7 order), columns fit the width. Sequential 7-step scale
 // built from neutral tokens + one hue (never country colours). Monthly OECD data (DF_IALFS_UNE_M), all seven.
-import { useMemo, useState, type MutableRefObject } from "react";
+import { useLayoutEffect, useMemo, useState, type MutableRefObject } from "react";
 import { heatStrip, heatStep, HEAT_STEPS, monLabel, perLabel } from "@/lib/charts.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import type { ReactNode } from "react";
@@ -31,6 +31,12 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
   const [wrap, w] = useWidth<HTMLDivElement>();
   const [cur, setCur] = useState<[number, number] | null>(null);
   const narrow = w > 0 && w < 520;
+  // Design 2026-10-16 (same as #22): one fixed label column sized to the measured longest name (Saudi Arabia) in the
+  // row-header font, 8px to the first cell; never cut. Phone width keeps the 2-letter codes.
+  const [labW, setLabW] = useState(84);
+  useLayoutEffect(() => { const el = wrap.current?.querySelector(".hrh"); if (!el) return; const cs = getComputedStyle(el);
+    const cx = document.createElement("canvas").getContext("2d"); if (!cx) return; cx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    setLabW(Math.ceil(Math.max(...Object.values(NAME).map((n) => cx.measureText(n).width))) + 1); }, [w, wrap]);
   const nC = h.cols.length;
   const lbl = (i: number) => { // sparse column labels that never collide
     const c = h.cols[i]; const every = h.unit === "year" ? (nC > 20 ? 10 : narrow ? (nC > 10 ? 5 : 3) : nC > 10 ? 2 : 1) : h.unit === "month" ? (narrow ? 3 : 1) : 4;
@@ -80,7 +86,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
           const note = own ? [note0, own, (c as { src?: string }).src].filter(Boolean).join(" · ") : note0;
           return <StatBox bottom={cur![0] < 3} title={`${NAME[sel.r.code]} · ${sel.c.label}`} onClose={() => setCur(null)} rows={[{ code: sel.r.code, name: cfg ? cfg.valueName(view) : "Unemployment rate", value: fmt(sel.v), note }]} />; })()}
         <div className={nC > 20 ? "hgrid y50" : "hgrid"} role="grid" aria-label={`${cfg ? cfg.aria : "Unemployment rate"} by country and period. Arrow keys move between cells.`} tabIndex={0} onKeyDown={key}
-          style={{ gridTemplateColumns: `${narrow ? 28 : 72}px repeat(${nC}, minmax(0, 1fr))` }}>
+          style={{ gridTemplateColumns: `${narrow ? 28 : labW + 6}px repeat(${nC}, minmax(0, 1fr))` }}>
           {h.rows.map((r, ri) => (
             <div role="row" key={r.code} className="hrow" data-code={r.code} data-freq={r.freq}>
               <span role="rowheader" className="hrh">{narrow ? SHORT_CODE[r.code] : NAME[r.code]}</span>

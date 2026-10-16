@@ -281,7 +281,7 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .heat{position:relative;padding:4px 0}
 .hgrid{display:grid;gap:2px;outline:none}
 .hrow{display:contents}
-.hrh{font-size:12px;font-weight:600;color:var(--text-2);display:flex;align-items:center;white-space:nowrap;overflow:hidden}
+.hrh{font-size:12px;font-weight:600;color:var(--text-2);display:flex;align-items:center;white-space:nowrap;overflow:hidden;padding-right:6px} /* + 2px grid gap = 8px to the first cell */
 .hc{height:28px;border-radius:3px;display:grid;place-items:center;cursor:pointer;min-width:0}
 .hc em{font-style:normal;font-size:9px;color:var(--muted);overflow:hidden}
 .hc.cur{outline:2px solid var(--text);outline-offset:-1px}
@@ -418,6 +418,9 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 /* finance small multiples */
 .fm figcaption{font-weight:600;font-size:13px;margin-bottom:4px}.fm figcaption b{color:var(--text);font-variant-numeric:tabular-nums}
 .fm figcaption .from{font-weight:400;font-size:11px;color:var(--text-2)}
+.fm figcaption .hv{display:flex;flex-direction:column;align-items:flex-end;flex:none;line-height:1.25}
+.fm figcaption .srct{white-space:nowrap;line-height:14px}
+.fm figcaption.tagged{height:32px;align-items:flex-start}
 .fm svg{display:block}.fm .gl{stroke:var(--grid)}.fm .zl{stroke:var(--text-2);stroke-opacity:.5}
 .fm .refl{stroke:var(--text-2);stroke-dasharray:3 3}.fm .refd{fill:var(--text-2)}.fm .xh{stroke:var(--text-2)}
 .notes i.refl{display:inline-block;width:16px;border-top:1px dashed var(--text-2);margin-right:8px;vertical-align:3px}
