@@ -1,13 +1,13 @@
 "use client";
 // #22 Jobs recovery scorecard — ranked diverging bars: employment rate 15–64, latest shared quarter − Q4 2019.
 import { useMemo, useState } from "react";
-import { COUNTRIES, qLabel } from "@/lib/series.mjs";
+import { qLabel, PEERS } from "@/lib/series.mjs";
 import { scorecard } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, StatBox, TagIn, anchorOf } from "./kit";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const pts = (v: number) => `${v >= 0.005 ? "+" : v <= -0.005 ? "−" : ""}${Math.abs(v).toFixed(2)}`;
 
 export default function Scorecard({ rate }: { rate: unknown }) {
@@ -19,7 +19,7 @@ export default function Scorecard({ rate }: { rate: unknown }) {
   const z = (-lo / span) * 100;
   const best = s.rows[0], worst = s.rows[s.rows.length - 1];
   const r = sel ? s.rows.find((x) => x.code === sel)! : null;
-  const ca = s.rows.find((x) => x.code === "CAN")!;
+  const ca = s.rows.find((x) => x.code === "CAN");
   return (
     <CardFrame id="chart-22" eyebrow="Labour" title={chartTitle("22")}
       sub={<>Employment rate, ages 15–64 · change since Q4 2019, in points · to {qLabel(s.end)}, the latest quarter all seven share</>}
@@ -36,7 +36,7 @@ export default function Scorecard({ rate }: { rate: unknown }) {
         <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_IALFS_INDIC · EMP_WAP</dd><dt>Frequency</dt><dd>Quarterly, all seven (monthly countries use their published quarters)</dd></dl></div>
         <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">{qLabel(s.base)} → {qLabel(s.end)}</dd><dt>Ends</dt><dd>{qLabel(s.end)}, the latest quarter all seven share.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>change = rate(end) − rate(Q4 2019), in points</code></div>
-          {ca.change !== null && <p className="ex">Canada: <b>{ca.end!.toFixed(2)}% − {ca.start!.toFixed(2)}% = {pts(ca.change)} pts</b></p>}</div></div>
+          {ca && ca.change !== null && <p className="ex">Canada: <b>{ca.end!.toFixed(2)}% − {ca.start!.toFixed(2)}% = {pts(ca.change)} pts</b></p>}</div></div>
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["22"]}</p></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps (n/a) are never filled</li><li><span className="ic">E</span>Estimated quarters are marked est.</li></ul></div>
       </>}>

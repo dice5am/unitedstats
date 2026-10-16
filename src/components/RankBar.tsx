@@ -2,14 +2,14 @@
 // Ranked horizontal bars (DESIGN-SYSTEM Round 4), sorted, value at the bar end, each country dated with its own latest period.
 // "ratio": bars from 0 with a reference line at 1 and a mini sparkline per bar (#17). "diverging": bars from zero both ways (#18).
 import { useMemo, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS, SHORT_CODE } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, StatBox } from "./kit";
 import { HeadFigs, rankLabels, sgn } from "./HeadFigs";
 
-const CODE2: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
+const CODE2: Record<string, string> = SHORT_CODE;
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 export type BarRow = { code: string; value: number | null; end: string | null; spark?: (number | null)[]; stat: { name: string; value: string }[] };
 export type RankBarSpec = {
   id: ChartId; eyebrow: string; kind: "ratio" | "diverging" | "dot"; dp: number; unit?: string; per: (p: string) => string; unitLabel: string;

@@ -2,14 +2,14 @@
 // Slope chart (DESIGN-SYSTEM Round 4): two columns (start | each country's own latest), one 2px line per country in its colour,
 // value labels at both ends spread vertically with ≥4px between them; the right label carries the change. #12 wages, #24 labour share.
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS, SHORT_CODE } from "@/lib/series.mjs";
 import { slope, wholeFlag } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth, useFitH, useWinParam, lastYearOf, STD_WINS, type Init } from "./kit";
 import { HeadFigs, rankLabels, sgn } from "./HeadFigs";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
-const CODE: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
+const CODE: Record<string, string> = SHORT_CODE;
 export type SlopeSpec = {
   id: ChartId; eyebrow: string; start: number; starts?: string[]; param?: string; win?: { param: string; old: string }; change: "pct" | "pts"; dp: number; valueFmt: (v: number) => string; unitLabel: string;
   labels: { up: string; down: string; upSmall: string; downSmall: string }; flagNote?: Record<string, string>;

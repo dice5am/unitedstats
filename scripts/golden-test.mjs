@@ -830,11 +830,26 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
   const legacy = [["?on=CAN,USA", "CAN,USA"], ["?g_on=JPN,ITA", "JPN,ITA"], ["?j_on=CAN,FRA&j_win=50", "CAN,FRA"], ["?c=CAN,EU&on=USA", "CAN,EU"], ["?u_on=can,gbr", "CAN,GBR"]].every(([q, want]) => parseOn(qsOf(q)).join() === want);
   check(!rtBad && legacy && parseOn(fmtOn(G7)).length === 7 && /export const SEL_KEY = "c"/.test(kit) && /OLD_ON = \["on", "g_on", "u_on", "j_on", "pr_on"\]/.test(kit) && /writeSel\(fmtOn\(codes\)\)/.test(cc) && /c \? `\/\$\{t\.id\}\?c=\$\{c\}`/.test(tp) && /sc \? `&c=\$\{sc\}`/.test(tp),
     `URL round-trip: ${subsets.length} subsets survive ?c= write/read; old ?on= / ?g_on= / ?j_on= / ?u_on= links map onto ?c= (c wins); ?c= rides on tab links and chart switches`);
-  // data presence: new peers have no series yet -> greyed 'no data' and skipped (never break a chart)
-  const E = EV.gdp;
-  const newP = PEER_CODES.filter((c) => !G7.includes(c)), noneHave = newP.every((c) => !hasSeries(E, c));
-  check(noneHave && G7.every((c) => hasSeries(data, c)) && /PEERS\.filter\(\(c\) => hasSeries\(ds, c\.code\)\)/.test(cc) && /"no data"/.test(cc), `selection: lines built only for countries with a series (${newP.length} new peers have none yet -> greyed 'no data', skipped); G7 all present`);
-  check(/MAX_DOTS = 8/.test(pk) && /sel\.slice\(0, MAX_DOTS\)/.test(pk) && /\+\{sel\.length - MAX_DOTS\}/.test(pk) && /className="psearch"/.test(pk) && /\.plist\{max-height:320px;overflow-y:auto/.test(css) && /\.tip \.tiprows\{max-height:min\(40vh,240px\);overflow-y:auto/.test(css), "menu: up to 8 dots then +N; type-to-filter search; list scrolls inside (320px popover, sheet flex); stats box rows scroll past ~8");
+  // data presence (G20 data wired): grey = missing from at least one input file the chart needs, derived from the
+  // merged data and asserted equal to the PM list; G7 always present; every other chart greys nobody
+  const G20M = await import("../lib/g20.mjs"); const rdj = (d, f) => { try { return JSON.parse(readFileSync(`${d}/${f}`, "utf8")); } catch { return null; } };
+  const mg = (f) => G20M.g20(rdj("data", f), rdj("data-g20", f));
+  const GREY_WANT = { "12": "ARG BRA CHN IND IDN RUS SAU ZAF EU", "18": "ARG BRA CHN IND IDN SAU ZAF EU", "6": "ARG BRA CHN IND IDN MEX SAU TUR", "13": "ARG BRA CHN IND IDN SAU", "15": "BRA IND IDN SAU", "16": "RUS SAU EU", "25": "SAU EU", jobs: "CHN" };
+  const SRC = JSON.parse(readFileSync("data-g20/SOURCES.json", "utf8")).files; const byChart = {};
+  for (const [f, r] of Object.entries(SRC)) for (const ch of r.charts) { const k = ch.split(" ")[0]; if (ch.includes("(")) continue; (byChart[k] ||= []).push(f); }
+  delete byChart["9"]; // single-select mix chart, not gated
+  const greyBad = []; let g7miss = 0;
+  for (const [ch, fs] of Object.entries(byChart)) { const files = fs.map(mg); const grey = PEER_CODES.filter((c) => files.some((x) => !G20M.present(x, c)));
+    if (grey.some((c) => G7.includes(c))) g7miss++;
+    const want = (GREY_WANT[ch] ?? "").split(" ").filter(Boolean); if (grey.join() !== PEER_CODES.filter((c) => want.includes(c)).join()) greyBad.push(`${ch}: got ${grey.join(" ") || "-"} want ${want.join(" ") || "-"}`); }
+  check(!greyBad.length && !g7miss && Object.keys(GREY_WANT).every((k) => byChart[k]) && /NO_DATA_NOTE = "no data from any source"/.test(readFileSync("src/components/Sel.tsx", "utf8")) && /NO_DATA_NOTE\]/.test(cc),
+    `grey list: derived from data presence over ${Object.keys(byChart).length} charts, equals the PM list (${Object.keys(GREY_WANT).length} charts greyed, rest none), note "no data from any source"${greyBad.length ? " :: " + greyBad.join(" | ") : ""}`);
+  // citations: each sidecar's country_sources equals SOURCES.json, and every new country's line is built the same way
+  let srcBad = 0, citeBad = 0, nCite = 0; const CITE = /^[^·]+( · [^·]+){2,}$/;
+  for (const [f, r] of Object.entries(SRC)) { const b = rdj("data-g20", f); if (!b) { srcBad++; continue; }
+    for (const [c, rec] of Object.entries(r.areas || {})) { if (JSON.stringify(b.country_sources?.[c]) !== JSON.stringify(rec)) srcBad++;
+      for (const l of G20M.citeLines(rec)) { nCite++; if (!CITE.test(l)) citeBad++; } } }
+  check(!srcBad && !citeBad && nCite > 0 && /<SelCites/.test(cc), `citations: country_sources match SOURCES.json in ${Object.keys(SRC).length} files; ${nCite} per-country citation lines all built by one formatter: "source[ · dataflow] · frequency · range[ · caveat]"`);
   // colour tokens = palette v2 (approved): every --<code> in both themes equals palette.json (vendored copy; Warehouse copy compared when present)
   const dk = (css.match(/:root,\[data-theme="dark"\]\{[^}]*\}/) || [""])[0], lt = (css.match(/\[data-theme="light"\]\{[^}]*\}/) || [""])[0];
   const PAL = JSON.parse(rd("scripts/golden/palette.json")), PN = { Canada: "CAN", US: "USA", UK: "GBR", Japan: "JPN", Germany: "DEU", France: "FRA", Italy: "ITA", Argentina: "ARG", Australia: "AUS", Brazil: "BRA", China: "CHN", India: "IND", Indonesia: "IDN", Mexico: "MEX", Russia: "RUS", "Saudi Arabia": "SAU", "South Africa": "ZAF", "South Korea": "KOR", Turkey: "TUR", EU: "EU" };

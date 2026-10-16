@@ -1,12 +1,12 @@
 "use client";
 // #1 The comeback race — small multiples, real GDP per person (or total) indexed to 2019-Q4 = 100.
 import { useMemo, useState, type MutableRefObject } from "react";
-import { COUNTRIES, monotonePath, qLabel } from "@/lib/series.mjs";
+import { monotonePath, qLabel, PEERS } from "@/lib/series.mjs";
 import { comeback, qi } from "@/lib/charts.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, useParams, useWidth, TagIn } from "./kit";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const pct = (v: number) => `${v - 100 >= 0.005 ? "+" : v - 100 <= -0.005 ? "−" : ""}${Math.abs(v - 100).toFixed(1)}%`;
 
 function Panel({ p, lo, hi, first, onOpen }: { p: ReturnType<typeof comeback>["panels"][number]; lo: number; hi: number; first: boolean; onOpen: () => void }) {
@@ -53,7 +53,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
   const first = backs.filter((p) => qi(p.back!) === firstQ);
   const notBack = c.panels.filter((p) => !p.back);
   const top = c.panels.filter((p) => p.last !== null).sort((a, b) => b.last! - a.last!)[0];
-  const ex = c.panels[0], exEnd = ex.points[ex.points.length - 1];
+  const ex = c.panels.find((p: any) => p.code === "CAN") ?? c.panels[0], exEnd = ex.points[ex.points.length - 1];
   const [open, setOpen] = useState<string | null>(null);
   const op = open ? c.panels.find((p) => p.code === open)! : null;
   return (
@@ -77,7 +77,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
         <div className="grp"><h3>Formulas</h3><div className="fx">
           <div className="code"><span>Index</span><code>index = value ÷ value(Q4 2019) × 100</code></div>
           <div className="code"><span>Back to 100</span><code>first quarter after Q1 2020 with index ≥ 100</code></div>
-          {exEnd.value !== null && <p className="ex">Canada, {qLabel(exEnd.period)}: <b>index {exEnd.value.toFixed(2)}</b>{ex.back ? <> · first back in <b>{qLabel(ex.back)}</b></> : null}</p>}
+          {exEnd.value !== null && <p className="ex">{NAME[ex.code] ?? ex.code}, {qLabel(exEnd.period)}: <b>index {exEnd.value.toFixed(2)}</b>{ex.back ? <> · first back in <b>{qLabel(ex.back)}</b></> : null}</p>}
         </div></div>
         <div className="grp"><h3>Window</h3><dl><dt>Start – end</dt><dd className="strong">Q1 2019 – {qLabel(c.end)} · quarterly</dd>
           <dt>Ends</dt><dd>{view === "pc" ? "Q1 2026, the latest quarter all seven share (France’s population stops there)." : "Q2 2026, the latest quarter all seven share."}</dd></dl></div>

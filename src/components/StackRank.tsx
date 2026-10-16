@@ -2,12 +2,12 @@
 // Generic stacked ranked bar with a year selector (#15 R&D). Segments on the neutral one-hue ramp (never country colours),
 // totals labelled; a year a country hasn't published is n/a, tagged with its latest year. Default year never mixes years.
 import { useMemo, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, Seg, StatBox, YearPick, useParams, type Init, anchorOf } from "./kit";
 import { HeadFigs } from "./HeadFigs";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 export type StackRow = { code: string; parts: (number | null)[]; total: number | null; latestYear: number; note?: string };
 export type StackSpec = {
   id: ChartId; eyebrow: string; param: string; years: string[]; def: string; parts: string[]; fmt: (v: number) => string;

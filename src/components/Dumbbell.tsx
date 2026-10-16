@@ -3,12 +3,12 @@
 // change label to the right. Rows sorted by change (the brief's "sorted by increase" / "sorting by the gap").
 // Generic: #10 public debt, #6 house prices vs incomes. Each end is the country's OWN latest reading, dated.
 import { useMemo, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS } from "@/lib/series.mjs";
 import { dumbbell } from "@/lib/finance.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, StatBox, TagIn, anchorOf } from "./kit";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 export type DumbbellSpec = {
   id: ChartId; eyebrow: string; start: string; change: "pts" | "pct"; per: (p: string) => string;
   sub: (latest: string) => ReactNode; source: string; unitLabel: string; valueFmt: (v: number) => string; tickFmt: (v: number) => string;

@@ -1,15 +1,14 @@
 "use client";
-import { DISPLAY_DP } from "@/lib/series.mjs";
+import { DISPLAY_DP, PEERS, SHORT_CODE } from "@/lib/series.mjs";
 // #2 Unemployment heat strip — rows = countries (fixed G7 order), columns fit the width. Sequential 7-step scale
 // built from neutral tokens + one hue (never country colours). Monthly OECD data (DF_IALFS_UNE_M), all seven.
 import { useMemo, useState, type MutableRefObject } from "react";
-import { COUNTRIES, SHORT_CODE } from "@/lib/series.mjs";
 import { heatStrip, heatStep, HEAT_STEPS, monLabel } from "@/lib/charts.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import type { ReactNode } from "react";
 import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const WIN = ["1", "5", "10", "20", "50"] as const;
 
 // Generic heatmap config (#13 inflation). Without cfg the card is #2 (unemployment heat strip).

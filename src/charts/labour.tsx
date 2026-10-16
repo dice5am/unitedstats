@@ -48,11 +48,11 @@ export const wageSpec: SlopeSpec = {
   labels: { up: "Fastest growth", down: "Biggest fall", upSmall: "Slowest growth", downSmall: "Smallest fall" },
   sub: (ends) => <>Average annual wage, after inflation, in US dollars at purchasing power parity · 1990 vs {ends[ends.length - 1]}</>,
   source: "Source: OECD · average annual wages, constant prices, USD PPP",
-  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN")!; return <>
+  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Wages</dt><dd>Average annual wage per full-time-equivalent employee, constant prices, converted at purchasing power parity. Already per employee, so no per-capita view.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_AV_AN_WAGE · constant prices · USD PPP</dd><dt>Years</dt><dd>1990 and {d.ends.join(", ")}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Growth</span><code>wage(latest) ÷ wage(1990) − 1</code></div>
-      {c.change !== null && <p className="ex">Canada: <b>{Math.round(c.endValue!).toLocaleString("en-GB")} ÷ {Math.round(c.startValue!).toLocaleString("en-GB")} − 1 = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)}%</b></p>}</div></div>
+      {c && c.change !== null && <p className="ex">Canada: <b>{Math.round(c.endValue!).toLocaleString("en-GB")} ÷ {Math.round(c.startValue!).toLocaleString("en-GB")} − 1 = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)}%</b></p>}</div></div>
     {rules([["n/a", "Gaps are never filled"]])}
   </>; },
 };
@@ -62,11 +62,11 @@ export const shareSpec: SlopeSpec = {
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" }, flagNote: { I: "ILO imputed (every year)" },
   sub: (ends) => <>Labour income as % of GDP · 2004 vs each country’s latest actual year ({ends.join(" or ")}) · ILO modelled estimates, no projections</>,
   source: "Source: ILO modelled estimates · labour income share, % of GDP",
-  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN")!; return <>
+  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Labour share</dt><dd>Wages plus the labour part of self-employment income, as % of GDP. Already a share, so no per-capita view.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">ILOSTAT · labour income share (ILO modelled estimates)</dd><dt>Actuals</dt><dd>Cut at each country’s last year ILO does not mark as a model-based projection: {d.rows.map((r) => `${r.code} ${r.end}`).join(", ")}.</dd><dt>US</dt><dd>Every US year is flagged “imputed” by ILO; the line stays solid and the stats box tags it.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>share(latest actual) − share(2004), in points</code></div>
-      {c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)} pts</b> ({c.end})</p>}</div></div>
+      {c && c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)} pts</b> ({c.end})</p>}</div></div>
     {rules([["n/a", "Gaps are never filled"], ["→", "Each country ends at its own last actual year"]])}
   </>; },
 };

@@ -2,14 +2,14 @@
 // Scatter (#8, year selector) and connected scatter (#5, one trail per country, dot per year, latest year labelled).
 // Round ticks with light gridlines on both axes; country colours; labels spread so they never collide. Tap a dot for its stats box.
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS, SHORT_CODE } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, YearPick, StatBox, useParams, useWidth, useFitH, type Init } from "./kit";
 import { HeadFigs, type Fig } from "./HeadFigs";
 import { spread } from "./Slope";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
-const CODE: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
+const CODE: Record<string, string> = SHORT_CODE;
 export type SPoint = { code: string; x: number | null; y: number | null; note?: string; trail?: { year: string; x: number; y: number }[]; date?: string };
 export type ScatterSpec = {
   id: ChartId; eyebrow: string; param?: string; years?: string[]; def?: string; xLabel: string; yLabel: string; xFmt: (v: number) => string; yFmt: (v: number) => string; xTick?: (v: number) => string;

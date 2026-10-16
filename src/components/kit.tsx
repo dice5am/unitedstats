@@ -1,4 +1,5 @@
 "use client";
+import { SelPicker, SelCites, useSelCtx } from "./Sel";
 // Shared card kit: URL params, disclosure, segmented control, card anatomy, lazy mount. Used by every card type.
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 
@@ -92,23 +93,24 @@ export function CardFrame({ id, eyebrow, title, sub, controls, headline, tag, le
 }) {
   const ref = useRef<HTMLElement>(null);
   useDocTitle(ref, title);
+  const sel = useSelCtx() ? <SelPicker /> : null;
   return (
     <section className="cardsec" id={id} aria-labelledby={`h-${id}`} ref={ref}>
       <p className="eyebrow">{eyebrow}</p>
       <h2 id={`h-${id}`} className="h1">{title}</h2>
       <p className="sub">{sub}</p>
       {headline ? <div className="toprow">
-        {controls && <div className="ctrls ctrls2">{controls}</div>}
+        {(controls || sel) && <div className="ctrls ctrls2">{controls}{sel}</div>}
         <div className="figwrap">{headline}{tag && <p className="srctag">{tag}</p>}</div>
       </div> : <div className="toprow nohead">
         {/* no ranked headline: controls sit directly under the description, source tag to their left (below at 390) */}
-        {controls && <div className="ctrls ctrls2">{controls}</div>}
+        {(controls || sel) && <div className="ctrls ctrls2">{controls}{sel}</div>}
         {tag && <p className="srctag">{tag}</p>}
       </div>}
       <div className="card chartcard plotcard">{children}</div>
       {legend && <ul className="notes">{legend}</ul>}
       <p className="source">{source}</p>
-      <section className="calc"><CalcDisclosure hid={`calc-h-${id}`}><div className="card panel">{calc}</div></CalcDisclosure></section>
+      <section className="calc"><CalcDisclosure hid={`calc-h-${id}`}><div className="card panel">{calc}<SelCites /></div></CalcDisclosure></section>
     </section>
   );
 }

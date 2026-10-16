@@ -3,14 +3,14 @@
 // fill = sequential neutral scale by the size of the change; values printed in the tiles. Tap a tile to expand its line.
 // Toggle: total emissions / per person. Early enders (US to 2022) are drawn and dated; left out of the headline figures.
 import { useMemo, useState } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS } from "@/lib/series.mjs";
 import { emissions } from "@/lib/waves.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, Seg, useParams, useWidth, type Init } from "./kit";
 import { HeadFigs, sgn } from "./HeadFigs";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const POS: Record<string, [number, number]> = { CAN: [0, 0], USA: [0, 1], GBR: [1, 0], FRA: [1, 1], DEU: [2, 0], ITA: [2, 1], JPN: [3, 0] };
 const VIEWS = [["total", "Total"], ["pp", "Per person"]] as const;
 export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & Init) {
@@ -30,6 +30,9 @@ export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & 
   const r0 = sel ? rows.find((r) => r.code === sel)! : null;
   const cols = 4, gap = 8, tw = w ? (w - gap * (cols - 1)) / cols : 0, th = Math.min(120, Math.max(84, tw * 0.75));
   const top = ranked[ranked.length - 1], bot = ranked[0];
+  // G7 only: the geographic layout; any other selection flows in roster order, 4 per row
+  const geo = rows.every((r) => POS[r.code]), pos = (c: string, i: number): [number, number] => (geo ? POS[c] : [i % cols, Math.floor(i / cols)]);
+  const nRows = geo ? 2 : Math.max(1, Math.ceil(rows.length / cols));
   return (
     <CardFrame id="chart-14" eyebrow="Environment" title={chartTitle("14", view)}
       sub={<>Greenhouse gas emissions {view === "pp" ? "per person" : "in total"}, excluding land use and forestry · change since 1990, % · to {common} (US to 2022)</>}
@@ -43,12 +46,12 @@ export default function TileMap({ ghg, pop, initial }: { ghg: any; pop: any } & 
           <dt>Per person</dt><dd>Total ÷ yearly population, tonnes CO2e per person. Yearly population = mean of the four quarters of OECD population; quarters estimated from OECD annual figures count as present.</dd></dl></div>
         <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD AIR_GHG · total excl. LULUCF · thousand t CO2e</dd><dt>Years</dt><dd>1990 to {common}; the US to 2022 (two years behind), shown but left out of the headline figures.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>value(latest) ÷ value(1990) − 1</code></div>
-          {(() => { const c = rows.find((r) => r.code === "CAN")!; const a = c.pts[0], b = c.pts[c.pts.length - 1]; return a.value !== null && b.value !== null && <p className="ex">Canada: <b>{val(b.value)} ÷ {val(a.value)} − 1 = {fmt(c.change!)}</b></p>; })()}</div></div>
+          {(() => { const c = rows.find((r) => r.code === "CAN"); if (!c) return null; const a = c.pts[0], b = c.pts[c.pts.length - 1]; return a.value !== null && b.value !== null && <p className="ex">Canada: <b>{val(b.value)} ÷ {val(a.value)} − 1 = {fmt(c.change!)}</b></p>; })()}</div></div>
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["14"]}</p></div>
         <div className="grp"><h3>Rules</h3><ul className="rules"><li><span className="ic">n/a</span>Gaps are never filled</li><li><span className="ic">→</span>Early enders are drawn and dated, and left out of the headline figures (they end earlier)</li></ul></div>
       </>}>
-      <div className="tmap" ref={ref} onPointerDown={() => setSel(null)} style={{ height: tw ? th * 2 + gap : undefined }}>
-        {tw > 0 && rows.map((r) => { const [cx, cy] = POS[r.code]; return (
+      <div className="tmap" ref={ref} onPointerDown={() => setSel(null)} style={{ height: tw ? th * nRows + gap * (nRows - 1) : undefined }}>
+        {tw > 0 && rows.map((r, i) => { const [cx, cy] = pos(r.code, i); return (
           <button key={r.code} type="button" className={`tile${sel === r.code ? " on" : ""}`} onPointerDown={(e) => e.stopPropagation()} onClick={() => setSel(sel === r.code ? null : r.code)}
             style={{ left: cx * (tw + gap), top: cy * (th + gap), width: tw, height: th, background: r.change === null ? undefined : shade(r.change) }}
             aria-label={`${NAME[r.code]}: ${r.change === null ? "n/a" : fmt(r.change)} since 1990, to ${r.end}`}>

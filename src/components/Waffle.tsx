@@ -2,19 +2,18 @@
 // Waffle small multiples (#23): 10×10 squares per country, one square = 1% of the population, rounded to whole squares;
 // the exact value is in the label. Filled squares in the country colour, the rest neutral. Year selector (published years only).
 import { useMemo, useState, type ReactNode } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS } from "@/lib/series.mjs";
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import { CardFrame, YearPick, StatBox, useParams, type Init } from "./kit";
 import { HeadFigs } from "./HeadFigs";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
-const ORDER = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 export type WaffleSpec = { id: ChartId; eyebrow: string; param: string; years: string[]; def: string; base: string; sub: (y: string) => ReactNode; source: string; calc: (y: string, v: (c: string, y: string) => number | null) => ReactNode };
 export default function Waffle({ file, spec, initial }: { file: any; spec: WaffleSpec } & Init) {
   const [st, set] = useParams(initial, { [spec.param]: [spec.def, spec.years] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const y = st[spec.param];
   const v = useMemo(() => (c: string, yr: string) => { const s = file.series[c], i = s.periods.indexOf(yr); return i < 0 ? null : s.values[i] ?? null; }, [file]);
-  const rows = ORDER.map((c) => ({ code: c, value: v(c, y), base: v(c, spec.base) })).sort((a, b) => (a.value === null ? 1 : b.value === null ? -1 : b.value - a.value));
+  const rows = Object.keys(file.series).map((c) => ({ code: c, value: v(c, y), base: v(c, spec.base) })).sort((a, b) => (a.value === null ? 1 : b.value === null ? -1 : b.value - a.value));
   const [sel, setSel] = useState<string | null>(null);
   const ok = rows.filter((r) => r.value !== null), top = ok[0], bot = ok[ok.length - 1], r = sel ? rows.find((q) => q.code === sel)! : null;
   const pct = (x: number) => `${x.toFixed(1)}%`;

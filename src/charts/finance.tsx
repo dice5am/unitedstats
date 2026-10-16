@@ -38,7 +38,7 @@ export const debtSpec: DumbbellSpec = {
     <div className="grp"><h3>Measures</h3><dl><dt>Debt</dt><dd>General government gross debt as % of GDP. Already a share of GDP, so no per-capita view.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">IMF WEO · GGXWDG_NGDP</dd><dt>Actuals</dt><dd>Cut at each country’s last actual year: {d.rows.map((r) => `${r.code} ${r.end}`).join(", ")}. IMF projections are not shown.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>debt(latest actual) − debt(2007), in points</code></div>
-      {(() => { const c = d.rows.find((r) => r.code === "CAN")!; return c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)} pts</b> ({c.end})</p>; })()}</div></div>
+      {(() => { const c = d.rows.find((r) => r.code === "CAN"); return c && c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)} pts</b> ({c.end})</p>; })()}</div></div>
     <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["10"]}</p></div>
     {rules([["n/a", "Gaps are never filled"], ["→", "Each country ends at its own last actual year"]])}
   </>,
@@ -53,7 +53,7 @@ export const houseSpec: DumbbellSpec = {
     <div className="grp"><h3>Measures</h3><dl><dt>Ratio</dt><dd>Nominal house prices ÷ nominal disposable income per person, as an index. Already a ratio, so no per-capita view. Levels are not comparable between countries; the change within each country is.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_HOUSE_PRICES · HPI_YDH · IX</dd><dt>Latest</dt><dd>Each country’s own latest quarter: {d.rows.map((r) => `${r.code} ${r.end ? qLabel(r.end) : "n/a"}`).join(", ")}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>(index(latest) ÷ index(Q1 2010) − 1) × 100</code></div>
-      {(() => { const c = d.rows.find((r) => r.code === "CAN")!; return c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} ÷ {c.startValue!.toFixed(1)} − 1 = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)}%</b></p>; })()}</div></div>
+      {(() => { const c = d.rows.find((r) => r.code === "CAN"); return c && c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} ÷ {c.startValue!.toFixed(1)} − 1 = {c.change >= 0 ? "+" : "−"}{Math.abs(c.change).toFixed(1)}%</b></p>; })()}</div></div>
     {rules([["n/a", "Gaps are never filled"], ["→", "Each country ends at its own latest quarter (Japan Q4 2025)"]])}
   </>,
 };

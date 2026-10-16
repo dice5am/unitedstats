@@ -3,15 +3,16 @@
 // neutral one-colour scale: coal; gas; other fossil; nuclear; hydro; wind, solar, bioenergy and other renewables. 1px card gap
 // between bands, 100% scale. Band = sum of its available fuels (n/a never 0). Stats box: six band rows with their Ember sources.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { COUNTRIES } from "@/lib/series.mjs";
+import { PEERS, SHORT_CODE } from "@/lib/series.mjs";
 import { mix, MIX_BANDS, bandParts } from "@/lib/waves.mjs";
 import { chartTitle, srcTag } from "@/src/charts/meta";
 import { CardFrame, YearPick, useParams, useWidth, type Init } from "./kit";
 
-const NAME = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.short]));
-const ORDER = ["CAN", "USA", "JPN", "FRA", "GBR", "DEU", "ITA"];
-const CODE: Record<string, string> = { CAN: "CA", USA: "US", JPN: "JP", FRA: "FR", GBR: "UK", DEU: "DE", ITA: "IT" };
+const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
+const CODE: Record<string, string> = SHORT_CODE;
 export default function MixArea({ ember, initial }: { ember: any } & Init) {
+  // single-select (unchanged rule); the list grows to every country Ember covers, G20 roster order
+  const ORDER = useMemo(() => PEERS.map((p) => p.code).filter((k) => ember.series[k]), [ember]);
   const [st, set] = useParams(initial, { em_c: ["CAN", ORDER] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const c = st.em_c, m = useMemo(() => mix(ember, c), [ember, c]);
   const [ref, w] = useWidth<HTMLDivElement>();

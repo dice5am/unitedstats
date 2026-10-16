@@ -5,6 +5,7 @@ import { writeSel, OLD_ON } from "./kit";
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
+import { NO_DATA_NOTE, SelCites, citesFor } from "./Sel";
 import { writeParams, CalcDisclosure, useDocTitle, TagIn } from "./kit";
 import { MON } from "@/lib/charts.mjs";
 import { srcTag, chartTitle } from "@/src/charts/meta";
@@ -117,7 +118,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
   const brkUnit = brks.length && brks.every((b) => b.label.includes("Q")) ? "quarter" : "year";
   const hasJan = kind === "jobs" && shown.some((l) => l.code === "USA"); // whenever the US is on, every window (incl. 50Y)
-  const noData = Object.fromEntries(PEER_CODES.filter((c) => !Object.values(sets).some((d) => d && hasSeries(d, c))).map((c) => [c, "no data"]));
+  const noData = Object.fromEntries(PEER_CODES.filter((c) => !Object.values(sets).some((d) => d && hasSeries(d, c))).map((c) => [c, NO_DATA_NOTE]));
   const naNote = { ...noData, ...Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`])) };
   const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); const nd = PEER_CODES.filter((c) => on[c] && noData[c]);
     if (!s.length) return nd.length ? `No data yet for ${nd.map((c) => PEERS.find((p) => p.code === c)!.name).join(", ")}` : null;
@@ -243,6 +244,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const calcBody = (
         <div className="card panel">
           {calc}
+          <SelCites cites={citesFor(Object.values(sets), PEER_CODES.filter((c) => on[c]))} />
           <div className="grp"><h3>Rules</h3><ul className="rules">
             <li><span className="ic">n/a</span>Gaps (n/a) are never filled</li>
             {hasJan && <li><span className="ic"><i className="dot amber" /></span>US Jan jump: OECD shows unusually large US changes in Jan; cause not confirmed</li>}

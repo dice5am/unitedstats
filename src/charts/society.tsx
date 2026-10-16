@@ -13,11 +13,11 @@ export const greySpec: SlopeSpec = {
   labels: { up: "Biggest rise", down: "Biggest fall", upSmall: "Smallest rise", downSmall: "Smallest fall" },
   sub: (ends, start) => <>People aged 65 and over, % of the population · {start} vs {ends[ends.length - 1]}</>,
   source: "Source: World Bank WDI · population ages 65 and above, % of total population (SP.POP.65UP.TO.ZS)",
-  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN")!; return <>
+  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Share 65+</dt><dd>People aged 65 and over as % of everyone. Already a share of the population, so no per-capita toggle.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">World Bank WDI · SP.POP.65UP.TO.ZS</dd><dt>Years</dt><dd>{d.start} and {d.ends.join(", ")}. Timeframe switch 10Y / 20Y / 50Y (default 50Y), each counted back from the chart’s own last year: the latest year any country publishes, {Math.max(...d.ends.map(Number))}, so 50Y starts in {Math.max(...d.ends.map(Number)) - 50}.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Change</span><code>share(latest) − share(start), in points</code></div>
-      {c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = +{c.change.toFixed(1)} pts</b></p>}</div></div>
+      {c && c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = +{c.change.toFixed(1)} pts</b></p>}</div></div>
     {rules([["n/a", "Gaps are never filled"]])}
   </>; },
 };
@@ -67,11 +67,11 @@ export const degreeSpec: DumbbellSpec = {
   legendStart: "Ages 25–64", legendEnd: "Ages 25–34", endName: (e) => `Ages 25–34 · ${e}`, dateOf: (e) => `${e} · ages 25–34 vs 25–64`,
   sub: (latest) => <>People with a degree or equivalent (tertiary, ISCED 5–8), % of each age group · ages 25–34 vs 25–64 · {latest}</>,
   source: "Source: OECD Education at a Glance · tertiary attainment, ages 25–34 and 25–64",
-  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN")!; return <>
+  calc: (d) => { const c = d.rows.find((r) => r.code === "CAN"); return <>
     <div className="grp"><h3>Measures</h3><dl><dt>Degree</dt><dd>Share of each age group with tertiary education (ISCED 5–8). Already a share, so no per-capita toggle.</dd><dt>Gap</dt><dd>Ages 25–34 minus ages 25–64, in points: how far the young are ahead of the working-age average.</dd></dl></div>
     <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD EAG · educational attainment, ISCED 5–8</dd><dt>Year</dt><dd>Latest year both age groups are published: {d.rows.map((r) => `${r.code} ${r.end}`).join(", ")}. Japan’s latest carries OECD flag W.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Gap</span><code>share(25–34) − share(25–64), in points</code></div>
-      {c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = +{c.change.toFixed(1)} pts</b></p>}</div></div>
+      {c && c.change !== null && <p className="ex">Canada: <b>{c.endValue!.toFixed(1)} − {c.startValue!.toFixed(1)} = +{c.change.toFixed(1)} pts</b></p>}</div></div>
     {rules([["n/a", "Gaps are never filled"]])}
   </>; },
 };

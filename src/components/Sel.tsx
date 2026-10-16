@@ -1,0 +1,54 @@
+"use client";
+// App-wide country selection (?c=) for every chart. A chart gets the selected countries' series only (pickCodes), the
+// menu greys countries with no data from any source for that chart, and new countries' citations go to
+// "How it's calculated". China rule: a country greyed on one chart stays selected and draws again on other charts.
+import { Fragment, createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { parseOn, fmtOn, PEERS, PEER_CODES, DEFAULT_ON } from "@/lib/series.mjs";
+import { pickCodes, present, citeLines, NEW } from "@/lib/g20.mjs";
+import { readSel, writeSel, SEL_EVENT } from "./kit";
+import Picker from "./Picker";
+
+export const NO_DATA_NOTE = "no data from any source";
+type Ctx = { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na: Record<string, string>; cites: { code: string; lines: string[] }[] };
+const SelCtx = createContext<Ctx | null>(null);
+
+export function useSelection() {
+  const [codes, setCodes] = useState<string[]>(DEFAULT_ON);
+  useEffect(() => {
+    const f = () => setCodes(parseOn(readSel(location.search)));
+    f(); writeSel(fmtOn(parseOn(readSel(location.search))));
+    addEventListener(SEL_EVENT, f); addEventListener("popstate", f);
+    return () => { removeEventListener(SEL_EVENT, f); removeEventListener("popstate", f); };
+  }, []);
+  const on = useMemo(() => Object.fromEntries(PEER_CODES.map((c) => [c, codes.includes(c)])), [codes]);
+  const setOn = (o: Record<string, boolean>) => { const next = PEER_CODES.filter((c) => o[c]); if (!next.length) return; setCodes(next); writeSel(fmtOn(next)); };
+  return { codes, on, setOn };
+}
+// codes with no data from any source: missing from ANY of the chart's required files
+export function noDataCodes(files: any[]) { return PEER_CODES.filter((c) => files.some((f) => !present(f, c))); }
+export function citesFor(files: any[], codes: string[]) {
+  return codes.filter((c) => NEW.includes(c)).map((c) => ({ code: c, lines: [...new Set(files.flatMap((f) => (f && f.g20_sources && f.g20_sources[c] ? citeLines(f.g20_sources[c]) : [])))] })).filter((x) => x.lines.length);
+}
+
+export function SelGate({ files, need, children }: { files: any[]; need?: any[]; children: (picked: any[], codes: string[]) => ReactNode }) {
+  const { codes, on, setOn } = useSelection();
+  const req = need ?? files;
+  const nd = useMemo(() => noDataCodes(req), [req]); // eslint-disable-line react-hooks/exhaustive-deps
+  const drawn = codes.filter((c) => !nd.includes(c));
+  const picked = useMemo(() => files.map((f) => pickCodes(f, drawn)), [files, drawn.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const na = Object.fromEntries(nd.map((c) => [c, NO_DATA_NOTE]));
+  const ctx = { on, setOn, na, cites: citesFor(files, drawn) };
+  return <SelCtx.Provider value={ctx}>{drawn.length ? children(picked, drawn) : <EmptySel />}</SelCtx.Provider>;
+}
+function EmptySel() {
+  const c = useContext(SelCtx)!;
+  const names = PEER_CODES.filter((k) => c.on[k]).map((k) => PEERS.find((p) => p.code === k)!.name).join(", ");
+  return <section className="cardsec"><div className="toprow nohead"><div className="ctrls ctrls2"><SelPicker /></div></div><div className="card chartcard plotcard"><div className="chart empty" style={{ height: 320 }} role="status"><div className="emptycard">No data from any source for {names} on this chart</div></div></div></section>;
+}
+export function SelPicker() { const c = useContext(SelCtx); return c ? <Picker on={c.on} setOn={c.setOn} na={c.na} /> : null; }
+export function useSelCtx() { return useContext(SelCtx); }
+export function SelCites({ cites }: { cites?: { code: string; lines: string[] }[] }) {
+  const c = useContext(SelCtx); const list = cites ?? c?.cites ?? [];
+  if (!list.length) return null;
+  return <div className="grp g20src"><h3>Sources by country</h3><dl>{list.map((x) => <Fragment key={x.code}><dt>{PEERS.find((p) => p.code === x.code)!.name}</dt><dd>{x.lines.join("; ")}</dd></Fragment>)}</dl></div>;
+}
