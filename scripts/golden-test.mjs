@@ -3,7 +3,7 @@ import { writeFileSync as writeFileSync, unlinkSync } from "node:fs";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, monotoneSegments, workedExample } from "../lib/series.mjs";
+import { avgChange, glowLeaders, mIdx, mStr, estAt, jobsPerCapitaDataset, buildLine, commonEnds, headline, headlinePick, headlineLabels, roundShown, fmtHeadline, econDataset, monotoneSegments as mseg, windowLabel, DEFAULT_ON, parseOn, G7, PEERS, PEER_CODES, PRESETS, fmtOn, hasSeries, monotoneSegments, workedExample } from "../lib/series.mjs";
 
 // Vendored Warehouse goldens (self-contained for CI/Vercel; no /workspace paths).
 const GOLDEN = (rel) => new URL(`./golden/${rel}`, import.meta.url);
@@ -206,9 +206,10 @@ for (const k of ["gdp", "pc"]) {
   check(d.freq === "quarterly" && /^Q\d \d{4} – Q2 2026 · quarterly$/.test(d.text), `window: jobs 5Y UK+Germany (quarterly) -> "${d.text}"`);
   check(e.text === "Q1 2006 – Q1 2026 · quarterly", `window: per capita 20Y unchanged -> "${e.text}"`); }
 // v10: default selection = all seven; invalid/empty ?on falls back to all seven
-check(DEFAULT_ON.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA" && parseOn("").length === 7 && parseOn(null).length === 7 && parseOn("XYZ,,foo").length === 7
-  && parseOn("jpn").join() === "JPN" && parseOn("ita,CAN").join() === "CAN,ITA", "default: all seven G7; invalid/empty on -> all seven; valid codes kept in fixed order");
-{ const h = headlinePick(data, DEFAULT_ON, 1), hr = headlinePick(un, DEFAULT_ON, 1, "unemp");
+check(G7.join() === "CAN,USA,JPN,GBR,DEU,FRA,ITA" && PEERS.length === 20 && DEFAULT_ON.join() === "CAN,USA,JPN,GBR,DEU,CHN,IND,EU"
+  && parseOn("").join() === DEFAULT_ON.join() && parseOn(null).join() === DEFAULT_ON.join() && parseOn("XYZ,,foo").join() === DEFAULT_ON.join()
+  && parseOn("jpn").join() === "JPN" && parseOn("ita,CAN").join() === "CAN,ITA" && parseOn("CAN,USA,JPN,GBR,DEU,FRA,ITA").join() === G7.join(), "G20 roster (20); default = curated eight (CAN USA CHN IND EU JPN DEU GBR); invalid/empty -> default; old G7 lists parse to the G7; codes kept in roster order");
+{ const h = headlinePick(data, G7, 1), hr = headlinePick(un, G7, 1, "unemp");
   check(h.fastest && h.slowest && hr.fastest && hr.slowest, `default 1Y headline (all seven): jobs ${h.fastest.codes}/${h.slowest.codes}, unemployment ${hr.fastest.codes}/${hr.slowest.codes}`); }
 // v11: Jobs per capita = jobs ÷ OECD total population (Warehouse convention: quarterly population on its middle month,
 // straight-line interpolation between; monthly: 3-mo avg of jobs ÷ population at each window end). Recomputed independently.
@@ -819,3 +820,33 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
   for (const root of ["src", "lib"]) walk(root);
   check(darkHex === "#E86BE0" && lightHex === "#A0168F" && leftover.length === 0,
     `Japan colour Option B magenta: dark ${darkHex} / light ${lightHex} (want #E86BE0 / #A0168F); old crimson leftovers: ${leftover.join(", ") || "none"}`); }
+// G20 country menu: presets, URL round-trip (?c=, old ?on= / ?g_on= links), selected-only drawing, no hard-coded hexes.
+{ const rd = (f) => readFileSync(f, "utf8"), kit = rd("src/components/kit.tsx"), pk = rd("src/components/Picker.tsx"), cc = rd("src/components/ChartCard.tsx"), tp = rd("src/components/TabPage.tsx"), css = rd("src/app/globals.css");
+  check(PRESETS.map((p) => p.label).join() === "Default,G7" && PRESETS[0].codes.join() === DEFAULT_ON.join() && PRESETS[1].codes.join() === G7.join() && !/All G7/.test(pk), "presets: Default (curated eight) and G7; 'All G7' gone");
+  // round-trip: any subset -> fmtOn -> parseOn gives it back in roster order; junk and duplicates are dropped
+  const subsets = [G7, DEFAULT_ON, PEER_CODES, ["EU"], ["TUR", "CAN"], PEER_CODES.slice(5, 17)]; let rtBad = 0;
+  for (const sub of subsets) { const s1 = fmtOn(sub), back = parseOn(s1); if (back.join() !== PEER_CODES.filter((c) => sub.includes(c)).join() || fmtOn(back) !== s1) rtBad++; }
+  const qsOf = (q) => { const u = new URLSearchParams(q); return u.get("c") ?? ["on", "g_on", "u_on", "j_on", "pr_on"].map((k) => u.get(k)).find((x) => x !== null) ?? null; };
+  const legacy = [["?on=CAN,USA", "CAN,USA"], ["?g_on=JPN,ITA", "JPN,ITA"], ["?j_on=CAN,FRA&j_win=50", "CAN,FRA"], ["?c=CAN,EU&on=USA", "CAN,EU"], ["?u_on=can,gbr", "CAN,GBR"]].every(([q, want]) => parseOn(qsOf(q)).join() === want);
+  check(!rtBad && legacy && parseOn(fmtOn(G7)).length === 7 && /export const SEL_KEY = "c"/.test(kit) && /OLD_ON = \["on", "g_on", "u_on", "j_on", "pr_on"\]/.test(kit) && /writeSel\(fmtOn\(codes\)\)/.test(cc) && /c \? `\/\$\{t\.id\}\?c=\$\{c\}`/.test(tp) && /sc \? `&c=\$\{sc\}`/.test(tp),
+    `URL round-trip: ${subsets.length} subsets survive ?c= write/read; old ?on= / ?g_on= / ?j_on= / ?u_on= links map onto ?c= (c wins); ?c= rides on tab links and chart switches`);
+  // data presence: new peers have no series yet -> greyed 'no data' and skipped (never break a chart)
+  const E = EV.gdp;
+  const newP = PEER_CODES.filter((c) => !G7.includes(c)), noneHave = newP.every((c) => !hasSeries(E, c));
+  check(noneHave && G7.every((c) => hasSeries(data, c)) && /PEERS\.filter\(\(c\) => hasSeries\(ds, c\.code\)\)/.test(cc) && /"no data"/.test(cc), `selection: lines built only for countries with a series (${newP.length} new peers have none yet -> greyed 'no data', skipped); G7 all present`);
+  check(/MAX_DOTS = 8/.test(pk) && /sel\.slice\(0, MAX_DOTS\)/.test(pk) && /\+\{sel\.length - MAX_DOTS\}/.test(pk) && /className="psearch"/.test(pk) && /\.plist\{max-height:320px;overflow-y:auto/.test(css) && /\.tip \.tiprows\{max-height:min\(40vh,240px\);overflow-y:auto/.test(css), "menu: up to 8 dots then +N; type-to-filter search; list scrolls inside (320px popover, sheet flex); stats box rows scroll past ~8");
+  // colour tokens = palette v2 (approved): every --<code> in both themes equals palette.json (vendored copy; Warehouse copy compared when present)
+  const dk = (css.match(/:root,\[data-theme="dark"\]\{[^}]*\}/) || [""])[0], lt = (css.match(/\[data-theme="light"\]\{[^}]*\}/) || [""])[0];
+  const PAL = JSON.parse(rd("scripts/golden/palette.json")), PN = { Canada: "CAN", US: "USA", UK: "GBR", Japan: "JPN", Germany: "DEU", France: "FRA", Italy: "ITA", Argentina: "ARG", Australia: "AUS", Brazil: "BRA", China: "CHN", India: "IND", Indonesia: "IDN", Mexico: "MEX", Russia: "RUS", "Saudi Arabia": "SAU", "South Africa": "ZAF", "South Korea": "KOR", Turkey: "TUR", EU: "EU" };
+  const tok = (blk, c) => (blk.match(new RegExp(`--${c}:(#[0-9A-Fa-f]{6})`)) || [])[1];
+  const palBad = Object.entries(PN).flatMap(([n, c]) => [["dark", dk], ["light", lt]].filter(([th, blk]) => tok(blk, c) !== PAL[th].colors[n]).map(([th, blk]) => `${c} ${th} ${tok(blk, c)} vs ${PAL[th].colors[n]}`));
+  let palUp = ""; try { palUp = rd("/workspace/g20-plan/palette.json") === rd("scripts/golden/palette.json") ? " (matches g20-plan copy)" : " — g20-plan/palette.json CHANGED: re-copy"; } catch { palUp = ""; }
+  const varsOk = Object.keys(PN).length === 20 && !palBad.length && !/TEMPORARY/.test(css) && tok(dk, "JPN") === "#E86BE0" && tok(lt, "JPN") === "#A0168F";
+  // no hard-coded hexes in components / charts (colours come from CSS vars)
+  const hexHits = []; const walk = (d) => { for (const n of readdirSync(d)) { const f = `${d}/${n}`; if (statSync(f).isDirectory()) walk(f); else if (/\.(tsx?|mjs)$/.test(n)) { const m = rd(f).match(/["'`(:\s]#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?\b/g); if (m) hexHits.push(`${f}: ${m.join(" ")}`); } } };
+  walk("src/components"); walk("src/charts");
+  check(varsOk && !hexHits.length, `colour tokens = palette v2 (palette.json, approved) for all 20 in both themes; G7 unchanged (Japan #E86BE0 / #A0168F)${palUp}${palBad.length ? " — DIFF " + palBad.join("; ") : ""}; no hard-coded hexes in src/components or src/charts${hexHits.length ? " — FOUND " + hexHits.join("; ") : ""}`);
+  const lc = rd("src/components/LineChart.tsx");
+  check(/className="hit"/.test(lc) && /setFocus\(l\.code\); pick\(e\.clientX\)/.test(lc) && /endl\$\{focus === e\.l\.code/.test(lc) && /setFocus\(null\); setHover\(null\);/.test(lc) && /\.chart\.dimmed \.series:not\(\.focus\)[^{]*\{opacity:\.3/.test(css), "tap rule: line / end label dims the others to 30% and opens the stats box; empty space clears both; hover does the same"); }
+if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
+

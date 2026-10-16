@@ -37,6 +37,8 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const [w, setW] = useState(0);
   const [covTip, setCovTip] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
+  // tap rule: a line or its end label sets focus (others dim to 30%) and opens the stats box; empty space clears both
+  const [focus, setFocus] = useState<string | null>(null);
   const [brkTip, setBrkTip] = useState<{ x: number; y: number; label: string } | null>(null);
   useEffect(() => {
     const el = ref.current; if (!el) return;
@@ -45,14 +47,14 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
     ro.observe(el); return () => ro.disconnect();
   }, []);
   useEffect(() => {
-    const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setHover(null); setBrkTip(null); } };
+    const close = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { setHover(null); setBrkTip(null); setFocus(null); } };
     document.addEventListener("pointerdown", close); return () => document.removeEventListener("pointerdown", close);
   }, []);
   const open = hover !== null;
   useEffect(() => {
     if (!open) return;
     const y0 = window.scrollY;
-    const onScroll = () => { if (Math.abs(window.scrollY - y0) > 8) setHover(null); };
+    const onScroll = () => { if (Math.abs(window.scrollY - y0) > 8) { setHover(null); setFocus(null); } };
     window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll);
   }, [open]);
 
@@ -174,7 +176,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
   const cx = hover === null ? 0 : x(hover);
   const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
-  const tipH = 44 + rows.length * 24 + rows.filter((r) => "note" in r && r.note).length * 18 + (jan ? 26 : 0) + brk.length * 22;
+  const tipH = 44 + Math.min(rows.length, 10) * 24 + rows.filter((r) => "note" in r && r.note).length * 18 + (jan ? 26 : 0) + brk.length * 22;
   const hits = (a: number, b: number) => ptYs.filter((py) => py > a - 8 && py < b + 8).length;
   const topHits = hits(0, tipH), botHits = hits(h - tipH, h);
   const tipBottom = ptYs.some((py) => py < pad.t + ih / 2) ? !(botHits > topHits) : topHits > botHits;
@@ -225,17 +227,17 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   };
 
   return (
-    <div ref={ref} className="chart" style={{ height: wide ? h : undefined }} tabIndex={0}
-      onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} aria-label="Chart; use arrow keys to step months"
+    <div ref={ref} className={`chart${focus && lines.some((l) => l.code === focus) ? " dimmed" : ""}`} style={{ height: wide ? h : undefined }} tabIndex={0}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setFocus(null); } }} aria-label="Chart; use arrow keys to step months"
       onKeyDown={(e) => {
-        if (e.key === "Escape") return setHover(null);
+        if (e.key === "Escape") { setFocus(null); return setHover(null); }
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
         e.preventDefault();
         setHover((hv) => Math.min(m1, Math.max(m0, (hv ?? m1) + (e.key === "ArrowRight" ? 1 : -1))));
       }}>
       <svg width={w} height={h} role="img" aria-label={summary}
-        onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e.clientX)}
-        onPointerDown={(e) => { setBrkTip(null); setCovTip(false); pick(e.clientX); }}
+        onPointerMove={(e) => (e.pointerType === "mouse" || (e.buttons && hover !== null)) && pick(e.clientX)}
+        onPointerDown={(e) => { setBrkTip(null); setCovTip(false); setFocus(null); setHover(null); }}
 >
         <defs>
           {glowCodes.map((c) => (
@@ -244,7 +246,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
                 <stop offset="0" stopColor={col(c)} stopOpacity="var(--area-a)" /><stop offset="1" stopColor={col(c)} stopOpacity="0" />
               </linearGradient>
               <linearGradient id={`mg-${c}`} gradientUnits="userSpaceOnUse" x1={x(m0)} x2={x(m1)} y1="0" y2="0">
-                {maskStops(c).map((st, i) => <stop key={i} offset={st.o} stopColor="#fff" stopOpacity={st.a} />)}
+                {maskStops(c).map((st, i) => <stop key={i} offset={st.o} stopColor="white" stopOpacity={st.a} />)}
               </linearGradient>
               <mask id={`mk-${c}`} maskUnits="userSpaceOnUse" x={0} y={0} width={w} height={h}>
                 <rect x={0} y={0} width={w} height={h} fill={`url(#mg-${c})`} />
@@ -275,7 +277,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         {xt.filter((mi) => !gaps.some((g) => Math.abs(x(mi) - (x(g.a) + x(g.b)) / 2) < (wide ? 36 : 26))).map((mi, i) => <text key={mi} x={x(mi)} y={bottom + 22} textAnchor={i === 0 ? "start" : i === xt.length - 1 ? "end" : "middle"} className="ax">{years <= 1 ? (allQ ? qL(mi, !wide) : fmtM(mi, !wide)) : Math.floor(mi / 12)}</text>)}
 
         {glowCodes.map((c) => { const l = lines.find((q) => q.code === c)!; return (
-          <g key={`gl${c}${years}${mode}`} mask={`url(#mk-${c})`} className="fadein">
+          <g key={`gl${c}${years}${mode}`} mask={`url(#mk-${c})`} className={`fadein glowg${focus === c ? " focus" : ""}`}>
             {lines.length === 1 && <path d={areaPath(l)} fill={`url(#ar-${c})`} />}
             <path d={glowPath(l)} fill="none" stroke={col(c)} strokeWidth={wide ? 7 : 5} opacity="var(--glow-a)" filter="url(#glow)" />
           </g>); })}
@@ -290,8 +292,11 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           const d = monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value === null || est[i] ? null : y(p.value) })));
           const dd = anyEst ? monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value !== null && (est[i] || (i > 0 && est[i - 1])) ? y(p.value) : null }))) : "";
           return (
-            <g key={l.code} className="series" style={{ opacity: op }} aria-hidden={!vis}>
+            <g key={l.code} className={`series${focus === l.code ? " focus" : ""}`} style={{ opacity: op }} aria-hidden={!vis}>
               <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              {vis && !l.excluded && <path d={monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })))} className="hit" data-code={l.code} fill="none" stroke="transparent" strokeWidth={wide ? 12 : 20} pointerEvents="stroke"
+                onPointerEnter={(e) => { if (e.pointerType === "mouse") setFocus(l.code); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setFocus(null); }}
+                onPointerDown={(e) => { e.stopPropagation(); setBrkTip(null); setCovTip(false); setFocus(l.code); pick(e.clientX); }} />}
               {dd && <path key={`d${l.code}${years}${mode}`} d={dd} className="ln est fadein" data-code={l.code} fill="none" stroke={col(l.code)} strokeWidth={2} strokeDasharray="4 3" strokeLinecap="butt" />}
               {vis && showJumps && l.janJumps.map((jp) => {
                 const p = l.points.find((q) => q.period === jp);
@@ -319,7 +324,9 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         }); })()}
 
         {ends.map((e) => (
-          <g key={e.l.code} className="fadein">
+          <g key={e.l.code} className={`fadein endl${focus === e.l.code ? " focus" : ""}`} data-code={e.l.code}
+            onPointerEnter={(ev) => { if (ev.pointerType === "mouse") { setFocus(e.l.code); setHover(e.mi); } }} onPointerLeave={(ev) => { if (ev.pointerType === "mouse") setFocus(null); }}
+            onPointerDown={(ev) => { ev.stopPropagation(); setFocus(e.l.code); setHover(e.mi); }}>
             {/* leader lives in the label gutter only: starts at the plot's right edge at the line's own y (no stub across
                 the plot for lines that end early), one short horizontal, a single bend, then to the label */}
             {(() => { const reach = x(e.mi) >= pad.l + iw - 0.5; return (
@@ -377,16 +384,16 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
       {hover !== null && (
         <div className={`tip ${tipBottom ? "bot" : "top"}`} style={wide ? { left: tipLeft, width: tipW } : undefined} role="status" onPointerDown={(e) => e.stopPropagation()}>
           <div className="tiph"><span className="mo">{allQ ? qL(hover) : fmtM(hover)}</span>{wide && <span className="cols">{RU ? "rate, 3-mo avg" : R ? "rate, end of month" : mode === "jobs" ? "index · employed" : "index, start = 100"}</span>}
-            <button className="tipx" aria-label="Close" onClick={() => setHover(null)}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></div>
-          {rows.map((r) => (
-            <div key={r.l.code} className="tipr">
+            <button className="tipx" aria-label="Close" onClick={() => { setHover(null); setFocus(null); }}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></div>
+          <div className="tiprows">{rows.map((r) => (
+            <div key={r.l.code} className={`tipr${focus === r.l.code ? " focus" : ""}`}>
               <i style={{ background: col(r.l.code) }} /><span className="nm">{r.l.name}</span>
               {r.tag && <em>{r.tag}</em>}
               <b>{r.v === null ? "n/a" : `${r.v.toFixed(R ? DISPLAY_DP.rate : 1)}${R ? "%" : ""}`}</b>
               {wide && mode === "jobs" && <span className="lv">{r.lvl === null ? "n/a" : `${(r.lvl / 1000).toFixed(2)}m`}</span>}
               {"note" in r && r.note && <span className="tipnote">{r.note}</span>}
             </div>
-          ))}
+          ))}</div>
           {!wide && covid && hover !== null && hover >= covid.a && hover <= covid.b && <div className="tipn covtip">Shaded: COVID-19 (Mar 2020 – Jun 2021)</div>}
           {jan && <div className="tipn"><i className="dot amber" />US Jan jump: cause not confirmed</div>}
           {brk.map((b) => <div key={b} className="tipn">{b}</div>)}

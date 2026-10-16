@@ -3,6 +3,19 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 
 // Merge one card's params into the URL (other cards' params untouched); commas kept readable.
+// Country selection: one app-wide pick in ?c= (roster order), carried across tabs/charts and refresh.
+// Old links (?on=, ?g_on=, ?u_on=, ?j_on=, ?pr_on=) are read once, rewritten to ?c= and dropped.
+export const SEL_KEY = "c";
+export const OLD_ON = ["on", "g_on", "u_on", "j_on", "pr_on"];
+export const SEL_EVENT = "us-sel";
+export function readSel(search: string, oldKeys: string[] = OLD_ON): string | null {
+  const q = new URLSearchParams(search);
+  if (q.has(SEL_KEY)) return q.get(SEL_KEY);
+  for (const o of oldKeys) if (q.has(o)) return q.get(o);
+  return null;
+}
+export function writeSel(codes: string) { writeParams({ [SEL_KEY]: codes }, OLD_ON); window.dispatchEvent(new Event(SEL_EVENT)); }
+
 export function writeParams(set: Record<string, string>, drop: string[] = []) {
   const q = new URLSearchParams(location.search);
   for (const d of drop) q.delete(d);

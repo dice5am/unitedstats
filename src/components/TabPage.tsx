@@ -4,6 +4,7 @@
 // ?chart=<id> + that chart's own prefixed params. Switching pushes history (Back steps between charts);
 // each chart's params are remembered for the session so switching away and back restores its state.
 // Only the shown chart's code and data load; the next chart is preloaded when the browser is idle.
+import { readSel, SEL_EVENT, OLD_ON } from "./kit";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
@@ -42,10 +43,17 @@ function readChart(tab: TabId): ChartId {
   return c && list.includes(c) ? c : inferChart(tab, q) ?? list[0];
 }
 
+// The country pick (?c=) rides along on tab links, so one selection carries across tabs (and refresh, via the URL).
+function useSelQuery() {
+  const [c, setC] = useState<string | null>(null);
+  useEffect(() => { const f = () => setC(readSel(location.search)); f(); addEventListener(SEL_EVENT, f); addEventListener("popstate", f); return () => { removeEventListener(SEL_EVENT, f); removeEventListener("popstate", f); }; }, []);
+  return c;
+}
 function TabRow({ tab }: { tab: TabId }) {
+  const c = useSelQuery();
   return (
     <nav className="tabs5" aria-label="Sections">
-      {TABS.map((t) => <Link key={t.id} href={`/${t.id}`} className={t.id === tab ? "on" : ""} aria-current={t.id === tab ? "page" : undefined}>{t.label}</Link>)}
+      {TABS.map((t) => <Link key={t.id} href={c ? `/${t.id}?c=${c}` : `/${t.id}`} className={t.id === tab ? "on" : ""} aria-current={t.id === tab ? "page" : undefined}>{t.label}</Link>)}
     </nav>
   );
 }
@@ -70,9 +78,9 @@ export default function TabPage({ tab }: { tab: TabId }) {
   const go = useCallback((next: ChartId) => {
     if (!chart || next === chart) { setSheet(false); return; }
     const q = new URLSearchParams(location.search), m = mem(), mine = CHART_META[chart].params;
-    m[chart] = [...q.entries()].filter(([k]) => mine.includes(k)).map(([k, v]) => `${k}=${v}`).join("&");
+    m[chart] = [...q.entries()].filter(([k]) => mine.includes(k) && !OLD_ON.includes(k)).map(([k, v]) => `${k}=${v}`).join("&");
     sessionStorage.setItem(STORE, JSON.stringify(m));
-    const keep = m[next] ? `&${m[next]}` : "";
+    const sc = readSel(location.search), keep = (m[next] ? `&${m[next]}` : "") + (sc ? `&c=${sc}` : "");
     history.pushState({ chart: next }, "", `${location.pathname}?chart=${next}${keep}`);
     const y = scrollY; // no jump: hold the page where it is while the next chart mounts
     setChart(next); setNonce((n) => n + 1); setSheet(false);

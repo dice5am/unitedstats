@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useEffect, useMemo, useRef, useState, useLayoutEffect, type MutableRefObject } from "react";
-import { COUNTRIES, WINDOWS, EURO, estAt, buildLine, headlinePick, headlineLabels, fmtHeadline, workedExample, quarterExample, qLabel, commonEnds, windowLabel, DEFAULT_ON, parseOn } from "@/lib/series.mjs";
+import { COUNTRIES, WINDOWS, EURO, estAt, buildLine, headlinePick, headlineLabels, fmtHeadline, workedExample, quarterExample, qLabel, commonEnds, windowLabel, DEFAULT_ON, parseOn, PEERS, PEER_CODES, fmtOn, hasSeries } from "@/lib/series.mjs";
+import { writeSel, OLD_ON } from "./kit";
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
@@ -66,7 +67,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   // URL state: read once before paint (server renders defaults -> no hydration mismatch), validate, canonicalise.
   // Old Labour links (?view=jobs|rate&win=&on=) map onto the matching card; ?view=rate scrolls to Unemployment.
   const urlRead = useRef<0 | 1 | 2>(0);
-  const keyStr = (v: View, w: number, codes: string[]) => ({ ...(keys.view ? { [keys.view]: URLV[v] } : {}), [keys.win]: String(w), [keys.on]: DEFAULT_ON.filter((c) => codes.includes(c)).join(",") });
+  const keyStr = (v: View, w: number) => ({ ...(keys.view ? { [keys.view]: URLV[v] } : {}), [keys.win]: String(w) });
   useLayoutEffect(() => {
     const q = new URLSearchParams(initialSearch.current ?? location.search);
     const lv = q.get("view");
@@ -75,16 +76,16 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
     const qv = keys.view ? (q.get(keys.view) ?? (legacy && E ? lv : null)) : null;
     const v = views.find(([vv]) => URLV[vv] === qv || vv === qv)?.[0] ?? views[0][0];
     const qw = Number(q.get(keys.win) ?? (legacy ? q.get("win") : null)), w = WINDOWS.includes(qw) ? qw : 1;
-    const codes = parseOn(q.get(keys.on) ?? (legacy ? q.get("on") : null));
+    const codes = parseOn(q.get("c") ?? q.get(keys.on) ?? (legacy ? q.get("on") : null) ?? [...OLD_ON].map((o) => q.get(o)).find((x) => x !== null) ?? null);
     setView(v); setYears(w); setOn(Object.fromEntries(codes.map((c) => [c, true])));
-    writeParams(keyStr(v, w, codes), LEGACY);
+    writeParams(keyStr(v, w), LEGACY); writeSel(fmtOn(codes));
     if (kind === "unemp" && lv === "rate") requestAnimationFrame(() => secRef.current?.scrollIntoView({ block: "start" }));
     urlRead.current = 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (urlRead.current !== 2) { if (urlRead.current === 1) urlRead.current = 2; return; }
-    writeParams(keyStr(view, years, DEFAULT_ON.filter((c) => on[c])), LEGACY);
+    writeParams(keyStr(view, years), LEGACY); writeSel(fmtOn(PEER_CODES.filter((c) => on[c])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, years, on]);
 
@@ -99,11 +100,12 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const tagStr = (() => { const ce = commonEnds(ds); const anyM = Object.keys(ds.monthly || {}).length > 0;
             return srcTag(E ? "gdp" : PR ? "7" : R ? "unemp" : "jobs", `${ds.rankEnd ? fmtM(ds.rankEnd) : anyM ? fmtM(ce.monthEnd) : qLabel(ce.quarterEnd)}`); })();
   // #7: DE/FR/IT national lines end Dec 1998; one euro-area line (XM) carries them from Jan 1999 when any is picked.
-  const lines = useMemo(() => [...COUNTRIES.map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
+  const lines = useMemo(() => [...PEERS.filter((c) => hasSeries(ds, c.code)).map((c) => ({ ...(buildLine(ds, c.code, years, mode) as Line), name: c.short, ...(kind === "jobs" ? {} : { janJumps: [] as string[] }) })),
     ...(PR ? [{ ...(buildLine(ds, "XM", years, mode) as Line), name: "Euro area" }] : [])], [ds, years, mode, PR]);
   const onX: Record<string, boolean> = PR ? { ...on, XM: EURO.some((c) => on[c]) } : on;
-  const sel = [...DEFAULT_ON.filter((c) => on[c]), ...(onX.XM ? ["XM"] : [])];
-  const wl = windowLabel(ds, sel, years, mode);
+  const sel = [...PEER_CODES.filter((c) => on[c] && lines.some((l) => l.code === c)), ...(onX.XM ? ["XM"] : [])];
+  // nothing drawable picked (only peers with no data yet): the window label falls back to the chart's own countries; no headline
+  const wl = windowLabel(ds, sel.length ? sel : lines.map((l) => l.code), years, mode);
   const asOfStr = asOf(ds.data_as_of.snapshot_id ?? ds.data_as_of.snapshot ?? "");
   const hasProv = ["monthly", "quarterly"].some((f) => Object.values(ds[f] || {}).some((x) => Object.values((x as { status?: Record<string, string> }).status || {}).includes("P")));
   const shown = lines.filter((l) => onX[l.code] && !l.excluded);
@@ -115,8 +117,11 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const brks = shown.filter((l) => l.points.some((p) => p.value !== null)).flatMap((l) => l.breaks.filter((b) => b.mi >= m0 && b.mi <= m1));
   const brkUnit = brks.length && brks.every((b) => b.label.includes("Q")) ? "quarter" : "year";
   const hasJan = kind === "jobs" && shown.some((l) => l.code === "USA"); // whenever the US is on, every window (incl. 50Y)
-  const naNote = Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`]));
-  const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); return s.length && s.every((l) => l.excluded) ? `No OECD data for ${s.map((l) => COUNTRIES.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
+  const noData = Object.fromEntries(PEER_CODES.filter((c) => !Object.values(sets).some((d) => d && hasSeries(d, c))).map((c) => [c, "no data"]));
+  const naNote = { ...noData, ...Object.fromEntries(lines.filter((l) => l.excluded && !(PR && EURO.includes(l.code) && onX.XM)).map((l) => [l.code, `n/a for ${years}Y`])) };
+  const emptyMsg = (() => { const s = lines.filter((l) => onX[l.code]); const nd = PEER_CODES.filter((c) => on[c] && noData[c]);
+    if (!s.length) return nd.length ? `No data yet for ${nd.map((c) => PEERS.find((p) => p.code === c)!.name).join(", ")}` : null;
+    return s.every((l) => l.excluded) ? `No OECD data for ${s.map((l) => PEERS.find((c) => c.code === l.code)!.name).join(", ")} over ${years}Y` : null; })();
   const windowRow = <><dt>Start – end</dt><dd className="strong">{wl.range}{wl.freq === "quarterly" ? " · quarterly" : ""}</dd></>;
   const lengthRow = <><dt>Length</dt><dd>{years} year{years > 1 ? "s" : ""} · moves with the switch</dd></>;
   const hid = `calc-h-${kind}`;
@@ -279,7 +284,8 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         <div className="figwrap">
           <div className="figs">
             {(() => {
-              const nm = (c: string) => c === "XM" ? "Euro area" : COUNTRIES.find((x) => x.code === c)!.short;
+              const nm = (c: string) => c === "XM" ? "Euro area" : PEERS.find((x) => x.code === c)!.short;
+              if (!sel.length) return <p key={`${view}-nodata`} className="fignone" role="status">No data yet for the countries picked.</p>;
               const h = headlinePick(ds, sel, years, mode);
               // Rank only countries with data for the whole window; otherwise say so plainly.
               if (h.none && sel.some((c) => !lines.find((l) => l.code === c)!.excluded)) return <p key={`${view}-none`} className="fignone" role="status">{h.fullCodes && h.fullCodes.length === 1

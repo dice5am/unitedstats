@@ -3,6 +3,8 @@
  --grid:rgba(255,255,255,.055);--card-border:rgba(255,255,255,.07);--base:#6A6A74;
  --text:#F2F2F5;--text-2:#A9A9B4;--muted:#85858F;--focus:#1899EC;
  --CAN:#F2484B;--USA:#5B8CFF;--JPN:#E86BE0;--GBR:#A08CFF;--DEU:#F2C230;--FRA:#2EC4E6;--ITA:#3CC87A;--amber:#F9AD26;
+ /* G20 palette v2 (Design APPROVED 2026-10-16): g20-plan/palette.json, vendored at scripts/golden/palette.json */
+ --ARG:#449CCC;--AUS:#F9BA9A;--BRA:#749E83;--CHN:#F73009;--IND:#F98F38;--IDN:#EC5674;--MEX:#91EBBB;--RUS:#C0D5FD;--SAU:#B2ECE2;--ZAF:#DBA9A2;--KOR:#AD6C64;--TUR:#DE879D;--EU:#6B81A5;
  --glass:rgba(30,30,37,.55);--glass-border:rgba(255,255,255,.08);--glass-hl:rgba(255,255,255,.10);--glass-hl-border:rgba(255,255,255,.14);
  --shadow:0 24px 60px -24px rgba(0,0,0,.7);--inset:inset 0 1px 0 rgba(255,255,255,.04);
  --aura:radial-gradient(60% 50% at 85% -10%,rgba(248,76,69,.10),transparent 70%),radial-gradient(50% 40% at 0% 0%,rgba(24,153,236,.08),transparent 70%);
@@ -14,6 +16,8 @@
  --grid:rgba(30,25,15,.07);--card-border:rgba(30,25,15,.08);--base:#8A8476;
  --text:#16151A;--text-2:#4A4852;--muted:#6B6873;--focus:#0568A4;
  --CAN:#C8102E;--USA:#1D4ED8;--JPN:#A0168F;--GBR:#5B3FD1;--DEU:#8A6200;--FRA:#00758F;--ITA:#0F7A3C;--amber:#8D5E05;
+ /* G20 palette v2 (Design APPROVED 2026-10-16): g20-plan/palette.json, vendored at scripts/golden/palette.json */
+ --ARG:#2A73B0;--AUS:#663123;--BRA:#0D5B45;--CHN:#8A0509;--IND:#894B21;--IDN:#D40C5B;--MEX:#047B62;--RUS:#2C416D;--SAU:#147172;--ZAF:#80383F;--KOR:#985B5F;--TUR:#6F1F49;--EU:#1A13BF;
  --glass:rgba(255,253,248,.62);--glass-border:rgba(30,25,15,.08);--glass-hl:rgba(30,25,15,.06);--glass-hl-border:rgba(30,25,15,.10);
  --shadow:0 24px 48px -28px rgba(60,45,20,.28);--inset:inset 0 1px 0 rgba(255,255,255,.8);
  --aura:radial-gradient(60% 50% at 85% -10%,rgba(187,4,20,.06),transparent 70%),radial-gradient(50% 40% at 0% 0%,rgba(5,104,164,.05),transparent 70%);
@@ -172,6 +176,7 @@ dt{color:var(--muted)}dd{margin:0;color:var(--text)}dd.strong{font-weight:600}
 .brkt{fill:var(--text-2);stroke:var(--card-solid);stroke-width:3px;paint-order:stroke}
 .brk{cursor:pointer}
 .chart svg > :not(.brk){pointer-events:none}
+.chart svg > .endl{pointer-events:auto}
 .emptyt{fill:var(--text-2);font-size:13px;font-weight:600}
 .figv.na{color:var(--muted)}
 .prow.na>span:last-child{color:var(--muted)}
@@ -542,3 +547,22 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .mixbox.float{pointer-events:none}.mixbox.float .tipx{pointer-events:auto}
 /* #9 sub-line wraps only between sources, never inside "Bioenergy 14.1%" */
 .mixbox .mxsrc>span{white-space:nowrap}
+
+/* G20 country menu: presets, type-to-filter, internal scroll (popover ~320px, sheet ~70vh), +N after 8 dots */
+.ppanel.pop{width:300px}
+.psearch{display:block;width:100%;height:40px;margin:0 0 6px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);background:var(--glass-hl);color:var(--text);font:inherit;font-size:var(--fs-2)}
+.psearch::placeholder{color:var(--muted)}
+.plist{max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.ppanel.sheet{max-height:85vh;display:flex;flex-direction:column}
+.ppanel.sheet .plist{max-height:none;flex:1 1 auto;min-height:0}
+.ppanel.sheet .psearch{height:44px;font-size:16px}
+.pnone{margin:8px 10px;color:var(--muted);font-size:var(--fs-1)}
+.pmore{font-size:var(--fs-1);font-weight:600;color:var(--text-2);margin-left:2px}
+/* stats box: selected countries only; internal scroll past ~8 rows */
+.tip .tiprows{max-height:min(40vh,240px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+/* tap/hover focus: the other lines dim to 30% */
+.chart .series,.chart .endl{transition:opacity .15s}
+.chart.dimmed .series:not(.focus),.chart.dimmed .endl:not(.focus),.chart.dimmed .glowg:not(.focus){opacity:.3 !important}
+.tipr.focus .nm{font-weight:700}
+.chart .hit{cursor:pointer}.chart .endl{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.chart .series,.chart .endl{transition:none}}

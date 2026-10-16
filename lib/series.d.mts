@@ -54,3 +54,9 @@ export function noDataBands(data: unknown, codes: string[], years: number, mode?
 export const NO_DATA_BAND_LABEL: string;
 export function jobsDataset(raw: unknown): any;
 export function flagTags(data: any, code: string, period: string | null): string[];
+export const PEERS: { code: string; name: string; short: string }[];
+export const PEER_CODES: string[];
+export const G7: string[];
+export const PRESETS: { label: string; codes: string[] }[];
+export function fmtOn(codes: string[]): string;
+export function hasSeries(ds: any, code: string): boolean;
