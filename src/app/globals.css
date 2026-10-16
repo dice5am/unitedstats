@@ -27,6 +27,8 @@
 :root{--fs-1:12px;--fs-2:14px;--fs-3:16px;--fs-4:20px;--fs-5:28px;--fs-d:40px;--fs-fig:56px;--pad:16px;--ease:cubic-bezier(.22,1,.36,1)}
 @media (min-width:768px){:root{--fs-d:64px;--fs-fig:88px;--pad:40px}}
 *{box-sizing:border-box}
+/* Design lock 2026-10-16: reserve the scrollbar gutter only where scrollbars take width (class set by sbScript in layout.tsx) */
+html.has-classic-scrollbar{scrollbar-gutter:stable}
 html,body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:clip}
 body{font-family:var(--font-sans),system-ui,sans-serif;font-size:var(--fs-2);transition:background .3s,color .3s}
 button,a{font:inherit;color:inherit}button{cursor:pointer;background:none;border:0}
