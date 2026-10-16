@@ -876,6 +876,29 @@ if (fail) { console.error(`${fail} check(s) failed`); process.exit(1); }
   const noSrc = allIds.filter((id) => !byChart[id] && id !== "9");
   check(!silent.length && !noSrc.length && ownSeen.some((x) => x.startsWith("2:CHN")) && ownSeen.some((x) => x.startsWith("13:AUS")),
     `never silently missing: ${allIds.length} charts; every non-greyed country is drawn (own-frequency rows/points on ${[...new Set(ownSeen.map((x) => x.split(":")[0]))].join(", ")}: ${ownSeen.length} series) or greyed with a note${silent.length ? " :: " + silent.join(" | ") : ""}${noSrc.length ? " :: no source map for " + noSrc.join(" ") : ""}`);
+  // App Lead f3a1bd7 items (each re-verified on 824ecff and checked here; DOM items in scripts/layout/g20-applead.cjs)
+  { const rdS = (f) => readFileSync(f, "utf8");
+    const cpiH = mg("oecd_cpi_headline_yoy.json"), cpiC = mg("oecd_cpi_core_yoy.json");
+    const hA = [1, 5, 10, 20].map((y) => CH.heatStrip(G20M.pickCodes(cpiH, ["AUS"]), y));
+    check(hA.every((h) => h.cols.length > 0 && h.rows.length === 1 && h.rows[0].freq === "quarterly" && h.rows[0].vals.some((v) => v !== null)) && /h\.cols\.length \?/.test(rdS("src/charts/finance.tsx")),
+      "App Lead (a): #13 with only Australia selected builds columns at its own quarterly frequency (no h.cols[0] crash) in 1Y/5Y/10Y/20Y");
+    const gH = PEER_CODES.filter((c) => !G20M.present(cpiH, c)), gC = PEER_CODES.filter((c) => !G20M.present(cpiC, c));
+    check(!gH.length && gC.join(" ") === "ARG BRA CHN IND IDN SAU" && /useSelNeed\(cfg \? \[cfg\.views\.findIndex/.test(rdS("src/components/HeatStrip.tsx")) && /setNeedIdx/.test(rdS("src/components/Sel.tsx")),
+      `App Lead (b): #13 greys per view: Headline greys none, Core greys ${gC.join(" ")} (gate follows the view)`);
+    const econ = mg("econ_gdp_series.json"), pol = SER.policyDataset(mg("bis_policy_rate_m.json")), eds = SER.econDataset(econ, "gdp");
+    const jpc = SER.jobsPerCapitaDataset(mg("c1_labour_series.json"), mg("econ_population_joined.json"));
+    check(!!(eds.g20_sources && eds.g20_sources.AUS && pol.g20_sources && pol.g20_sources.AUS && jpc.g20_sources && jpc.g20_sources.AUS && SER.applyStarts(eds).g20_sources) && /citesFor\(Object\.values\(sets\)/.test(cc),
+      "App Lead (d): derived datasets (GDP, GDP per capita, #7 policy, jobs per capita) carry g20_sources, so Sources by country renders on GDP and #7");
+    const sc = CH.scorecard(mg("c1_employment_rate.json")), rk = sc.rows.filter((x) => x.change !== null && x.freq !== "annual"), wst = rk[rk.length - 1];
+    check(wst.code === "ZAF" && Math.abs(wst.change + 2.47) < 0.005 && /x\.change !== null && x\.freq !== "annual"/.test(rdS("src/components/Scorecard.tsx")),
+      `App Lead (e): #22 headline ranks only rows with a quarterly change (no null 'Smallest gain 0.00', China annual not ranked): all 20 -> Still below ${wst.code} ${wst.change.toFixed(2)}`);
+    const cites13 = [cpiH, cpiC].flatMap((f) => Object.keys(f.g20_sources || {}));
+    check(cites13.includes("AUS") && cites13.includes("CHN") && /Sources by country/.test(rdS("src/charts/finance.tsx")) && /<SelCites\/>|<SelCites \/>/.test(kit),
+      "App Lead (g): #13 explainer cites every new country (Sources by country from SOURCES.json) and points to it from Inputs");
+    const lc = rdS("src/components/LineChart.tsx");
+    check(/fy < h \/ 2/.test(lc) && /innerHeight - vr\.top/.test(lc) && /maxHeight: tipCap/.test(lc),
+      "App Lead (c): stats box goes to the half away from the tapped point, capped short of it at phone width, and kept inside the viewport (DOM-measured in g20-applead.cjs)");
+  }
   // colour tokens = palette v2 (approved): every --<code> in both themes equals palette.json (vendored copy; Warehouse copy compared when present)
   const dk = (css.match(/:root,\[data-theme="dark"\]\{[^}]*\}/) || [""])[0], lt = (css.match(/\[data-theme="light"\]\{[^}]*\}/) || [""])[0];
   const PAL = JSON.parse(rd("scripts/golden/palette.json")), PN = { Canada: "CAN", US: "USA", UK: "GBR", Japan: "JPN", Germany: "DEU", France: "FRA", Italy: "ITA", Argentina: "ARG", Australia: "AUS", Brazil: "BRA", China: "CHN", India: "IND", Indonesia: "IDN", Mexico: "MEX", Russia: "RUS", "Saudi Arabia": "SAU", "South Africa": "ZAF", "South Korea": "KOR", Turkey: "TUR", EU: "EU" };

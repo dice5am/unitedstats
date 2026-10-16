@@ -21,8 +21,8 @@ export const cpiCfg = (headline: unknown, core: unknown): HeatCfg => ({
   calc: (h, v) => <>
     <div className="grp"><h3>Measures</h3><dl><dt>Inflation</dt><dd>{v === "core" ? "CPI excluding food and energy" : "CPI, all items"}, % change on the same month a year earlier. Already a rate, so no per-capita view.</dd>
       <dt>Colour</dt><dd>Fixed bands around the 2% target, the same in every window: {CPI_LABELS.join(" · ")}. Below 1.5%: grey; 1.5–2.5%: plain; above 2.5%: warm.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_PRICES_ALL (US, UK, Germany) · DF_PRICES_C2018_ALL (Canada, Japan, France, Italy)</dd><dt>Method</dt><dd>National CPI (not HICP); each country wholly from one dataset.</dd></dl></div>
-    <div className="grp"><h3>Window</h3><dl><dt>Columns</dt><dd className="strong">{h.cols[0].label} – {h.cols[h.cols.length - 1].label}</dd><dt>Ends</dt><dd>{monLabel(h.end)}, the latest month any country has.</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_PRICES_ALL (US, UK, Germany) · DF_PRICES_C2018_ALL (Canada, Japan, France, Italy)</dd><dt>Other countries</dt><dd>Each cited under Sources by country below.</dd><dt>Method</dt><dd>National CPI (not HICP); each country wholly from one dataset.</dd></dl></div>
+    <div className="grp"><h3>Window</h3><dl><dt>Columns</dt><dd className="strong">{h.cols.length ? `${h.cols[0].label} – ${h.cols[h.cols.length - 1].label}` : "n/a"}</dd><dt>Ends</dt><dd>{monLabel(h.end)}, the latest month any country has.</dd></dl></div>
     <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Quarter / year cell</span><code>mean of its monthly rates published so far; n/a if any is missing</code></div></div></div>
     {rules([["n/a", "Gaps (n/a) are never filled"], ["*", "Latest period uses months published so far"]])}
   </>,

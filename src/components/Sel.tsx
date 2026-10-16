@@ -9,7 +9,7 @@ import { readSel, writeSel, SEL_EVENT } from "./kit";
 import Picker from "./Picker";
 
 export const NO_DATA_NOTE = "no data from any source";
-type Ctx = { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na: Record<string, string>; cites: { code: string; freq?: string | null; lines: string[] }[]; names: Record<string, string>; drawn: string[] };
+type Ctx = { on: Record<string, boolean>; setOn: (o: Record<string, boolean>) => void; na: Record<string, string>; cites: { code: string; freq?: string | null; lines: string[] }[]; names: Record<string, string>; drawn: string[]; setNeedIdx?: (i: number[] | null) => void };
 const SelCtx = createContext<Ctx | null>(null);
 
 export function useSelection() {
@@ -32,13 +32,16 @@ export function citesFor(files: any[], codes: string[]) {
 
 export function SelGate({ files, need, children }: { files: any[]; need?: any[]; children: (picked: any[], codes: string[]) => ReactNode }) {
   const { codes, on, setOn } = useSelection();
-  const req = need ?? files;
-  const nd = useMemo(() => noDataCodes(req), [req]); // eslint-disable-line react-hooks/exhaustive-deps
+  // per-view gate: a card with views over different files (#13 Headline / Core) tells the gate which files its current
+  // view needs (by index), so Headline never greys the countries only Core lacks
+  const [needIdx, setNeedIdx] = useState<number[] | null>(null);
+  const req = needIdx ? needIdx.map((i) => files[i]) : need ?? files;
+  const nd = useMemo(() => noDataCodes(req), [req.map((f) => files.indexOf(f)).join(), files]); // eslint-disable-line react-hooks/exhaustive-deps
   const drawn = codes.filter((c) => !nd.includes(c));
   const picked = useMemo(() => files.map((f) => pickCodes(f, drawn)), [files, drawn.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const na = Object.fromEntries(nd.map((c) => [c, NO_DATA_NOTE]));
   const eu = euLabel(files), names: Record<string, string> = eu ? { EU: eu } : {};
-  const ctx = { on, setOn, na, cites: citesFor(files, drawn), names, drawn };
+  const ctx = { on, setOn, na, cites: citesFor(req, drawn), names, drawn, setNeedIdx };
   return <SelCtx.Provider value={ctx}>{drawn.length ? children(picked, drawn) : <EmptySel />}</SelCtx.Provider>;
 }
 function EmptySel() {
@@ -54,6 +57,7 @@ export function useSelNames<T extends Record<string, string>>(base: T): T { cons
 // otherwise "all N selected" from the countries drawn on this chart.
 export const allText = (codes: string[]) => (codes.length === 7 && G7.every((c) => codes.includes(c)) ? "all seven" : `all ${codes.length} selected`);
 export function useAllText() { const c = useContext(SelCtx); return c ? allText(c.drawn) : "all seven"; }
+export function useSelNeed(idx: number[] | null) { const c = useContext(SelCtx); const k = idx ? idx.join() : ""; useEffect(() => { c?.setNeedIdx?.(idx); }, [k]); } // eslint-disable-line react-hooks/exhaustive-deps
 export function SelCites({ cites }: { cites?: { code: string; freq?: string | null; lines: string[] }[] }) {
   const c = useContext(SelCtx); const list = cites ?? c?.cites ?? [];
   if (!list.length) return null;

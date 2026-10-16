@@ -1,4 +1,5 @@
 "use client";
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MON } from "@/lib/charts.mjs";
 import { DISPLAY_DP } from "@/lib/series.mjs";
@@ -186,10 +187,18 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
   const brk = hover !== null ? lines.flatMap((l) => l.breaks.filter((b) => Math.abs(b.mi - hover) <= (b.label.includes("Q") ? 1 : 6)).map((b) => `${l.name}: ${b.label}`)) : [];
   const cx = hover === null ? 0 : x(hover);
   const ptYs = rows.filter((r) => r.p && r.v !== null).map((r) => y(r.v!));
-  const tipH = 44 + Math.min(rows.length, 10) * 24 + rows.filter((r) => "note" in r && r.note).length * 18 + (jan ? 26 : 0) + brk.length * 22;
+  const tipH = 44 + Math.min(rows.length * 24 + rows.filter((r) => "note" in r && r.note).length * 18, 240) + (jan ? 26 : 0) + brk.length * 22;
   const hits = (a: number, b: number) => ptYs.filter((py) => py > a - 8 && py < b + 8).length;
   const topHits = hits(0, tipH), botHits = hits(h - tipH, h);
-  const tipBottom = ptYs.some((py) => py < pad.t + ih / 2) ? !(botHits > topHits) : topHits > botHits;
+  // the tapped (focused) point is never covered: the box goes to the other half, and at phone width it is capped
+  // so it stops short of that point (rows scroll); otherwise the old rule (fewest points covered)
+  const fr = focus ? rows.find((r) => r.l.code === focus && r.p && r.v !== null) : null, fy = fr ? y(fr.v!) : null;
+  const tipBottom = fy !== null ? fy < h / 2 : ptYs.some((py) => py < pad.t + ih / 2) ? !(botHits > topHits) : topHits > botHits;
+  // keep the box inside the viewport (1440x900: the chart can run past the fold), inside the chart's visible part
+  const vr = typeof window !== "undefined" && ref.current ? ref.current.getBoundingClientRect() : null;
+  const visTop = vr ? Math.max(0, -vr.top) : 0, visBot = vr ? Math.min(h, innerHeight - vr.top) : h;
+  const tipCap = !wide && fy !== null ? Math.max(120, tipBottom ? visBot - fy - 14 : fy - visTop - 14) : Math.max(120, visBot - visTop - 8);
+  const tipPos: React.CSSProperties = tipBottom ? { bottom: Math.max(0, h - visBot), top: "auto" } : { top: visTop, bottom: "auto" };
   const tipW = wide ? 340 : 0;
   const tipLeft = wide ? (cx + 24 + tipW > w ? Math.max(0, cx - 24 - tipW) : cx + 24) : 0;
 
@@ -393,7 +402,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
         </svg>
 
       {hover !== null && (
-        <div className={`tip ${tipBottom ? "bot" : "top"}`} style={wide ? { left: tipLeft, width: tipW } : undefined} role="status" onPointerDown={(e) => e.stopPropagation()}>
+        <div className={`tip ${tipBottom ? "bot" : "top"}`} style={{ ...(wide ? { left: tipLeft, width: tipW } : {}), ...tipPos, maxHeight: tipCap, overflowY: "auto" }} role="status" onPointerDown={(e) => e.stopPropagation()}>
           <div className="tiph"><span className="mo">{allQ ? qL(hover) : fmtM(hover)}</span>{wide && <span className="cols">{RU ? "rate, 3-mo avg" : R ? "rate, end of month" : mode === "jobs" ? "index · employed" : "index, start = 100"}</span>}
             <button className="tipx" aria-label="Close" onClick={() => { setHover(null); setFocus(null); }}><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></button></div>
           <div className="tiprows">{rows.map((r) => (

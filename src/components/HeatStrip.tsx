@@ -7,7 +7,7 @@ import { heatStrip, heatStep, HEAT_STEPS, monLabel, perLabel } from "@/lib/chart
 import { chartTitle, srcTag, type ChartId } from "@/src/charts/meta";
 import type { ReactNode } from "react";
 import { CardFrame, Seg, StatBox, useParams, useWidth } from "./kit";
-import { useAllText } from "./Sel";
+import { useAllText, useSelNeed } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const WIN = ["1", "5", "10", "20", "50"] as const;
@@ -25,6 +25,7 @@ export default function HeatStrip({ um: un0, initial, cfg }: { um?: unknown; ini
   const [st, set] = useParams(initial, spec as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
   const wp = cfg ? cfg.winParam : "uh_win", view = cfg ? st[cfg.viewParam] : "";
   const un = cfg ? cfg.views.find((v) => v[0] === view)![2] : un0;
+  useSelNeed(cfg ? [cfg.views.findIndex((v) => v[0] === view)] : null); // grey per view (Headline vs Core)
   const years = Number(st[wp]);
   const h = useMemo(() => heatStrip(un, years), [un, years]);
   const [wrap, w] = useWidth<HTMLDivElement>();

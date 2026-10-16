@@ -19,7 +19,9 @@ export default function Scorecard({ rate }: { rate: unknown }) {
   const vals = s.rows.map((r) => r.change).filter((v): v is number => v !== null);
   const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), span = hi - lo || 1;
   const z = (-lo / span) * 100;
-  const best = s.rows[0], worst = s.rows[s.rows.length - 1];
+  // headline only from rows with a change (a null row is never 'Smallest gain 0.00')
+  const ranked = s.rows.filter((x) => x.change !== null && x.freq !== "annual"), // annual rows (China) are not Q4 2019 → shared quarter, so not ranked
+    best = ranked[0] ?? s.rows[0], worst = ranked[ranked.length - 1] ?? s.rows[s.rows.length - 1];
   const r = sel ? s.rows.find((x) => x.code === sel)! : null;
   const ca = s.rows.find((x) => x.code === "CAN");
   return (
