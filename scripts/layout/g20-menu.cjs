@@ -9,8 +9,8 @@ for(const [w,h] of [[390,844],[1366,657],[1440,900]])for(const t of ['dark','lig
  const lab=await p.textContent('.pbtn .plabel');if(lab!=='Default (8)')bad.push('label '+lab);
  const dots=await p.$$eval('.pbtn .pdots i',x=>x.length);if(dots!==8)bad.push('dots '+dots);
  await p.$eval('.picker',e=>e.scrollIntoView({block:'center'}));await p.screenshot({path:`${OUT}/menu-closed-${k}.png`});
- await tap('.pbtn');const panel=await p.evaluate(()=>{const l=document.querySelector('.plist'),pp=document.querySelector('.ppanel'),r=pp.getBoundingClientRect();return {rows:l.querySelectorAll('.prow').length,scroll:l.scrollHeight>l.clientHeight+1,greyed:[...l.querySelectorAll('.prow.na')].map(x=>x.dataset.code),presets:[...document.querySelectorAll('.quick button')].map(x=>x.textContent),on:[...document.querySelectorAll('.quick button.on')].map(x=>x.textContent),inView:r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1}});
- if(panel.rows!==20)bad.push('rows '+panel.rows);if(!panel.scroll)bad.push('list does not scroll');if(panel.presets.join()!=='Default,G7')bad.push('presets '+panel.presets);if(panel.on.join()!=='Default')bad.push('preset on '+panel.on);if(panel.greyed.length!==13)bad.push('greyed '+panel.greyed.length);if(!panel.inView)bad.push('panel off screen');
+ await tap('.pbtn');const panel=await p.evaluate(()=>{const l=document.querySelector('.plist'),pp=document.querySelector('.ppanel'),r=pp.getBoundingClientRect();return {rows:l.querySelectorAll('.prow').length,scroll:l.scrollHeight>l.clientHeight+1,greyed:[...l.querySelectorAll('.prow.na')].filter(x=>/no data from any source/.test(x.textContent)).map(x=>x.dataset.code),presets:[...document.querySelectorAll('.quick button')].map(x=>x.textContent),on:[...document.querySelectorAll('.quick button.on')].map(x=>x.textContent),inView:r.top>=-1&&r.bottom<=innerHeight+1&&r.left>=-1&&r.right<=innerWidth+1}});
+ if(panel.rows!==20)bad.push('rows '+panel.rows);if(!panel.scroll)bad.push('list does not scroll');if(panel.presets.join()!=='Default,G7')bad.push('presets '+panel.presets);if(panel.on.join()!=='Default')bad.push('preset on '+panel.on);if(panel.greyed.length!==0)bad.push('gdp greyed '+panel.greyed.join());if(!panel.inView)bad.push('panel off screen');
  await p.screenshot({path:`${OUT}/menu-open-${k}.png`});
  // type-to-filter
  await p.click('.psearch');await p.keyboard.type('sou');await p.waitForTimeout(200);const f=await p.$$eval('.prow',x=>x.map(e=>e.dataset.code).join());if(f!=='ZAF,KOR')bad.push('filter sou -> '+f);
@@ -26,8 +26,8 @@ for(const [w,h] of [[390,844],[1366,657],[1440,900]])for(const t of ['dark','lig
  if(w<500)await p.click('.ppanel .done');else await p.keyboard.press('Escape');await p.waitForTimeout(250);
  await p.$eval('.picker',e=>e.scrollIntoView({block:'center'}));await p.screenshot({path:`${OUT}/menu-closed-10sel-${k}.png`});
  const sel10=await p.evaluate(()=>new URLSearchParams(location.search).get('c'));
- // chart still renders (new peers skipped, no crash): G7 lines drawn only
- const nlines=await p.$$eval('.cardsec .chart .hit',x=>x.map(e=>e.dataset.code).join());if(nlines!=='CAN,USA,JPN,GBR,DEU,FRA,ITA')bad.push('lines '+nlines);
+ // every selected country with data in the window is drawn (G20 data wired)
+ const nlines=await p.$$eval('.cardsec .chart .hit',x=>x.map(e=>e.dataset.code).join());if(nlines!==sel10)bad.push('lines '+nlines+' vs '+sel10);
  // refresh keeps it; tab switch keeps it
  await p.reload();await p.waitForTimeout(1200);if((await p.evaluate(()=>new URLSearchParams(location.search).get('c')))!==sel10)bad.push('refresh lost c');
  await tap('.tabs5 a[href^="/labour"]');await p.waitForTimeout(1500);const lc=await p.evaluate(()=>({c:new URLSearchParams(location.search).get('c'),l:document.querySelector('.pbtn .plabel')?.textContent}));if(lc.c!==sel10||lc.l!=='10 countries')bad.push('tab switch '+JSON.stringify(lc));
@@ -35,7 +35,13 @@ for(const [w,h] of [[390,844],[1366,657],[1440,900]])for(const t of ['dark','lig
  await p.goto(`${B}/labour?view=jobs&win=5&on=CAN,FRA`);await p.waitForTimeout(1200);const ol=await p.evaluate(()=>location.search);if(!/c=CAN,FRA/.test(ol)||/[?&]on=/.test(ol))bad.push('old link '+ol);
  await p.goto(`${B}/economy?chart=gdp&g_on=JPN,ITA`);await p.waitForTimeout(1200);const ol2=await p.evaluate(()=>location.search);if(!/c=JPN,ITA/.test(ol2)||/g_on=/.test(ol2))bad.push('old g_on '+ol2);
  // only new peers selected: chart shows a message, no crash
- await p.goto(`${B}/economy?chart=gdp&c=ARG,EU`);await p.waitForTimeout(1200);const em=await p.$eval('.cardsec',e=>e.querySelector('.emptycard')?.textContent||'none');if(!/No data yet for Argentina, European Union/.test(em))bad.push('empty '+em);
+ await p.goto(`${B}/labour?chart=12&c=ARG,EU`);await p.waitForTimeout(1500);const em=await p.$eval('.cardsec',e=>e.querySelector('.emptycard')?.textContent||'none');if(!/No data from any source for Argentina, European Union/.test(em))bad.push('empty '+em);
+ // grey list on #12 + China rule: CHN greyed on #12 but kept in ?c=, drawn again on GDP without re-selecting
+ await p.goto(`${B}/labour?chart=12&c=CAN,USA,CHN`);await p.waitForTimeout(1500);await tap('.cardsec .pbtn');await p.waitForTimeout(300);
+ const g12=await p.evaluate(()=>({g:[...document.querySelectorAll('.plist .prow.na')].map(x=>x.dataset.code).join(' '),note:document.querySelector('.plist .prow.na')?.textContent||''}));
+ if(g12.g!=='ARG BRA CHN IND IDN RUS SAU ZAF EU'||!/no data from any source/.test(g12.note))bad.push('#12 grey '+JSON.stringify(g12));
+ await p.keyboard.press('Escape');const c12=await p.evaluate(()=>new URLSearchParams(location.search).get('c'));if(c12!=='CAN,USA,CHN')bad.push('china rule c on #12 '+c12);
+ await p.goto(`${B}/economy?chart=gdp&c=${c12}`);await p.waitForTimeout(1500);const cl2=await p.$$eval('.cardsec .chart .hit',x=>x.map(e=>e.dataset.code).join());if(!/CHN/.test(cl2))bad.push('china rule gdp lines '+cl2);
  // tap rule on the line chart (G7)
  await p.goto(`${B}/economy?chart=gdp&c=CAN,USA,JPN,GBR,DEU,FRA,ITA`);await p.waitForTimeout(1300);
  const pt=await p.evaluate(()=>{const h=document.querySelector('.cardsec .chart .hit[data-code=USA]');h.scrollIntoView({block:'center'});const L=h.getTotalLength(),q=h.getPointAtLength(L*0.5),m=h.getScreenCTM();return {x:q.x*m.a+m.e,y:q.y*m.d+m.f}});
@@ -53,7 +59,8 @@ for(const [w,h] of [[390,844],[1366,657],[1440,900]])for(const t of ['dark','lig
   const lt=await p.evaluate(()=>({box:!!document.querySelector('.cardsec .tip'),f:document.querySelector('.cardsec .series.focus .hit')?.dataset.code}));if(!lt.box||lt.f!=='JPN')bad.push('label tap '+JSON.stringify(lt));}
  // desktop hover on a line dims
  if(w>=500){await p.mouse.move(5,5);await p.waitForTimeout(200);const pt2=await p.evaluate(()=>{const h=document.querySelector('.cardsec .chart .hit[data-code=CAN]');const L=h.getTotalLength(),q=h.getPointAtLength(L*0.8),m=h.getScreenCTM();return {x:q.x*m.a+m.e,y:q.y*m.d+m.f}});await p.mouse.move(pt2.x,pt2.y,{steps:4});await p.waitForTimeout(300);
-  const hv=await p.evaluate(()=>({box:!!document.querySelector('.cardsec .tip'),f:document.querySelector('.cardsec .series.focus .hit')?.dataset.code}));if(!hv.box||hv.f!=='CAN')bad.push('hover '+JSON.stringify(hv));}
+  // with 10 lines another line can sit on top at that point: the focused line must be the one under the pointer
+  const hv=await p.evaluate(({x,y})=>({box:!!document.querySelector('.cardsec .tip'),f:document.querySelector('.cardsec .series.focus .hit')?.dataset.code,top:document.elementFromPoint(x,y)?.dataset?.code}),pt2);if(!hv.box||!hv.f||hv.f!==hv.top)bad.push('hover '+JSON.stringify(hv));}
  // stats box internal scroll with >8 rows: N/A until new peers have data (only G7 can be drawn); check the CSS cap is applied
  const cap=await p.evaluate(()=>{const r=document.querySelector('.cardsec .tip .tiprows');return r?getComputedStyle(r).overflowY+' '+getComputedStyle(r).maxHeight:'no box'});
  if(errs.length)bad.push('page errors '+errs.join('|'));

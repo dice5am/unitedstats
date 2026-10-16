@@ -549,10 +549,10 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .mixbox .mxsrc>span{white-space:nowrap}
 
 /* G20 country menu: presets, type-to-filter, internal scroll (popover ~320px, sheet ~70vh), +N after 8 dots */
-.ppanel.pop{width:300px}
+.ppanel.pop{width:300px;scroll-margin:16px}
 .psearch{display:block;width:100%;height:40px;margin:0 0 6px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);background:var(--glass-hl);color:var(--text);font:inherit;font-size:var(--fs-2)}
 .psearch::placeholder{color:var(--muted)}
-.plist{max-height:320px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.plist{max-height:min(320px,calc(100vh - 160px));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .ppanel.sheet{max-height:85vh;display:flex;flex-direction:column}
 .ppanel.sheet .plist{max-height:none;flex:1 1 auto;min-height:0}
 .ppanel.sheet .psearch{height:44px;font-size:16px}
@@ -562,7 +562,7 @@ h1,.h1{margin:0;font-size:var(--fs-d);line-height:1;font-weight:700;letter-spaci
 .tip .tiprows{max-height:min(40vh,240px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 /* tap/hover focus: the other lines dim to 30% */
 .chart .series,.chart .endl{transition:opacity .15s}
-.chart.dimmed .series:not(.focus),.chart.dimmed .endl:not(.focus),.chart.dimmed .glowg:not(.focus){opacity:.3 !important}
+.chart.dimmed .series:not(.focus):not(.off),.chart.dimmed .endl:not(.focus),.chart.dimmed .glowg:not(.focus){opacity:.3 !important}
 .tipr.focus .nm{font-weight:700}
 .chart .hit{cursor:pointer}.chart .endl{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.chart .series,.chart .endl{transition:none}}

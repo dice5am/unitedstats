@@ -292,7 +292,7 @@ export default function LineChart({ lines: all, on, years, data, mode = "jobs", 
           const d = monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value === null || est[i] ? null : y(p.value) })));
           const dd = anyEst ? monotonePath(l.points.map((p, i) => ({ x: x(p.mi), y: p.value !== null && (est[i] || (i > 0 && est[i - 1])) ? y(p.value) : null }))) : "";
           return (
-            <g key={l.code} className={`series${focus === l.code ? " focus" : ""}`} style={{ opacity: op }} aria-hidden={!vis}>
+            <g key={l.code} className={`series${focus === l.code ? " focus" : ""}${vis ? "" : " off"}`} style={{ opacity: op }} aria-hidden={!vis}>
               <path key={`${l.code}${years}${mode}`} d={d} pathLength={1} className="ln draw" fill="none" stroke={col(l.code)} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
               {vis && !l.excluded && <path d={monotonePath(l.points.map((p) => ({ x: x(p.mi), y: p.value === null ? null : y(p.value) })))} className="hit" data-code={l.code} fill="none" stroke="transparent" strokeWidth={wide ? 12 : 20} pointerEvents="stroke"
                 onPointerEnter={(e) => { if (e.pointerType === "mouse") setFocus(l.code); }} onPointerLeave={(e) => { if (e.pointerType === "mouse") setFocus(null); }}

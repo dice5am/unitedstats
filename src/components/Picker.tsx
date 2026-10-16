@@ -23,6 +23,9 @@ export default function Picker({ on, setOn, na = {} }: { on: Record<string, bool
   const btn = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // desktop popover: if it would run past the bottom of a short window (1366x657), scroll just enough to show it
+  useEffect(() => { if (!open || mobile) return; const id = requestAnimationFrame(() => panelRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" as ScrollBehavior })); return () => cancelAnimationFrame(id); }, [open, mobile]);
   const sel = PEER_CODES.filter((c) => on[c]);
   const label = pickerLabel(sel);
   const shown = useMemo(() => { const t = q.trim().toLowerCase(); return t ? PEERS.filter((c) => c.name.toLowerCase().includes(t) || NAME[c.code].toLowerCase().includes(t) || c.code.toLowerCase().startsWith(t)).map((c) => c.code) : PEER_CODES; }, [q]);
@@ -62,7 +65,7 @@ export default function Picker({ on, setOn, na = {} }: { on: Record<string, bool
       </button>
       {open && mobile && <div className="backdrop" onClick={() => setOpen(false)} aria-hidden />}
       {open && (
-        <div className={`ppanel ${mobile ? "sheet" : "pop"}`} role={mobile ? "dialog" : undefined} aria-label={mobile ? "Choose countries" : undefined}>
+        <div ref={panelRef} className={`ppanel ${mobile ? "sheet" : "pop"}`} role={mobile ? "dialog" : undefined} aria-label={mobile ? "Choose countries" : undefined}>
           {mobile && <div className="grab" aria-hidden />}
           <div className="quick" role="group" aria-label="Presets">
             {PRESETS.map((p) => { const act = same(sel, p.codes);
