@@ -5,7 +5,7 @@ import { Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
 const font = Be_Vietnam_Pro({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-sans" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mono" });
 
-export const metadata: Metadata = { title: "unitedstats", description: "Employment across the G7, indexed. Data: OECD." };
+export const metadata: Metadata = { title: "unitedstats", description: "Economy, labour and society across the G20. Data: OECD, BIS, IMF, World Bank, ILOSTAT." };
 export const viewport: Viewport = {
   width: "device-width", initialScale: 1,
   themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#0B0B0E" }, { media: "(prefers-color-scheme: light)", color: "#F6F3EC" }],

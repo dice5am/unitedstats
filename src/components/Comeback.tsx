@@ -66,7 +66,7 @@ export default function Comeback({ econ, initial }: { econ: unknown; initial: Mu
       headline={
         <div className="figs">
           <div className="fig"><div className="figl">First back to 100</div><div className="figc">{first.map((p) => <span key={p.code}><i style={{ background: `var(--${p.code})` }} />{NAME[p.code]}</span>)}</div>
-            <div className="figv sm">{firstQ !== null ? qLabel(first[0].back!) : "n/a"}</div><div className="figp">{notBack.length ? `Not yet back: ${notBack.map((p) => NAME[p.code]).join(", ")}` : "All seven are back"}</div></div>
+            <div className="figv sm">{firstQ !== null ? qLabel(first[0].back!) : "n/a"}</div><div className="figp">{notBack.length ? `Not yet back: ${notBack.map((p) => NAME[p.code]).join(", ")}` : `${ALL.charAt(0).toUpperCase()}${ALL.slice(1)} are back`}</div></div>
           <div className="fig"><div className="figl">Highest now</div><div className="figc"><span><i style={{ background: `var(--${top.code})` }} />{NAME[top.code]}</span></div>
             <div className="figv">{pct(top.last!)}</div><div className="figp">{qLabel(c.end)}<TagIn tag={srcTag("1", qLabel(c.end))} /></div></div>
         </div>}

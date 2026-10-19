@@ -1,6 +1,6 @@
 "use client";
 // Bump chart (#3): rank over time, 1 = highest. One 2px line per country in its colour, a dot per year, name + rank at the
-// both ends (DS: name at both ends; ranks are 1 row apart so labels never collide). Ranked only in years all seven publish (1970 on). Tap/hover a year for the stats box.
+// both ends (DS: name at both ends; ranks are 1 row apart so labels never collide). Ranked only in years all selected publish (1970 on). Tap/hover a year for the stats box.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PEERS, SHORT_CODE } from "@/lib/series.mjs";
 import { league, DEU_FROM } from "@/lib/waves.mjs";
@@ -9,6 +9,7 @@ import { chartTitle, srcTag } from "@/src/charts/meta";
 import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import { CardFrame, Seg, StatBox, useParams, useWidth, writeParams, type Init } from "./kit";
 import { HeadFigs } from "./HeadFigs";
+import { useAllText } from "./Sel";
 
 const NAME = Object.fromEntries(PEERS.map((c) => [c.code, c.short]));
 const CODE: Record<string, string> = SHORT_CODE;
@@ -25,6 +26,7 @@ function legacyQuery(initial: Init["initial"]) {
 const usd = (v: number) => `$${Math.round(v).toLocaleString("en-GB")}`;
 
 export default function Bump({ file, initial }: { file: unknown } & Init) {
+  const ALL = useAllText(); // count text (PM lock)
   const q0 = useRef<string | null>(null);
   if (q0.current === null) q0.current = legacyQuery(initial);
   const [st, set] = useParams(q0, { lg_win: ["50", WINS] } as any) as unknown as [Record<string, string>, (k: string, v: string) => void];
@@ -56,11 +58,11 @@ export default function Bump({ file, initial }: { file: unknown } & Init) {
       tag={srcTag("3", end)}
       controls={<div className="bar solo"><Seg label="Timeframe" value={st.lg_win} options={WINS.map((v) => [v, `${v}Y`])} onChange={(v) => { setHover(null); set("lg_win", v); }} /></div>}
       headline={<HeadFigs tag={srcTag("3", end)} figs={(byRank.length > 1 ? [byRank[0], byRank[byRank.length - 1]] : byRank).map((b, k) => ({ code: b.c, label: k ? `Rank ${byRank.length} (lowest)` : "Rank 1 (highest)", value: usd(L.value[b.c][last]!), date: `${end} · per person, PPP` }))} />}
-      legend={<>{narrow && deJ > 0 && <li><i className="ndkey" />{deLabel}</li>}<li>Rank 1 = highest GDP per person that year</li><li>{NC === 7 && CS.includes("DEU") ? "Ranked in years all seven publish; Germany from 1991, the other six 1–6 before" : `Ranked among the ${NC} selected, in years all of them publish${CS.includes("DEU") ? "; Germany from 1991" : ""}`}</li></>}
+      legend={<>{narrow && deJ > 0 && <li><i className="ndkey" />{deLabel}</li>}<li>Rank 1 = highest GDP per person that year</li><li>{`Ranked in years ${ALL} publish${CS.includes("DEU") ? `; Germany from 1991, the other ${NC - 1} 1–${NC - 1} before` : ""}`}</li></>}
       source="Source: OECD · GDP per head, US dollars, current prices and current PPPs"
       calc={<>
         <div className="grp"><h3>Measures</h3><dl><dt>GDP per person</dt><dd>GDP per head at current prices and current purchasing power parities (PPPs adjust for price differences between countries), US dollars. Already per person, so no per-capita toggle.</dd></dl></div>
-        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_TABLE1_EXPENDITURE_HCPC · B1GQ_POP · USD_PPP_PS</dd><dt>Years</dt><dd>1970–{end}. The UK and France start in 1960, everyone else in 1970, so ranking starts in 1970. Germany is ranked from 1991 (unified Germany); before that the other six rank 1–6.</dd></dl></div>
+        <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_TABLE1_EXPENDITURE_HCPC · B1GQ_POP · USD_PPP_PS</dd><dt>Years</dt><dd>1970–{end}. The UK and France start in 1960, everyone else in 1970, so ranking starts in 1970. Germany is ranked from 1991 (unified Germany); before that the other {CS.includes("DEU") ? NC - 1 : NC} rank 1–{CS.includes("DEU") ? NC - 1 : NC}.</dd></dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx"><div className="code"><span>Rank</span><code>order of GDP per person that year, 1 = highest</code></div>
           <p className="ex">{end}: <b>{byRank.map((b) => `${b.r}. ${NAME[b.c]} ${usd(L.value[b.c][last]!)}`).join(" · ")}</b></p></div></div>
         <div className="grp"><h3>Source differences</h3><p className="diffnote">{DIFFERENCE_NOTES["3"]}</p></div>

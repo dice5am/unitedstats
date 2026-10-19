@@ -7,6 +7,7 @@ import { DIFFERENCE_NOTES } from "@/lib/differenceNotes.mjs";
 import type { DumbbellSpec } from "@/src/components/Dumbbell";
 import type { MultiplesSpec } from "@/src/components/Multiples";
 import type { HeatCfg } from "@/src/components/HeatStrip";
+import { allText } from "@/src/components/Sel";
 
 export const rules = (items: [string, string][]) => <div className="grp"><h3>Rules</h3><ul className="rules">{items.map(([ic, t]) => <li key={t}><span className="ic">{ic}</span>{t}</li>)}</ul></div>;
 const pct1 = (v: number) => `${v.toFixed(1)}%`;
@@ -86,7 +87,7 @@ export const bopSpec: MultiplesSpec = {
   source: "Source: OECD balance of payments · current account balance, % of GDP (DF_BOP), seasonally adjusted",
   calc: (m) => <>
     <div className="grp"><h3>Measures</h3><dl><dt>Balance</dt><dd>Current account balance (exports and income earned from abroad minus imports and income paid abroad), as % of GDP. Already a share of GDP, so no per-capita view.</dd></dl></div>
-    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_BOP · CA, B, PT_B1GQ</dd><dt>Coverage</dt><dd>All seven together from Q1 1999. Recent quarters are revised often; flags (OECD estimate, provisional) show in the stats box.</dd></dl></div>
+    <div className="grp"><h3>Inputs</h3><dl><dt>Dataset</dt><dd className="mono">OECD DF_BOP · CA, B, PT_B1GQ</dd><dt>Coverage</dt><dd>{(() => { const a = allText(m.panels.map((p) => p.code)); return a.charAt(0).toUpperCase() + a.slice(1); })()} together from Q1 1999. Recent quarters are revised often; flags (OECD estimate, provisional) show in the stats box.</dd></dl></div>
     {winRow(m)}
     {rules([["n/a", "Gaps are never filled"], ["±", "Bars above zero: surplus; below: deficit (drawn lighter)"]])}
   </>,

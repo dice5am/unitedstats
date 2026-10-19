@@ -5,7 +5,7 @@ import { writeSel, OLD_ON } from "./kit";
 import LineChart, { type Line } from "./LineChart";
 import Tween from "./Tween";
 import Picker from "./Picker";
-import { NO_DATA_NOTE, SelCites, citesFor } from "./Sel";
+import { NO_DATA_NOTE, SelCites, citesFor, allText } from "./Sel";
 import { euLabel } from "@/lib/g20.mjs";
 import { writeParams, CalcDisclosure, useDocTitle, TagIn } from "./kit";
 import { MON } from "@/lib/charts.mjs";
@@ -119,6 +119,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
   const euNames: Record<string, string> = (() => { const l = euLabel(Object.values(sets)); return (l ? { EU: l } : {}) as Record<string, string>; })();
   const onX: Record<string, boolean> = PR ? { ...on, XM: EURO.some((c) => on[c]) || !!on.EU } : on; // #7: the EU slot is the euro-area line (XM)
   const sel = [...PEER_CODES.filter((c) => on[c] && lines.some((l) => l.code === c)), ...(onX.XM ? ["XM"] : [])];
+  const ALL = allText(PEER_CODES.filter((c) => on[c])); // count text (PM lock)
   // nothing drawable picked (only peers with no data yet): the window label falls back to the chart's own countries; no headline
   const wl = windowLabel(ds, sel.length ? sel : lines.map((l) => l.code), years, mode);
   const asOfStr = asOf(ds.data_as_of.snapshot_id ?? ds.data_as_of.snapshot ?? "");
@@ -183,12 +184,12 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         <div className="grp"><h3>Inputs</h3><dl>
           <dt>Dataset</dt><dd className="mono">OECD DF_QNA · B1GQ{view === "pc" ? " + POP" : ""}</dd>
           <dt>Measure</dt><dd>{view === "pc" ? "Real GDP (chain-linked volume) ÷ population, persons" : "Real GDP, chain-linked volume, seasonally adjusted"}</dd>
-          <dt>Frequency</dt><dd>Quarterly, all seven</dd>
+          <dt>Frequency</dt><dd>Quarterly, {ALL}</dd>
           <dt>Snapshot</dt><dd>{asOfStr}</dd>
         </dl></div>
         <div className="grp"><h3>Window</h3><dl>
           {windowRow}
-          <dt>Ends</dt><dd>Ends {qLabel(commonEnds(ds).quarterEnd)}, the latest quarter all seven share.</dd>
+          <dt>Ends</dt><dd>Ends {qLabel(commonEnds(ds).quarterEnd)}, the latest quarter {ALL} share.</dd>
           {lengthRow}
         </dl></div>
         <div className="grp"><h3>Formulas</h3><div className="fx">
@@ -216,7 +217,7 @@ export default function ChartCard({ kind, sets, primary = false, initialSearch }
         <div className="grp"><h3>Inputs</h3><dl>
           <dt>Dataset</dt><dd className="mono">{UM ? "OECD DF_IALFS_UNE_M · ages 15+" : "OECD DF_IALFS_INDIC · UNE_LF"}</dd>
           <dt>Measure</dt><dd>Unemployed as % of labour force, 15+, seasonally adjusted</dd>
-          <dt>Frequency</dt><dd>{UM ? "Monthly, all seven. UK, France, Italy from 1983; Germany from 1991." : "Monthly: CA US JP · Qtrly: UK DE FR IT"}</dd>
+          <dt>Frequency</dt><dd>{UM ? `Monthly, ${ALL}. UK, France, Italy from 1983; Germany from 1991.` : "Monthly: CA US JP · Qtrly: UK DE FR IT"}</dd>
           <dt>Snapshot</dt><dd>{asOfStr}</dd>
         </dl></div>
         <div className="grp"><h3>Window</h3><dl>{windowRow}{UM && <><dt>Ends</dt><dd>{`Ranked change runs to ${ds.rankEnd ? fmtM(ds.rankEnd) : "the shared month"}, the latest month most countries share. Lines run to each country’s own latest month. A country that ends earlier (UK) is not ranked; its own figure is in the stats box.`}</dd></>}{lengthRow}</dl></div>
