@@ -195,15 +195,28 @@ export function YearPick({ label, value, options, onChange, labels }: { label: s
 // Returns null below 1024 (keep the fixed mobile height). `cur` is the part the component controls (svg height, rows × panel).
 export function useFitH(ref: { current: Element | null }, curRef: { current: number }, tol = 1) {
   const [fit, setFit] = useState<number | null>(null);
+  const fitRef = useRef<number | null>(null), good = useRef<number | null>(null), steps = useRef(0), tripped = useRef(false);
+  fitRef.current = fit;
   useLayoutEffect(() => {
     const f = () => {
       const el = ref.current as HTMLElement | null, cur = curRef.current; if (!el || innerWidth < 1024 || !cur) { setFit((v) => (v === null ? v : null)); return; }
       const src = el.closest(".cardsec")?.querySelector(".source"); if (!src) return;
-      const min = (innerHeight < 800 ? 340 : 480) - Math.max(0, el.getBoundingClientRect().height - cur), t = Math.max(min, Math.round(cur + innerHeight - 8 - (src.getBoundingClientRect().bottom + scrollY)));
-      setFit((v) => (v !== null && Math.abs(v - t) <= Math.max(1, tol) ? v : t)); // never re-render for a change of 1px or less (Design lock) // tol: panel grids floor per row, so they settle within rows px
+      const eh = el.getBoundingClientRect().height;
+      // The part the component says it controls (cur) must actually be laid out. If the element is shorter than that, its
+      // content is not drawn yet (e.g. width briefly 0 after a 1px-wide frame): growing cur would not move the source line,
+      // so each pass would ask for the same gap again. Wait for real layout instead.
+      if (eh + Math.max(1, tol) < cur) return;
+      const min = (innerHeight < 800 ? 340 : 480) - Math.max(0, eh - cur), t = Math.max(min, Math.round(cur + innerHeight - 8 - (src.getBoundingClientRect().bottom + scrollY)));
+      const v = fitRef.current;
+      if (v !== null && Math.abs(v - t) <= Math.max(1, tol)) return; // never re-render for a change of 1px or less (Design lock) // tol: panel grids floor per row, so they settle within rows px
+      // Backstop only: at most 12 fit changes before the browser paints. If it trips, go back to the last height that was painted
+      // (no collapse; panel minimums 96/120 still apply) and stop until the next frame.
+      if (steps.current >= 12) { if (!tripped.current) { tripped.current = true; console.warn(`[useFitH] guard tripped on #${el.closest(".cardsec")?.id ?? "?"}: kept ${good.current === null ? "default height" : good.current + "px"}, wanted ${t}px`); if (fitRef.current !== good.current) { fitRef.current = good.current; setFit(good.current); } } return; }
+      steps.current++; fitRef.current = t; setFit(t);
     };
     f(); addEventListener("resize", f); return () => removeEventListener("resize", f);
   });
+  useEffect(() => { const id = requestAnimationFrame(() => { good.current = fitRef.current; steps.current = 0; tripped.current = false; }); return () => cancelAnimationFrame(id); }); // after paint: this height reached the screen
   return fit;
 }
 

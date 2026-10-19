@@ -33,7 +33,7 @@ export default function Multiples({ file, spec, initial }: { file: any; spec: Mu
   // fit-to-viewport only up to 8 panels, otherwise the card grows and the page scrolls.
   const vw = w && typeof window !== "undefined" ? innerWidth : 0, minPh = vw >= 1024 ? 120 : 96;
   const cols = vw >= 1440 ? 4 : vw >= 1024 ? 3 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(m.panels.length / cols), ph = Math.max(minPh, fitT && m.panels.length <= 8 ? Math.floor(fitT / rows) : cols >= 3 ? 150 : 120);
-  phNow.current = rows * ph;
+  phNow.current = pw > 0 ? rows * ph : 0; // only claim height for panels actually drawn (grid width 0 = nothing drawn, nothing to fit)
   const pl = 6, pr = 6, pt = 16, pb = 18, iw = pw - pl - pr, ih = ph - pt - pb;
   const q0 = qi(m.from), q1 = qi(m.toX ?? m.to), n = q1 - q0 + 1;
   // round ticks with light gridlines (Round 4c): domain snaps to whole steps, never raw extents

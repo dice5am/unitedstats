@@ -25,7 +25,7 @@ export default function YearMultiples({ file, spec, initial }: { file: any; spec
   // fit-to-viewport only up to 8 panels, otherwise the card grows and the page scrolls.
   const vw = w && typeof window !== "undefined" ? innerWidth : 0, minPh = vw >= 1024 ? 120 : 96;
   const cols = vw >= 1440 ? 4 : vw >= 1024 ? 3 : 2, gap = 12, pw = w ? Math.floor((w - gap * (cols - 1)) / cols) - 22 : 0, rows = Math.ceil(panels.length / cols), ph = Math.max(minPh, fitT && panels.length <= 8 ? Math.floor(fitT / rows) : cols >= 3 ? 140 : 110), pl = 6, pr = 6, pt = 16, pb = 18;
-  phNow.current = rows * ph;
+  phNow.current = pw > 0 ? rows * ph : 0; // only claim height for panels actually drawn (grid width 0 = nothing drawn, nothing to fit)
   const y0 = panels[0].pts[0].y, y1 = Math.max(...panels.map((p) => +p.end));
   const x = (yr: number) => pl + ((yr - y0) / (y1 - y0 || 1)) * (pw - pl - pr), y = (v: number) => pt + ((hi - v) / (hi - lo)) * (ph - pt - pb);
   const sorted = [...panels].sort((a, b) => b.value - a.value), p0 = sel ? panels.find((p) => p.code === sel)! : null;
